@@ -1,9 +1,5 @@
 import {CssVarsProvider as JoyCssVarsProvider, extendTheme} from '@mui/joy/styles';
-import {
-    createTheme,
-    ThemeProvider,
-    THEME_ID as MATERIAL_THEME_ID,
-} from '@mui/material/styles';
+import {createTheme, THEME_ID as MATERIAL_THEME_ID} from '@mui/material/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import {BrowserRouter, Routes, Route} from 'react-router';
 
