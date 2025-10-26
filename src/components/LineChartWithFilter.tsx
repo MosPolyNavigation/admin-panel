@@ -32,8 +32,8 @@ const LineChartWithFilter = ({headerText, endpoint}: LineChartWithFilterProps) =
     const [data, setData] = useState<EndpointStatistics[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [startDate, setStartDate] = useState<Dayjs | null>(dayjs("2025-10-20"));
-    const [endDate, setEndDate] = useState<Dayjs | null>(dayjs("2025-10-26"));
+    const [startDate, setStartDate] = useState<Dayjs | null>(dayjs().locale('ru').startOf('week'));
+    const [endDate, setEndDate] = useState<Dayjs | null>(dayjs().locale('ru').endOf('week'));
 
     useEffect(() => {
         const fetchData = async () => {
