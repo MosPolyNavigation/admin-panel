@@ -1,4 +1,9 @@
-import {CssVarsProvider} from '@mui/joy/styles';
+import {CssVarsProvider as JoyCssVarsProvider, extendTheme} from '@mui/joy/styles';
+import {
+    createTheme,
+    ThemeProvider,
+    THEME_ID as MATERIAL_THEME_ID,
+} from '@mui/material/styles';
 import CssBaseline from '@mui/joy/CssBaseline';
 import {BrowserRouter, Routes, Route} from 'react-router';
 
@@ -10,9 +15,19 @@ import Users from "./pages/Users.tsx"
 import {AuthProvider} from "./contexts/AuthContext.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 
+const materialTheme = createTheme({
+    palette: {
+        mode: 'dark'
+    }
+});
+
+const joyTheme = extendTheme({
+    [MATERIAL_THEME_ID]: materialTheme
+})
+
 export default function App() {
     return (
-        <CssVarsProvider disableTransitionOnChange defaultColorScheme={'dark'}>
+        <JoyCssVarsProvider disableTransitionOnChange defaultColorScheme={'dark'} theme={joyTheme}>
             <CssBaseline/>
             <BrowserRouter>
                 <AuthProvider>
@@ -30,6 +45,6 @@ export default function App() {
                     </Routes>
                 </AuthProvider>
             </BrowserRouter>
-        </CssVarsProvider>
+        </JoyCssVarsProvider>
     );
 }

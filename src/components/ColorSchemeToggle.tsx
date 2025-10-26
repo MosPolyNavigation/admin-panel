@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { useColorScheme } from '@mui/joy/styles';
+import { useColorScheme as useJoyColorScheme } from '@mui/joy/styles';
+import { useColorScheme as useMaterialColorScheme } from '@mui/material/styles';
 import IconButton, { type IconButtonProps } from '@mui/joy/IconButton';
 
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
@@ -7,7 +8,8 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 
 export default function ColorSchemeToggle(props: IconButtonProps) {
     const { onClick, sx, ...other } = props;
-    const { mode, setMode } = useColorScheme();
+    const { mode, setMode: setJoyMode } = useJoyColorScheme();
+    const { setMode: setMaterialMode } = useMaterialColorScheme();
     const [mounted, setMounted] = React.useState(false);
     React.useEffect(() => {
         setMounted(true);
@@ -33,24 +35,19 @@ export default function ColorSchemeToggle(props: IconButtonProps) {
             {...props}
             onClick={(event) => {
                 if (mode === 'light') {
-                    setMode('dark');
+                    setJoyMode('dark');
+                    setMaterialMode('dark');
                 } else {
-                    setMode('light');
+                    setJoyMode('light');
+                    setMaterialMode('light');
                 }
                 onClick?.(event);
             }}
             sx={[
-                mode === 'dark'
-                    ? { '& > *:first-of-type': { display: 'none' } }
-                    : { '& > *:first-of-type': { display: 'initial' } },
-                mode === 'light'
-                    ? { '& > *:last-of-type': { display: 'none' } }
-                    : { '& > *:last-of-type': { display: 'initial' } },
                 ...(Array.isArray(sx) ? sx : [sx]),
             ]}
         >
-            <DarkModeRoundedIcon />
-            <LightModeIcon />
+            {mode === 'dark' ? <DarkModeRoundedIcon /> : <LightModeIcon />}
         </IconButton>
     );
 }
