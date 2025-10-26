@@ -1,71 +1,102 @@
 import {Card} from "@mui/joy";
 import Typography from "@mui/joy/Typography";
 import {LineChart} from "@mui/x-charts";
+import {useEffect, useState} from "react";
+import axios from "axios";
 
 interface LineChartWithFilterProps {
     headerText: string;
+    endpoint: string;
 }
 
-const dataFixture = {
-    "data": {
-        "endpointStatistics": [
-            {
-                "allVisits": 226,
-                "period": "2025-10-20",
-                "uniqueVisitors": 9,
-                "visitorCount": 27
-            },
-            {
-                "allVisits": 41,
-                "period": "2025-10-21",
-                "uniqueVisitors": 1,
-                "visitorCount": 8
-            },
-            {
-                "allVisits": 103,
-                "period": "2025-10-22",
-                "uniqueVisitors": 1,
-                "visitorCount": 10
-            },
-            {
-                "allVisits": 234,
-                "period": "2025-10-23",
-                "uniqueVisitors": 11,
-                "visitorCount": 23
-            },
-            {
-                "allVisits": 143,
-                "period": "2025-10-24",
-                "uniqueVisitors": 7,
-                "visitorCount": 23
-            },
-            {
-                "allVisits": 188,
-                "period": "2025-10-25",
-                "uniqueVisitors": 4,
-                "visitorCount": 9
-            },
-            {
-                "allVisits": 8,
-                "period": "2025-10-26",
-                "uniqueVisitors": 3,
-                "visitorCount": 4
-            }
-        ]
+interface EndpointStatistics {
+    allVisits: number;
+    period: string;
+    uniqueVisitors: number;
+    visitorCount: number;
+}
+
+interface GqlResponse {
+    data: {
+        endpointStatistics: EndpointStatistics[];
+    };
+}
+
+const LineChartWithFilter = ({headerText, endpoint}: LineChartWithFilterProps) => {
+    const [data, setData] = useState<EndpointStatistics[]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [startDate, _setStartDate] = useState<string>("2025-10-20");
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [endDate, _setEndDate] = useState<string>("2025-10-26");
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.post<GqlResponse>(
+                    "http://localhost:8080/api/graphql",
+                    {
+                        query: `{
+    endpointStatistics(endpoint: "${endpoint}", endDate: "${endDate}", startDate: "${startDate}") {
+        allVisits
+        period
+        uniqueVisitors
+        visitorCount
     }
-}
+}`,
+                    },
+                    {
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
 
-const data = dataFixture.data.endpointStatistics
+                if (response.data && response.data.data && response.data.data.endpointStatistics) {
+                    setData(response.data.data.endpointStatistics);
+                } else {
+                    console.error("Некорректная структура ответа GraphQL:", response.data);
+                    setError("Данные в ответе отсутствуют или имеют неверный формат.");
+                }
+            } catch (err) {
+                console.error("Ошибка при запросе GraphQL:", err);
+                setError("Не удалось загрузить данные.");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-const LineChartWithFilter = ({headerText}: LineChartWithFilterProps) => {
+        fetchData();
+    }, [endpoint, startDate, endDate]);
+
+    if (loading) {
+        return (
+            <Card>
+                <Typography level="title-lg">{headerText}</Typography>
+                <Typography>Загрузка...</Typography>
+            </Card>
+        );
+    }
+
+    if (error) {
+        return (
+            <Card>
+                <Typography level="title-lg">{headerText}</Typography>
+                <Typography color="danger">{error}</Typography>
+            </Card>
+        );
+    }
+
     return (
         <Card>
             <Typography level="title-lg">{headerText}</Typography>
             <LineChart series={[
-                { label: "Всего", dataKey: 'visitorCount'},
-                { label: "Уникальных", dataKey: 'uniqueVisitors'}
+                {label: "Всего", dataKey: 'visitorCount'},
+                {label: "Уникальных", dataKey: 'uniqueVisitors'}
             ]} xAxis={[
-                {dataKey: 'period', scaleType: "band", tickLabelStyle: {angle: -45, textAnchor: "middle"}}
+                {dataKey: 'period', scaleType: "band"}
             ]} yAxis={[{width: 50}]} dataset={data} height={250} width={400}/>
         </Card>
     )

@@ -7,16 +7,16 @@ const Dashboard = () => {
         <Page headerText={"Дашборды"}>
             <Grid container spacing={2} sx={{flexGrow: 1, justifyContent: "space-evenly"}}>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                    <LineChartWithFilter headerText="Сайт посетили" />
+                    <LineChartWithFilter headerText="Сайт посетили" endpoint={"site"} />
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                    <LineChartWithFilter headerText="Выбрали аудиторию" />
+                    <LineChartWithFilter headerText="Выбрали аудиторию" endpoint={"auds"}/>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                    <LineChartWithFilter headerText="Построили маршрут" />
+                    <LineChartWithFilter headerText="Построили маршрут" endpoint={"ways"}/>
                 </Grid>
                 <Grid size={{ xs: 12, sm: 6 }}>
-                    <LineChartWithFilter headerText="Сменили план" />
+                    <LineChartWithFilter headerText="Сменили план" endpoint={"plans"}/>
                 </Grid>
             </Grid>
         </Page>
