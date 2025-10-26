@@ -50,7 +50,7 @@ interface SidebarListItemsNestedProps {
     children: React.ReactNode;
 }
 
-export const SidebarListItemsNested = ({defaultExpanded, icon, name, children}: SidebarListItemsNestedProps) => {
+const SidebarListItemsNested = ({defaultExpanded, icon, name, children}: SidebarListItemsNestedProps) => {
     return (
         <ListItem nested>
             <Toggler
@@ -76,3 +76,5 @@ export const SidebarListItemsNested = ({defaultExpanded, icon, name, children}: 
         </ListItem>
     )
 }
+
+export default SidebarListItemsNested;

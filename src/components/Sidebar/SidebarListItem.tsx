@@ -10,7 +10,7 @@ interface SidebarListItemProps {
     children: React.ReactNode;
 }
 
-export const SidebarListItem = ({children, icon, ...buttonProps}: SidebarListItemProps) => {
+const SidebarListItem = ({children, icon, ...buttonProps}: SidebarListItemProps) => {
     return (
         <ListItem>
             <ListItemButton {...buttonProps}>
@@ -22,3 +22,5 @@ export const SidebarListItem = ({children, icon, ...buttonProps}: SidebarListIte
         </ListItem>
     )
 }
+
+export default SidebarListItem;

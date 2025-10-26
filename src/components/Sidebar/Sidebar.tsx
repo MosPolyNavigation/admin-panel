@@ -18,8 +18,8 @@ import {useLocation, useNavigate} from "react-router";
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
 import {closeSidebar} from '../../utils.ts';
 import {useAuth} from "../../contexts/AuthContext.tsx";
-import {SidebarListItem} from "./SidebarListItem.tsx";
-import {SidebarListItemsNested} from "./SidebarListItemsNested.tsx";
+import SidebarListItem from "./SidebarListItem.tsx";
+import SidebarListItemsNested from "./SidebarListItemsNested.tsx";
 
 export default function Sidebar() {
     const location = useLocation();
