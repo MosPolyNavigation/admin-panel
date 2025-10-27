@@ -3,16 +3,14 @@ import Typography from "@mui/joy/Typography";
 import {LineChart} from "@mui/x-charts";
 import {useEffect, useState} from "react";
 import axios from "axios";
-import Stack from "@mui/joy/Stack";
-import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
-import {LocalizationProvider} from "@mui/x-date-pickers/LocalizationProvider";
-import {DatePicker} from "@mui/x-date-pickers/DatePicker";
 import "dayjs/locale/ru.js";
 import dayjs, {Dayjs} from "dayjs";
 
 interface LineChartWithFilterProps {
     headerText: string;
     endpoint: string;
+    start_date: Dayjs | null;
+    end_date: Dayjs | null;
 }
 
 interface EndpointStatistics {
@@ -28,19 +26,20 @@ interface GqlResponse {
     };
 }
 
-const LineChartWithFilter = ({headerText, endpoint}: LineChartWithFilterProps) => {
+const LineChartWithFilter = ({headerText, endpoint, start_date, end_date}: LineChartWithFilterProps) => {
     const [data, setData] = useState<EndpointStatistics[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [startDate, setStartDate] = useState<Dayjs | null>(dayjs().locale('ru').startOf('week'));
-    const [endDate, setEndDate] = useState<Dayjs | null>(dayjs().locale('ru').endOf('week'));
 
     useEffect(() => {
         const fetchData = async () => {
             try {
+                if (start_date === null || end_date == null) {
+                    return;
+                }
                 setLoading(true);
-                const normalizedStartDate = dayjs(startDate).format('YYYY-MM-DD');
-                const normalizedEndDate = dayjs(endDate).format('YYYY-MM-DD');
+                const normalizedStartDate = dayjs(start_date).format('YYYY-MM-DD');
+                const normalizedEndDate = dayjs(end_date).format('YYYY-MM-DD');
                 const response = await axios.post<GqlResponse>(
                     "http://localhost:8080/api/graphql",
                     {
@@ -75,7 +74,7 @@ const LineChartWithFilter = ({headerText, endpoint}: LineChartWithFilterProps) =
         };
 
         fetchData();
-    }, [endpoint, startDate, endDate]);
+    }, [endpoint, start_date, end_date]);
 
     if (loading) {
         return (
@@ -98,12 +97,6 @@ const LineChartWithFilter = ({headerText, endpoint}: LineChartWithFilterProps) =
     return (
         <Card>
             <Typography level="title-lg">{headerText}</Typography>
-                <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
-                    <Stack direction="row">
-                        <DatePicker label="Дата начала" value={startDate} onChange={(newValue) => setStartDate(newValue)}/>
-                        <DatePicker label="Дата конца" value={endDate} onChange={(newValue) => setEndDate(newValue)}/>
-                    </Stack>
-                </LocalizationProvider>
             <LineChart series={[
                 {label: "Всего", dataKey: 'visitorCount'},
                 {label: "Уникальных", dataKey: 'uniqueVisitors'}
