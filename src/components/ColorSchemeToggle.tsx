@@ -33,9 +33,10 @@ export default function ColorSchemeToggle(props: IconButtonProps) {
             variant="outlined"
             color="neutral"
             {...props}
-            onClick={() => {
+            onClick={(event) => {
                 setMaterialMode(mode === 'dark' ? 'light' : 'dark');
                 setJoyMode(mode === 'dark' ? 'light' : 'dark');
+                onClick?.(event);
             }}
             sx={[
                 ...(Array.isArray(sx) ? sx : [sx]),
