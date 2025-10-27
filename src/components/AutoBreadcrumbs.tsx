@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router';
+import {useMemo} from 'react';
+import {useNavigate} from 'react-router';
 import Breadcrumbs from '@mui/joy/Breadcrumbs';
 import Link from '@mui/joy/Link';
 import Typography from '@mui/joy/Typography';
@@ -16,7 +16,8 @@ const PATH_LABELS: Record<string, string> = {
     '/': 'Главная',
     '/users': 'Пользователи',
     '/users/:id': 'Профиль пользователя',
-    '/profile': "Мой профиль"
+    '/profile': "Мой профиль",
+    '/dashboards': "Дашборды"
 };
 
 // Проверяет, совпадает ли путь с шаблоном (например, /users/:id)
@@ -31,10 +32,10 @@ function matchRoute(path: string, pattern: string): boolean {
 function AutoBreadcrumbs() {
     const navigate = useNavigate();
 
-    const { breadcrumbs, lastLabel } = useMemo(() => {
+    const {breadcrumbs, lastLabel} = useMemo(() => {
         const pathSnippets = window.location.pathname.split('/').filter((i) => i);
         const breadcrumbsArray: BreadcrumbItem[] = [
-            { label: 'Главная', href: '/' },
+            {label: 'Главная', href: '/'},
         ];
 
         let currentPath = '';
@@ -74,7 +75,7 @@ function AutoBreadcrumbs() {
         const lastBreadcrumb = breadcrumbsArray.pop();
         const lastLabel = lastBreadcrumb?.label || '';
 
-        return { breadcrumbs: breadcrumbsArray, lastLabel };
+        return {breadcrumbs: breadcrumbsArray, lastLabel};
     }, []);
 
     const handleClick = (href: string) => {
@@ -85,8 +86,8 @@ function AutoBreadcrumbs() {
         <Breadcrumbs
             size="sm"
             aria-label="breadcrumbs"
-            separator={<ChevronRightRoundedIcon />}
-            sx={{ pl: 0 }}
+            separator={<ChevronRightRoundedIcon/>}
+            sx={{pl: 0}}
         >
             {breadcrumbs.map((crumb, index) => (
                 <Link
@@ -94,12 +95,12 @@ function AutoBreadcrumbs() {
                     underline="hover"
                     color="neutral"
                     onClick={() => handleClick(crumb.href!)}
-                    sx={{ fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+                    sx={{fontSize: 12, fontWeight: 500, cursor: 'pointer'}}
                 >
                     {index === 0 ? <HomeRoundedIcon /*fontSize="sm"*/ /> : crumb.label}
                 </Link>
             ))}
-            <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>
+            <Typography color="primary" sx={{fontWeight: 500, fontSize: 12}}>
                 {lastLabel}
             </Typography>
         </Breadcrumbs>
