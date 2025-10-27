@@ -3,7 +3,6 @@ import Typography from "@mui/joy/Typography";
 import {LineChart} from "@mui/x-charts";
 import {useEffect, useState} from "react";
 import axios from "axios";
-import "dayjs/locale/ru.js";
 import dayjs, {Dayjs} from "dayjs";
 
 interface LineChartWithFilterProps {

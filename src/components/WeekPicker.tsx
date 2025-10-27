@@ -6,6 +6,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { PickersDay, type PickersDayProps } from '@mui/x-date-pickers/PickersDay';
 import {DatePicker} from "@mui/x-date-pickers/DatePicker";
+import "dayjs/locale/ru.js";
 
 dayjs.extend(isBetweenPlugin);
 
@@ -37,11 +38,11 @@ const CustomPickersDay = styled(PickersDay, {
             },
         }),
     }),
-    ...(day.day() === 0 && {
+    ...(day.day() === 1 && {
         borderTopLeftRadius: '50%',
         borderBottomLeftRadius: '50%',
     }),
-    ...(day.day() === 6 && {
+    ...(day.day() === 0 && {
         borderTopRightRadius: '50%',
         borderBottomRightRadius: '50%',
     }),
@@ -103,7 +104,7 @@ const WeekPicker = ({onWeekChange, initialDate}: WeekPickerProps) => {
     // handleChange(value);
 
     return (
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="ru">
             <DatePicker
                 value={value}
                 onChange={handleChange}
