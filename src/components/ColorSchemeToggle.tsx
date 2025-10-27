@@ -8,8 +8,8 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 
 export default function ColorSchemeToggle(props: IconButtonProps) {
     const { onClick, sx, ...other } = props;
-    const { mode, setMode: setJoyMode } = useJoyColorScheme();
-    const { setMode: setMaterialMode } = useMaterialColorScheme();
+    const { setMode: setJoyMode } = useJoyColorScheme();
+    const { mode, setMode: setMaterialMode } = useMaterialColorScheme();
     const [mounted, setMounted] = React.useState(false);
     React.useEffect(() => {
         setMounted(true);
@@ -34,13 +34,8 @@ export default function ColorSchemeToggle(props: IconButtonProps) {
             color="neutral"
             {...props}
             onClick={(event) => {
-                if (mode === 'light') {
-                    setJoyMode('dark');
-                    setMaterialMode('dark');
-                } else {
-                    setJoyMode('light');
-                    setMaterialMode('light');
-                }
+                setMaterialMode(mode === 'dark' ? 'light' : 'dark');
+                setJoyMode(mode === 'dark' ? 'light' : 'dark');
                 onClick?.(event);
             }}
             sx={[
