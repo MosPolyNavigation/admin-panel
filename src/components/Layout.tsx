@@ -1,6 +1,6 @@
 import {Navigate, Outlet} from "react-router";
 import { Box } from '@mui/joy';
-import Sidebar from './Sidebar';
+import Sidebar from './Sidebar/Sidebar.tsx';
 import Header from './Header';
 import {useAuth} from "../contexts/AuthContext.tsx";
 
