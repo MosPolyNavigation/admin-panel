@@ -12,6 +12,8 @@ import ColorSchemeToggle from "../components/ColorSchemeToggle.tsx";
 import IconButton from "@mui/joy/IconButton";
 import {useAuth} from "../contexts/AuthContext.tsx";
 import {Navigate} from "react-router";
+import Alert from '@mui/joy/Alert';
+import WarningIcon from '@mui/icons-material/Warning';
 
 interface FormElements extends HTMLFormControlsCollection {
     login: HTMLInputElement;
@@ -24,11 +26,13 @@ interface SignInFormElement extends HTMLFormElement {
 
 export default function SingIn() {
     const { login, isAuthenticated } = useAuth();
+    const [error, setError] = React.useState<string>('');
 
     if (isAuthenticated) return <Navigate to="/" replace/>
 
     const handleSubmit = async (event: React.FormEvent<SignInFormElement>) => {
         event.preventDefault();
+        setError('');
         const formElements = event.currentTarget.elements;
         const username = formElements.login.value;
         const password = formElements.password.value;
@@ -37,7 +41,7 @@ export default function SingIn() {
             await login({ username, password });
         } catch (error) {
             console.error('Login failed:', error);
-            alert('Неверный логин или пароль');
+            setError('Неверный логин или пароль');
         }
     };
 
@@ -110,6 +114,19 @@ export default function SingIn() {
                                 </Typography>
                             </Stack>
                         </Stack>
+
+                        {error && (
+                            <Alert
+                                color="danger"
+                                variant="soft"
+                                startDecorator={<WarningIcon />}
+                                sx={{ mb: 2 }}
+                            >
+                                {error}
+                            </Alert>
+                        )}
+                            
+
                         <Stack sx={{ gap: 4, mt: 2 }}>
                             <form onSubmit={handleSubmit}>
                                 <FormControl required>
