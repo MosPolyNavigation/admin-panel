@@ -3,17 +3,18 @@ import {Card, Grid} from "@mui/joy";
 import LineChartWithFilter from "../components/LineChartWithFilter.tsx";
 import DateSelectors from "../components/DateSelectors.tsx";
 import {useState} from "react";
-import dayjs, {Dayjs} from "dayjs";
+import dayjs from "../dayjs.ts";
+import {Dayjs} from "dayjs";
 import Stack from "@mui/joy/Stack";
 import { useDateSelectors } from "../hooks/useDateSelectors"; 
 
 const Dashboard = () => {
     const { dateInterval, setDateInterval } = useDateSelectors();
     
-    const initialStart = dayjs().locale('ru').startOf('week');
-    const initialEnd = dayjs().locale('ru').endOf('day').isBefore(dayjs().locale('ru').endOf('week'))
-        ? dayjs().locale('ru').endOf('day')
-        : dayjs().locale('ru').endOf('week');
+    const initialStart = dayjs().startOf('week');
+    const initialEnd = dayjs().endOf('day').isBefore(dayjs().endOf('week'))
+        ? dayjs().endOf('day')
+        : dayjs().endOf('week');
 
     const [startDate, setStartDate] = useState<Dayjs | null>(initialStart);
     const [endDate, setEndDate] = useState<Dayjs | null>(initialEnd);
