@@ -1,4 +1,4 @@
-import type { SxProps } from '@mui/system';
+import { type SxProps } from "@mui/joy/styles/types";
 import { tc,theme } from './theme'
 
 
