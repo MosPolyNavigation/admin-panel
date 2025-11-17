@@ -2,8 +2,9 @@ import {Card} from "@mui/joy";
 import Typography from "@mui/joy/Typography";
 import {LineChart} from "@mui/x-charts";
 import {useEffect, useState} from "react";
-import axios from "axios";
 import dayjs, {Dayjs} from "dayjs";
+import {type EndpointStatistics, get_stat} from "../api.ts";
+import {useAuth} from "../contexts/AuthContext.tsx";
 
 interface LineChartWithFilterProps {
     headerText: string;
@@ -12,23 +13,11 @@ interface LineChartWithFilterProps {
     end_date: Dayjs | null;
 }
 
-interface EndpointStatistics {
-    allVisits: number;
-    period: string;
-    uniqueVisitors: number;
-    visitorCount: number;
-}
-
-interface GqlResponse {
-    data: {
-        endpointStatistics: EndpointStatistics[];
-    };
-}
-
 const LineChartWithFilter = ({headerText, endpoint, start_date, end_date}: LineChartWithFilterProps) => {
     const [data, setData] = useState<EndpointStatistics[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const token = useAuth().token!;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -39,24 +28,7 @@ const LineChartWithFilter = ({headerText, endpoint, start_date, end_date}: LineC
                 setLoading(true);
                 const normalizedStartDate = dayjs(start_date).format('YYYY-MM-DD');
                 const normalizedEndDate = dayjs(end_date).format('YYYY-MM-DD');
-                const response = await axios.post<GqlResponse>(
-                    "http://localhost:8080/api/graphql",
-                    {
-                        query: `{
-    endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-}`,
-                    },
-                    {
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
+                const response = await get_stat(endpoint, normalizedStartDate, normalizedEndDate, token);
 
                 if (response.data && response.data.data && response.data.data.endpointStatistics) {
                     setData(response.data.data.endpointStatistics);
@@ -73,7 +45,7 @@ const LineChartWithFilter = ({headerText, endpoint, start_date, end_date}: LineC
         };
 
         fetchData();
-    }, [endpoint, start_date, end_date]);
+    }, [endpoint, start_date, end_date, token]);
 
     if (loading) {
         return (
