@@ -6,6 +6,8 @@ export interface EndpointStatistics {
     period: string;
     uniqueVisitors: number;
     visitorCount: number;
+
+    [key: string]: string | number | Date | null | undefined;
 }
 
 export interface GqlResponse {
