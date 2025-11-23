@@ -8,7 +8,7 @@ import { configDsFirstDay } from '../components/config.ts'
 export const useDateSelectors = () => {
   const { data: firstDay } = useFirstDay()
   const [dateInterval, setDateInterval] = useState<DateInterval>({
-    type: DateIntervalType.AllTime,
+    type: DateIntervalType.Month,
     startDate: firstDay?.format('YYYY-MM-DD') ?? configDsFirstDay.format('YYYY-MM-DD'),
     endDate: dayjs().format('YYYY-MM-DD'),
     isSetted: false,
