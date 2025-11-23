@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const BASE_URL: string = "http://localhost:8080";
+import {BASE_API_URL} from "./config.ts";
 
 export interface EndpointStatistics {
     allVisits: number;
@@ -17,7 +16,7 @@ export interface GqlResponse {
 
 export const get_stat = async (endpoint: string, normalizedStartDate: string, normalizedEndDate: string, token: string) => {
     return await axios.post<GqlResponse>(
-        `${BASE_URL}/api/graphql`,
+        `${BASE_API_URL}/graphql`,
         {
             query: `{
     endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
