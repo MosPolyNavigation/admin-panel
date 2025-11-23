@@ -9,12 +9,13 @@ import Profile from "./pages/Profile.tsx";
 import Users from "./pages/Users.tsx"
 import {AuthProvider} from "./contexts/AuthContext.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
+import {BASE_PATH} from "./config.ts";
 
 export default function App() {
     return (
         <JoyCssVarsProvider disableTransitionOnChange defaultMode={'dark'}>
             <CssBaseline/>
-            <BrowserRouter>
+            <BrowserRouter basename={BASE_PATH}>
                 <AuthProvider>
                     <Routes>
                         <Route path="/login" element={<SignIn/>}/>

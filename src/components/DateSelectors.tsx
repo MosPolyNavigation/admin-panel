@@ -17,7 +17,7 @@ import {
     months,
     weekDays,
 } from './defs.ts'
-import {CalendarDaysIcon, XIcon} from 'lucide-react'
+import {CalendarDaysIcon} from 'lucide-react'
 
 interface DateSelectorProps {
     dateInterval: DateInterval
@@ -38,7 +38,7 @@ const DateSelectors = ({
                            dateInterval,
                            onDateIntervalChange,
                            omit = [],
-                           defaultDateInterval = DateIntervalType.AllTime,
+                           defaultDateInterval = DateIntervalType.Month,
                            maxSelectedDays,
                        }: DateSelectorProps) => {
     const {data: firstDayFromServer} = useFirstDay()
@@ -249,20 +249,6 @@ const DateSelectors = ({
                     onClick={() => handleSelectChange(createPeriodRange(30, DateIntervalType.Month))}
                 >
                     Месяц
-                </Button>
-            )}
-
-            {!omit.includes(DateIntervalType.AllTime) && (
-                <Button
-                    {...getStyle(DateIntervalType.AllTime)}
-                    onClick={() =>
-                        handleSelectChange(
-                            `${DateIntervalType.AllTime}_${firstDay.format('YYYY-MM-DD')}_${today.format('YYYY-MM-DD')}`,
-                        )
-                    }
-                    endDecorator={dateInterval.type !== DateIntervalType.AllTime && <XIcon/>}
-                >
-                    Всё время
                 </Button>
             )}
 
