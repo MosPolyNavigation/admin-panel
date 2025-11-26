@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router';
+import {useNavigate} from 'react-router';
+import {BASE_API_URL} from "../config.ts";
 
 interface User {
     login: string;
@@ -27,7 +28,7 @@ export const useAuth = () => {
     return context;
 };
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({children}: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     const fetchUser = async (token: string) => {
         try {
-            const response = await axios.get<User>('http://localhost:8080/api/auth/me', {
+            const response = await axios.get<User>(`${BASE_API_URL}/auth/me`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const login = async (credentials: { username: string; password: string }) => {
         try {
             const response = await axios.post(
-                'http://localhost:8080/api/auth/token',
+                `${BASE_API_URL}/auth/token`,
                 new URLSearchParams({
                     username: credentials.username,
                     password: credentials.password,
@@ -78,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 }
             );
 
-            const { access_token } = response.data;
+            const {access_token} = response.data;
 
             // Сохраняем токен
             sessionStorage.setItem('auth_token', access_token);
