@@ -158,6 +158,14 @@ export default function Sidebar() {
                             <ListItemButton selected={isActive('/roles')}>Права и разрешения</ListItemButton>
                         </ListItem>
                     </SidebarListItemsNested>
+                    
+                    <SidebarListItem 
+                        icon={<AssignmentIndRoundedIcon/>} 
+                        selected={isActive('/roles')}
+                        onClick={() => handleNavigate("/roles")}
+                    >
+                        <Typography level="title-sm">Роли</Typography>
+                    </SidebarListItem>
                 </List>
             </Box>
             <Divider/>
