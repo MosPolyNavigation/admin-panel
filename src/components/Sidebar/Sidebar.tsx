@@ -24,7 +24,7 @@ import SidebarListItemsNested from "./SidebarListItemsNested.tsx";
 export default function Sidebar() {
     const location = useLocation();
     const navigate = useNavigate();
-    const {logout} = useAuth();
+    const {logout, user} = useAuth();
 
     const handleNavigate = (to: string) => {
         navigate(to);
@@ -176,8 +176,7 @@ export default function Sidebar() {
                 />
                 <Box sx={{minWidth: 0, flex: 1, '&:hover': {cursor: 'pointer'}}}
                      onClick={() => handleNavigate('/profile')}>
-                    <Typography level="title-sm">Placeholder Name</Typography>
-                    <Typography level="body-xs">Placeholder login</Typography>
+                    <Typography level="title-sm">{user?.login}</Typography>
                 </Box>
                 <IconButton size="sm" variant="plain" color="neutral" onClick={handleLogout}>
                     <LogoutRoundedIcon/>
