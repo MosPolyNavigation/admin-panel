@@ -13,6 +13,8 @@ import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import TableViewIcon from '@mui/icons-material/TableView';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
+import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import {useLocation, useNavigate} from "react-router";
 
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
@@ -123,6 +125,11 @@ export default function Sidebar() {
                     <SidebarListItem icon={<DashboardRoundedIcon/>} selected={isActive('/dashboards')}
                                      onClick={() => handleNavigate("/dashboards")}>
                         <Typography level="title-sm">Дашборды</Typography>
+                    </SidebarListItem>
+
+                    <SidebarListItem icon={<RateReviewRoundedIcon/>} selected={isPartOf('/reviews')}
+                                     onClick={() => handleNavigate("/reviews")}>
+                        <Typography level="title-sm">Отзывы</Typography>
                     </SidebarListItem>
 
                     <SidebarListItemsNested defaultExpanded={isPartOf('/tables')} icon={<TableViewIcon/>}

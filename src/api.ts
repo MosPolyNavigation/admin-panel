@@ -16,6 +16,26 @@ export interface GqlResponse {
     };
 }
 
+export interface Review {
+    id: number | string;
+    problemId: string;
+    creationDate: string;
+    text: string;
+    imageName: string | null;
+}
+
+export interface ReviewsGqlResponse {
+    data: {
+        reviews: Review[];
+    };
+}
+
+export interface ReviewStatus {
+    value: string;
+    label?: string;
+    current?: boolean;
+}
+
 export const get_stat = async (endpoint: string, normalizedStartDate: string, normalizedEndDate: string, token: string) => {
     return await axios.post<GqlResponse>(
         `${BASE_API_URL}/graphql`,
@@ -36,4 +56,50 @@ export const get_stat = async (endpoint: string, normalizedStartDate: string, no
             },
         }
     )
+}
+
+export const getReviews = async (token: string): Promise<Review[]> => {
+    const response = await axios.post<ReviewsGqlResponse>(
+        `${BASE_API_URL}/graphql`,
+        {
+            query: `{
+                reviews {
+                    id,
+                    problemId,
+                    creationDate,
+                    text,
+                    imageName
+                }
+            }`,
+        },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+        }
+    );
+    return response.data.data.reviews;
+}
+
+export const getReviewStatuses = async (reviewId: string, token: string): Promise<ReviewStatus[]> => {
+    try {
+        const response = await axios.get<ReviewStatus[]>(
+            `${BASE_API_URL}/review/${reviewId}/status`,
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+            }
+        );
+        return response.data;
+    } catch (error) {
+        console.error('Ошибка загрузки статусов:', error);
+        return [];
+    }
+}
+
+export const getReviewImageUrl = (imageName: string): string => {
+    return `${BASE_API_URL}/review/image/${imageName}`;
 }
