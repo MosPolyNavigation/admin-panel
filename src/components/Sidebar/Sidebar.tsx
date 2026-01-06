@@ -13,6 +13,7 @@ import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import TableViewIcon from '@mui/icons-material/TableView';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
 import {useLocation, useNavigate} from "react-router";
 
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
