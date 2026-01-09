@@ -28,6 +28,7 @@ import {
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { getReviews, getReviewStatuses, getReviewImageUrl, type Review, type ReviewStatus } from '../api.ts';
+import { translateProblemId } from '../utils.ts';
 
 export default function ReviewPage() {
   const { id } = useParams<{ id: string }>();
@@ -66,8 +67,7 @@ export default function ReviewPage() {
           const statusList = await getReviewStatuses(id, token);
           setStatuses(statusList);
           if (statusList.length > 0) {
-            const currentStatus = statusList.find(s => s.current) || statusList[0];
-            setSelectedStatus(currentStatus.value);
+            setSelectedStatus(String(statusList[0].id));
           }
         } catch (statusErr) {
           console.error('Ошибка загрузки статусов:', statusErr);
@@ -164,7 +164,7 @@ export default function ReviewPage() {
           color="primary"
           startDecorator={<ProblemIcon sx={{ fontSize: 16 }} />}
         >
-          Problem ID: {review.problemId}
+          Problem ID: {translateProblemId(review.problemId)}
         </Chip>
       </Box>
 
@@ -228,8 +228,8 @@ export default function ReviewPage() {
                   disabled={statuses.length === 0}
                 >
                   {statuses.map((status) => (
-                    <Option key={status.value} value={status.value}>
-                      {status.label || status.value}
+                    <Option key={status.id} value={String(status.id)}>
+                      {status.name}
                     </Option>
                   ))}
                 </Select>

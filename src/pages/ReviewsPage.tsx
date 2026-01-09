@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { getReviews, type Review } from '../api.ts';
 import { useNavigate } from 'react-router';
+import { translateProblemId } from '../utils.ts';
 
 function ReviewsPage() {
   const { token } = useAuth();
@@ -114,7 +115,7 @@ function ReviewsPage() {
                 </td>
                 <td style={{ padding: '12px' }}>
                   <Chip size="sm" variant="soft" color="primary">
-                    {review.problemId}
+                    {translateProblemId(review.problemId)}
                   </Chip>
                 </td>
                 <td style={{ padding: '12px' }}>

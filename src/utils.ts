@@ -24,3 +24,14 @@ export function toggleSidebar() {
         }
     }
 }
+
+export function translateProblemId(problemId: string): string {
+    const translations: Record<string, string> = {
+        'other': 'Другое',
+        'plan': 'Неточность на плане',
+        'work': 'Работа приложения',
+        'way': 'Неправильный маршрут'
+    };
+    
+    return translations[problemId] || problemId;
+}

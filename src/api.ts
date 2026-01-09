@@ -31,9 +31,8 @@ export interface ReviewsGqlResponse {
 }
 
 export interface ReviewStatus {
-    value: string;
-    label?: string;
-    current?: boolean;
+    id: number;
+    name: string;
 }
 
 export const get_stat = async (endpoint: string, normalizedStartDate: string, normalizedEndDate: string, token: string) => {
@@ -72,6 +71,7 @@ export const getReviews = async (token: string): Promise<Review[]> => {
                 }
             }`,
         },
+        // status { id, name }
         {
             headers: {
                 "Content-Type": "application/json",
@@ -85,10 +85,9 @@ export const getReviews = async (token: string): Promise<Review[]> => {
 export const getReviewStatuses = async (reviewId: string, token: string): Promise<ReviewStatus[]> => {
     try {
         const response = await axios.get<ReviewStatus[]>(
-            `${BASE_API_URL}/review/${reviewId}/status`,
+            `${BASE_API_URL}/review/statuses`,
             {
                 headers: {
-                    "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
             }
