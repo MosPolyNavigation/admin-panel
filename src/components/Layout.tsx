@@ -1,11 +1,26 @@
 import {Navigate, Outlet} from "react-router";
-import { Box } from '@mui/joy';
+import { Box, CircularProgress } from '@mui/joy';
 import Sidebar from './Sidebar/Sidebar.tsx';
 import Header from './Header';
 import {useAuth} from "../contexts/AuthContext.tsx";
 
 function Layout() {
-    const {isAuthenticated} = useAuth();
+    const {isAuthenticated, loading} = useAuth();
+        if (loading) {
+        return (
+            <Box 
+                sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'center', 
+                    height: '100vh' 
+                }}
+            >
+                <CircularProgress />
+            </Box>
+        );
+    }
+
     if (!isAuthenticated) return <Navigate to="/login" replace></Navigate>
     return (
         <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
