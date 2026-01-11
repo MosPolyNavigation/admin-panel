@@ -147,7 +147,7 @@ const RoleEditPage = () => {
   
   const [originalRole, setOriginalRole] = useState<Role>(mockRoles.find(r => r.id === roleId) || mockRoles[0]);
   const [role, setRole] = useState<Role>(originalRole);
-  const [isEditing, setIsEditing] = useState(true); 
+  const [_isEditing, setIsEditing] = useState(true); 
   const [notification, setNotification] = useState('');
   const [showAddEntity, setShowAddEntity] = useState(false);
   const [newEntityName, setNewEntityName] = useState('');

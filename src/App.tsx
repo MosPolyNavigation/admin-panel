@@ -10,6 +10,8 @@ import Users from "./pages/Users.tsx"
 import UserEditPage from './pages/UserEditPage.tsx';
 import Role from './pages/Role.tsx'
 import RoleEditPage from './pages/RoleEditPage.tsx';
+import ReviewsPage from './pages/ReviewsPage.tsx';
+import ReviewPage from './pages/ReviewPage.tsx';
 import {AuthProvider} from "./contexts/AuthContext.tsx";
 import Dashboard from "./pages/Dashboard.tsx";
 import {BASE_PATH} from "./config.ts";
@@ -32,7 +34,11 @@ export default function App() {
                             <Route path="profile" element={<Profile/>}/>
                             <Route path="UserEditPage" element={<UserEditPage />} />
                             <Route path="roles" element={<Role />}/>
-                            <Route path="RoleEditPage" element={<RoleEditPage />} /> 
+                            <Route path="RoleEditPage" element={<RoleEditPage />} />
+                            <Route path="reviews">
+                                <Route index element={<ReviewsPage />}/>
+                                <Route path=":id" element={<ReviewPage />}/>
+                            </Route>
                         </Route>
                     </Routes>
                 </AuthProvider>
