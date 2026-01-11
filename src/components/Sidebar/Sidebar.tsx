@@ -13,8 +13,9 @@ import DashboardRoundedIcon from '@mui/icons-material/DashboardRounded';
 import TableViewIcon from '@mui/icons-material/TableView';
 import GroupRoundedIcon from '@mui/icons-material/GroupRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
+import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import {useLocation, useNavigate} from "react-router";
-
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
 import {closeSidebar} from '../../utils.ts';
 import {useAuth} from "../../contexts/AuthContext.tsx";
@@ -125,6 +126,11 @@ export default function Sidebar() {
                         <Typography level="title-sm">Дашборды</Typography>
                     </SidebarListItem>
 
+                    <SidebarListItem icon={<RateReviewRoundedIcon/>} selected={isPartOf('/reviews')}
+                                     onClick={() => handleNavigate("/reviews")}>
+                        <Typography level="title-sm">Отзывы</Typography>
+                    </SidebarListItem>
+
                     <SidebarListItemsNested defaultExpanded={isPartOf('/tables')} icon={<TableViewIcon/>}
                                             name={"Таблицы"}>
                         <ListItem sx={{mt: 0.5}}>
@@ -158,6 +164,14 @@ export default function Sidebar() {
                             <ListItemButton selected={isActive('/roles')}>Права и разрешения</ListItemButton>
                         </ListItem>
                     </SidebarListItemsNested>
+                    
+                    <SidebarListItem 
+                        icon={<AssignmentIndRoundedIcon/>} 
+                        selected={isActive('/roles')}
+                        onClick={() => handleNavigate("/roles")}
+                    >
+                        <Typography level="title-sm">Роли</Typography>
+                    </SidebarListItem>
                 </List>
             </Box>
             <Divider/>

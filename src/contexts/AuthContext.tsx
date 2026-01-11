@@ -34,20 +34,23 @@ export const AuthProvider = ({children}: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
-    // При запуске проверяем, есть ли токен в sessionStorage
     useEffect(() => {
         const savedToken = sessionStorage.getItem('auth_token');
-        if (savedToken) {
-            setToken(savedToken);
-            // Загружаем данные пользователя по токену
-            fetchUser(savedToken).catch(() => {
-                // Если токен невалидный — очищаем сессию
-                sessionStorage.removeItem('auth_token');
-                setToken(null);
-                setUser(null);
-            });
-        }
-        setLoading(false);
+        
+        const initAuth = async () => {
+            if (savedToken) {
+                try {
+                    setToken(savedToken);
+                    await fetchUser(savedToken);
+                } catch (error) {
+                    sessionStorage.removeItem('auth_token');
+                    setToken(null);
+                    setUser(null);
+                }
+            }
+            setLoading(false);
+        };
+        initAuth();
     }, []);
 
     const fetchUser = async (token: string) => {
