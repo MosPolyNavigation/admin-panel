@@ -138,7 +138,7 @@ const RolesPage = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleEntitiesChange = (event: React.SyntheticEvent | null, newValue: string[]) => {
+  const handleEntitiesChange = (_event: React.SyntheticEvent | null, newValue: string[]) => {
     handleFormChange('entities', newValue);
   };
 

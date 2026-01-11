@@ -27,7 +27,14 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext.tsx';
-import { getReviews, getReviewStatuses, getReviewImageUrl, type Review, type ReviewStatus } from '../api.ts';
+import {
+  getReviews,
+  getReviewStatuses,
+  getReviewImageUrl,
+  setReviewStatus,
+  type Review,
+  type ReviewStatus
+} from '../api.ts';
 import { translateProblemId } from '../utils.ts';
 
 export default function ReviewPage() {
@@ -64,10 +71,10 @@ export default function ReviewPage() {
         setReview(foundReview);
 
         try {
-          const statusList = await getReviewStatuses(id, token);
+          const statusList = await getReviewStatuses(token);
           setStatuses(statusList);
           if (statusList.length > 0) {
-            setSelectedStatus(String(statusList[0].id));
+            setSelectedStatus(String(foundReview.statusId));
           }
         } catch (statusErr) {
           console.error('Ошибка загрузки статусов:', statusErr);
@@ -90,9 +97,14 @@ export default function ReviewPage() {
 
     try {
       setStatusLoading(true);
-      // TODO метод для изменения статуса отзыва
-      
-      showAlert('Статус успешно обновлён', 'success');
+
+      const result = await setReviewStatus(id, selectedStatus, token);
+      if (result === null) {
+        showAlert('Ошибка при обновлении статуса', 'danger');
+      } else {
+        setSelectedStatus(String(result.status_id));
+        showAlert('Статус успешно обновлён', 'success');
+      }
     } catch (err) {
       showAlert('Ошибка при обновлении статуса', 'danger');
       console.error(err);

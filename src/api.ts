@@ -22,7 +22,13 @@ export interface Review {
     creationDate: string;
     text: string;
     imageName: string | null;
+    statusId: number;
 }
+
+export interface ReviewStatus {
+    id: number;
+    name: string;
+};
 
 export interface ReviewsGqlResponse {
     data: {
@@ -30,9 +36,22 @@ export interface ReviewsGqlResponse {
     };
 }
 
+export interface ReviewStatusesGqlResponse {
+    data: {
+        reviewStatuses: ReviewStatus[];
+    };
+}
+
 export interface ReviewStatus {
     id: number;
     name: string;
+}
+
+export interface SetReviewStatusRespose {
+    message: string,
+    review_id: number,
+    status_id: number,
+    status_name: string,
 }
 
 export const get_stat = async (endpoint: string, normalizedStartDate: string, normalizedEndDate: string, token: string) => {
@@ -67,11 +86,11 @@ export const getReviews = async (token: string): Promise<Review[]> => {
                     problemId,
                     creationDate,
                     text,
-                    imageName
+                    imageName,
+                    statusId
                 }
             }`,
         },
-        // status { id, name }
         {
             headers: {
                 "Content-Type": "application/json",
@@ -82,17 +101,25 @@ export const getReviews = async (token: string): Promise<Review[]> => {
     return response.data.data.reviews;
 }
 
-export const getReviewStatuses = async (reviewId: string, token: string): Promise<ReviewStatus[]> => {
+export const getReviewStatuses = async (token: string): Promise<ReviewStatus[]> => {
     try {
-        const response = await axios.get<ReviewStatus[]>(
-            `${BASE_API_URL}/review/statuses`,
+        const response = await axios.post<ReviewStatusesGqlResponse>(
+            `${BASE_API_URL}/graphql`,
+            {
+                query: `{
+                    reviewStatuses {
+                        id, name
+                    }
+                }`,
+            },
             {
                 headers: {
+                    "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
             }
         );
-        return response.data;
+        return response.data.data.reviewStatuses;
     } catch (error) {
         console.error('Ошибка загрузки статусов:', error);
         return [];
@@ -101,4 +128,24 @@ export const getReviewStatuses = async (reviewId: string, token: string): Promis
 
 export const getReviewImageUrl = (imageName: string): string => {
     return `${BASE_API_URL}/review/image/${imageName}`;
+}
+
+export const setReviewStatus = async (review_id: string, status_id: string, token: string): Promise<SetReviewStatusRespose | null> => {
+    try {
+        const response = await axios.patch<SetReviewStatusRespose>(
+            `${BASE_API_URL}/review/${review_id}/status`,
+            `status_id=${status_id}`,
+            {
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "Authorization": `Bearer ${token}`
+                },
+            }
+        );
+        return response.data
+    }
+    catch (error) {
+        console.error('Ошибка загрузки статусов:', error);
+        return null;
+    }
 }

@@ -97,12 +97,12 @@ function ReviewsPage() {
         <Table stickyHeader>
           <thead>
             <tr>
-              <th style={{ padding: '12px', width: '80px' }}>ID</th>
-              <th style={{ padding: '12px', width: '120px' }}>Problem ID</th>
+              <th style={{ padding: '12px', width: '5%' }}>ID</th>
+              <th style={{ padding: '12px', width: '20%' }}>Problem ID</th>
               <th style={{ padding: '12px' }}>Текст отзыва</th>
-              <th style={{ padding: '12px', width: '200px' }}>Дата создания</th>
-              <th style={{ padding: '12px', width: '100px' }}>Изображение</th>
-              <th style={{ padding: '12px', width: '100px', textAlign: 'right' }}>Действия</th>
+              <th style={{ padding: '12px', width: '20%' }}>Дата создания</th>
+              <th style={{ padding: '12px', width: '10%' }}>Изображение</th>
+              <th style={{ padding: '12px', width: '10%', textAlign: 'right' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
