@@ -16,7 +16,6 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import AssignmentIndRoundedIcon from '@mui/icons-material/AssignmentIndRounded';
 import RateReviewRoundedIcon from '@mui/icons-material/RateReviewRounded';
 import {useLocation, useNavigate} from "react-router";
-
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
 import {closeSidebar} from '../../utils.ts';
 import {useAuth} from "../../contexts/AuthContext.tsx";
