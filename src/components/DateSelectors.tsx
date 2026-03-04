@@ -23,7 +23,6 @@ interface DateSelectorProps {
     dateInterval: DateInterval
     onDateIntervalChange: (interval: DateInterval) => void
     omit?: DateIntervalType[]
-    /** Тип диапазона по умолчанию , должен совпадать с типом диапазона в useDateSelectors (или не быть, по умолчанию AllTime)*/
     defaultDateInterval?: DateIntervalType
     maxSelectedDays?: number
 }
@@ -33,16 +32,26 @@ const today = configDsToday
 const todayValue = `${DateIntervalType.Today}_${today.format('YYYY-MM-DD')}_${today.format('YYYY-MM-DD')}`
 const yesterdayValue = `${DateIntervalType.Yesterday}_${today.subtract(1, 'day').format('YYYY-MM-DD')}_${today.subtract(1, 'day').format('YYYY-MM-DD')}`
 
-/** Компонент для выбора диапазона дат. Возможные варианты: сегодня, вчера, неделя с выбором, месяц с выбором, квартал с выбором, год с выбором, и за всё время (от первого до сегодняшнего дня) */
+const getYearValue = () => {
+    const endDate = today
+    const startDate = today.subtract(1, 'year').add(1, 'month') // Текущий месяц год назад
+    return `${DateIntervalType.Year}_${startDate.format('YYYY-MM')}_${endDate.format('YYYY-MM')}`
+}
+
+const getAllTimeValue = () => {
+    const startYear = '2024'
+    const endYear = today.format('YYYY')
+    return `${DateIntervalType.AllTime}_${startYear}_${endYear}`
+}
+
 const DateSelectors = ({
-                           dateInterval,
-                           onDateIntervalChange,
-                           omit = [],
-                           defaultDateInterval = DateIntervalType.Month,
-                           maxSelectedDays,
-                       }: DateSelectorProps) => {
+                        dateInterval,
+                        onDateIntervalChange,
+                        omit = [],
+                        defaultDateInterval = DateIntervalType.Month,
+                        maxSelectedDays,
+                    }: DateSelectorProps) => {
     const {data: firstDayFromServer} = useFirstDay()
-    // const firstDay = dayjs('2025-01-01')
     const firstDay = firstDayFromServer ?? configDsFirstDay
 
     const [calendarOpen, setCalendarOpen] = useState(false)
@@ -63,7 +72,7 @@ const DateSelectors = ({
         [onDateIntervalChange],
     )
 
-    // Универсальная функция для создания периода (неделя/месяц)
+    // функция для создания периода byDate
     const createPeriodRange = useCallback(
         (days: number, type: DateIntervalType) => {
             const periodEnd = today
@@ -121,9 +130,17 @@ const DateSelectors = ({
     }, [calendarOpen])
 
     // Форматирование отображаемого диапазона
-    const formatDateRange = useCallback((startDate: string, endDate: string) => {
+    const formatDateRange = useCallback((startDate: string, endDate: string, type: DateIntervalType) => {
         const start = dayjs(startDate)
         const end = dayjs(endDate)
+
+        if (type === DateIntervalType.Year) {
+            return `${start.format('MMMM YYYY')} - ${end.format('MMMM YYYY')}`
+        }
+        
+        if (type === DateIntervalType.AllTime) {
+            return `${startDate} - ${endDate} гг.`
+        }
 
         if (start.year() === end.year()) {
             if (start.month() === end.month()) {
@@ -147,14 +164,16 @@ const DateSelectors = ({
         }
     }, [dateInterval])
 
-    // Устанавливаем значение по умолчанию если оно задано и не было установлено
+    // Устанавливаем значение по умолчанию
     const isSetted = useRef(false)
     useEffect(() => {
         if (!omit.includes(defaultDateInterval) && !isSetted.current) {
-            if ([DateIntervalType.Today, DateIntervalType.Yesterday].includes(defaultDateInterval as any)) {
-                handleSelectChange(
-                    defaultDateInterval === DateIntervalType.Today ? todayValue : yesterdayValue,
-                )
+            if (defaultDateInterval === DateIntervalType.Today) {
+                handleSelectChange(todayValue)
+                isSetted.current = true
+                return
+            } else if (defaultDateInterval === DateIntervalType.Yesterday) {
+                handleSelectChange(yesterdayValue)
                 isSetted.current = true
                 return
             } else if (defaultDateInterval === DateIntervalType.Week) {
@@ -165,10 +184,12 @@ const DateSelectors = ({
                 handleSelectChange(createPeriodRange(30, DateIntervalType.Month))
                 isSetted.current = true
                 return
-            } else if (defaultDateInterval === DateIntervalType.AllTime && !!firstDayFromServer) {
-                handleSelectChange(
-                    `${DateIntervalType.AllTime}_${firstDay.format('YYYY-MM-DD')}_${today.format('YYYY-MM-DD')}`,
-                )
+            } else if (defaultDateInterval === DateIntervalType.Year) {
+                handleSelectChange(getYearValue())
+                isSetted.current = true
+                return
+            } else if (defaultDateInterval === DateIntervalType.AllTime) {
+                handleSelectChange(getAllTimeValue())
                 isSetted.current = true
                 return
             }
@@ -180,7 +201,6 @@ const DateSelectors = ({
         omit,
         handleSelectChange,
         firstDay,
-        firstDayFromServer,
         createPeriodRange,
     ])
 
@@ -208,12 +228,15 @@ const DateSelectors = ({
     return (
         <Sheet
             variant='outlined'
+            ref={menuRef}
             sx={{
                 borderRadius: 'md',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 1,
                 position: 'relative',
+                flexWrap: 'wrap',
+                p: 0.5,
             }}
         >
             {!omit.includes(DateIntervalType.Today) && (
@@ -252,7 +275,23 @@ const DateSelectors = ({
                 </Button>
             )}
 
-            {/* Кнопка календаря */}
+            {!omit.includes(DateIntervalType.Year) && (
+                <Button
+                    {...getStyle(DateIntervalType.Year)}
+                    onClick={() => handleSelectChange(getYearValue())}
+                >
+                    Год
+                </Button>
+            )}
+
+            {!omit.includes(DateIntervalType.AllTime) && (
+                <Button
+                    {...getStyle(DateIntervalType.AllTime)}
+                    onClick={() => handleSelectChange(getAllTimeValue())}
+                >
+                    За всё время
+                </Button>
+            )}
 
             <Box sx={{...datePickerRangeStylesLocal}}>
                 <DatePicker
@@ -261,7 +300,7 @@ const DateSelectors = ({
                     range
                     rangeHover
                     minDate={firstDay.toDate()}
-                    maxDate={today.add(0, 'day').endOf('day').toDate()}
+                    maxDate={today.toDate()}
                     format='DD/MM/YYYY'
                     style={{
                         width: '300px',
@@ -281,11 +320,11 @@ const DateSelectors = ({
                     ]}
                     render={(_, openCalendar) => {
                         return (
-                            <Button {...getStyle(DateIntervalType.Custom, {gap: 1})} onClick={openCalendar}>
-                                {
-                                    // dateInterval.type === DateIntervalType.Custom &&
-                                    formatDateRange(dateInterval.startDate, dateInterval.endDate)
-                                }
+                            <Button 
+                                {...getStyle(DateIntervalType.Custom, {gap: 1})} 
+                                onClick={openCalendar}
+                            >
+                                {formatDateRange(dateInterval.startDate, dateInterval.endDate, dateInterval.type)}
                                 <CalendarDaysIcon/>
                             </Button>
                         )
