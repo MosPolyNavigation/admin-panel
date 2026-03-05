@@ -60,13 +60,6 @@ const Dashboard = () => {
                 setLoading(true);
                 setError(null);
                 
-                console.log('Отправка запроса:', {
-                    filterType,
-                    startDate: requestStartDate,
-                    endDate: requestEndDate,
-                    type: dateInterval.type
-                });
-                
                 const response = await get_all_stats(
                     filterType,
                     requestStartDate, 
@@ -76,7 +69,6 @@ const Dashboard = () => {
 
                 if (isRequestValid()) {
                     if (response.data?.data) {
-                        console.log('Получены данные:', response.data.data);
                         setChartData(response.data.data);
                     } else {
                         setError("Данные в ответе отсутствуют или имеют неверный формат.");

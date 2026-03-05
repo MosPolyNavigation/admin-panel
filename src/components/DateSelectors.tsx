@@ -88,8 +88,8 @@ const DateSelectors = ({
     const handleCalendarChange = useCallback(
         (dates: DateObject[]) => {
             if (dates.length === 2) {
-                const startDate = dates[0].format('YYYY-MM-DD')
-                const endDate = dates[1].format('YYYY-MM-DD')
+                const startDate = dates[0].format('YYYY-MM-DD');
+                const endDate = dates[1].format('YYYY-MM-DD');
 
                 if (maxSelectedDays) {
                     const daysDiff = Math.abs(dayjs(endDate).diff(dayjs(startDate), 'day')) + 1
@@ -104,9 +104,9 @@ const DateSelectors = ({
                     startDate,
                     endDate,
                     isSetted: true,
-                })
+                });
 
-                setCalendarOpen(false)
+                setCalendarOpen(false);
             }
         },
         [onDateIntervalChange, maxSelectedDays],
@@ -300,7 +300,7 @@ const DateSelectors = ({
                     range
                     rangeHover
                     minDate={firstDay.toDate()}
-                    maxDate={today.toDate()}
+                    maxDate={today.add(0, 'day').endOf('day').toDate()}
                     format='DD/MM/YYYY'
                     style={{
                         width: '300px',

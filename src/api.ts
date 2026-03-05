@@ -169,8 +169,6 @@ export const get_all_stats = async (
     signal?: AbortSignal
 ) => {
     try {
-        console.log('Запрос статистики:', { filterType, startDate, endDate });
-
         const filterString = `${filterType}: {start: "${startDate}", end: "${endDate}"}`;
 
         const query = `{
@@ -199,8 +197,6 @@ export const get_all_stats = async (
                 visitorCount
             }
         }`;
-
-        console.log('GraphQL запрос:', query);
 
         const response = await axios.post<BatchGqlResponse>(
             `${BASE_API_URL}/graphql`,
