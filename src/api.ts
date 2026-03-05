@@ -222,3 +222,88 @@ export const get_all_stats = async (
         throw error;
     }
 };
+
+export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
+    const query = `{
+        status1: reviews(status_id: 1) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status2: reviews(status_id: 2) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status3: reviews(status_id: 3) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status4: reviews(status_id: 4) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status5: reviews(status_id: 5) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status6: reviews(status_id: 6) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+        status7: reviews(status_id: 7) {
+            id
+            problemId
+            creationDate
+            text
+            status_id
+            imageName
+        }
+    }`;
+
+    const response = await axios.post<{
+        data: {
+            status1: Review[];
+            status2: Review[];
+            status3: Review[];
+            status4: Review[];
+            status5: Review[];
+            status6: Review[];
+            status7: Review[];
+        }
+    }>(
+        `${BASE_API_URL}/graphql`,
+        { query },
+        {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            signal,
+        }
+    );
+
+    return response.data.data;
+};
