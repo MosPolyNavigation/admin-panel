@@ -45,7 +45,6 @@ const STATUS_COLORS: Record<number, string> = {
 };
 
 const ROWS_PER_PAGE = 5;
-const STATUSES_PER_PAGE = 5;
 
 function ReviewsPage() {
   const { token } = useAuth();
@@ -55,7 +54,6 @@ function ReviewsPage() {
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<Record<number, number>>({});
   const [expanded, setExpanded] = useState<Record<number, boolean>>({1: true});
-  const [statusPage, setStatusPage] = useState(1);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -69,7 +67,7 @@ function ReviewsPage() {
         const initialExpanded: Record<number, boolean> = {};
         Object.keys(STATUS_MAP).forEach(statusId => {
           initialPages[Number(statusId)] = 1;
-          initialExpanded[Number(statusId)] = true;
+          initialExpanded[Number(statusId)] = Number(statusId) === 1 ? true : false;
         });
         setPages(initialPages);
         setExpanded(initialExpanded);
@@ -90,11 +88,6 @@ function ReviewsPage() {
   }, {} as Record<number, Review[]>);
 
   const statusIds = Object.keys(STATUS_MAP).map(Number).sort((a, b) => a - b);
-  const totalStatusPages = Math.ceil(statusIds.length / STATUSES_PER_PAGE);
-  const currentStatusIds = statusIds.slice(
-    (statusPage - 1) * STATUSES_PER_PAGE,
-    statusPage * STATUSES_PER_PAGE
-  );
 
   const formatDate = (dateString: string) => {
     try {
@@ -116,7 +109,7 @@ function ReviewsPage() {
   const toggleExpand = (statusId: number) => 
     setExpanded(prev => ({ ...prev, [statusId]: !prev[statusId] }));
 
-  const renderPageNumbers = (total: number, current: number, statusId: number, onChange: (page: number) => void) => {
+  const renderPageNumbers = (total: number, current: number, onChange: (page: number) => void) => {
     if (total <= 5) {
       return Array.from({ length: total }, (_, i) => i + 1).map(i => (
         <Button key={i} size="sm" variant={current === i ? "solid" : "outlined"} onClick={() => onChange(i)}>
@@ -169,7 +162,7 @@ function ReviewsPage() {
       {error && <Alert color="danger" variant="soft" sx={{ mb: 2 }}>{error}</Alert>}
 
       <Stack spacing={3}>
-        {currentStatusIds.map(statusId => {
+        {statusIds.map(statusId => {
           const statusName = STATUS_MAP[statusId];
           const statusReviews = groupedReviews[statusId] || [];
           const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE);
@@ -254,7 +247,7 @@ function ReviewsPage() {
                             <ChevronLeftIcon />
                           </IconButton>
                           
-                          {renderPageNumbers(totalPages, currentPage, statusId, page => handlePageChange(statusId, page))}
+                          {renderPageNumbers(totalPages, currentPage, page => handlePageChange(statusId, page))}
                           
                           <IconButton size="sm" variant="outlined" disabled={currentPage === totalPages} onClick={() => handlePageChange(statusId, currentPage + 1)} title="Вперёд">
                             <ChevronRightIcon />
@@ -276,29 +269,6 @@ function ReviewsPage() {
           );
         })}
       </Stack>
-
-      {totalStatusPages > 1 && (
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mt: 4, mb: 2, gap: 2 }}>
-          <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ flexWrap: 'wrap' }}>
-            <IconButton size="sm" variant="outlined" disabled={statusPage === 1} onClick={() => setStatusPage(1)} title="Первая">
-              <FirstPageIcon />
-            </IconButton>
-            <IconButton size="sm" variant="outlined" disabled={statusPage === 1} onClick={() => setStatusPage(p => p - 1)} title="Назад">
-              <ChevronLeftIcon />
-            </IconButton>
-            
-            {renderPageNumbers(totalStatusPages, statusPage, 0, setStatusPage)}
-            
-            <IconButton size="sm" variant="outlined" disabled={statusPage === totalStatusPages} onClick={() => setStatusPage(p => p + 1)} title="Вперёд">
-              <ChevronRightIcon />
-            </IconButton>
-            <IconButton size="sm" variant="outlined" disabled={statusPage === totalStatusPages} onClick={() => setStatusPage(totalStatusPages)} title="Последняя">
-              <LastPageIcon />
-            </IconButton>
-          </Stack>
-          <Typography level="body-sm" sx={{ color: 'neutral.500' }}>Страница {statusPage} из {totalStatusPages}</Typography>
-        </Box>
-      )}
 
       <Typography level="body-sm" sx={{ mt: 3, textAlign: 'center', color: 'neutral.500' }}>
         Всего отзывов: {reviews.length} • Статусов: {statusIds.length}

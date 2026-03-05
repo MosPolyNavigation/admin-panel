@@ -159,6 +159,69 @@ export const setReviewStatus = async (review_id: string, status_id: string, toke
     }
 }
 
+export type DateFilterType = 'byDate' | 'byMonth' | 'byYear';
+
+export const get_all_stats = async (
+    filterType: DateFilterType,
+    startDate: string, 
+    endDate: string, 
+    token: string, 
+    signal?: AbortSignal
+) => {
+    try {
+        const filterString = `${filterType}: {start: "${startDate}", end: "${endDate}"}`;
+
+        const query = `{
+            site: endpointStatistics(endpoint: "site", ${filterString}) {
+                allVisits
+                period
+                uniqueVisitors
+                visitorCount
+            }
+            auds: endpointStatistics(endpoint: "auds", ${filterString}) {
+                allVisits
+                period
+                uniqueVisitors
+                visitorCount
+            }
+            ways: endpointStatistics(endpoint: "ways", ${filterString}) {
+                allVisits
+                period
+                uniqueVisitors
+                visitorCount
+            }
+            plans: endpointStatistics(endpoint: "plans", ${filterString}) {
+                allVisits
+                period
+                uniqueVisitors
+                visitorCount
+            }
+        }`;
+
+        const response = await axios.post<BatchGqlResponse>(
+            `${BASE_API_URL}/graphql`,
+            { query },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                signal,
+            }
+        );
+        
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            console.error('Ошибка API:', {
+                status: error.response?.status,
+                data: error.response?.data,
+                headers: error.response?.headers
+            });
+        }
+        throw error;
+    }
+};
 
 export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
     const query = `{
@@ -244,44 +307,3 @@ export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
 
     return response.data.data;
 };
-
-export const get_all_stats = async (normalizedStartDate: string, normalizedEndDate: string, token: string, signal?: AbortSignal) => {
-    return await axios.post<BatchGqlResponse>(
-        `${BASE_API_URL}/graphql`,
-        {
-            query: `{
-    site: endpointStatistics(endpoint: "site", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-    auds: endpointStatistics(endpoint: "auds", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-    ways: endpointStatistics(endpoint: "ways", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-    plans: endpointStatistics(endpoint: "plans", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-}`,
-        },
-        {
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            signal,
-        }
-    )
-}
