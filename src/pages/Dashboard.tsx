@@ -6,8 +6,9 @@ import {useState, useEffect} from "react";
 import dayjs from "../dayjs.ts";
 import Stack from "@mui/joy/Stack";
 import { useDateSelectors } from "../hooks/useDateSelectors";
-import {get_all_stats, type EndpointStatistics} from "../api.ts";
+import {get_all_stats, type EndpointStatistics, type DateFilterType} from "../api.ts";
 import {useAuth} from "../contexts/AuthContext.tsx";
+import { DateIntervalType } from "../components/defs.ts";
 
 const Dashboard = () => {
     const { dateInterval, setDateInterval } = useDateSelectors();
@@ -25,6 +26,22 @@ const Dashboard = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    const getFilterType = (type: DateIntervalType): DateFilterType => {
+        switch (type) {
+            case DateIntervalType.Year:
+                return 'byMonth';
+            case DateIntervalType.AllTime:
+                return 'byYear';
+            case DateIntervalType.Today:
+            case DateIntervalType.Yesterday:
+            case DateIntervalType.Week:
+            case DateIntervalType.Month:
+            case DateIntervalType.Custom:
+            default:
+                return 'byDate';
+        }
+    };
+
     useEffect(() => {
         if (!dateInterval.isSetted || authLoading || !token || !dateInterval.startDate || !dateInterval.endDate) {
             setLoading(false);
@@ -34,6 +51,8 @@ const Dashboard = () => {
         const fetchAllData = async () => {
             const requestStartDate = dateInterval.startDate;
             const requestEndDate = dateInterval.endDate;
+            const filterType = getFilterType(dateInterval.type);
+            
             const isRequestValid = () => 
                 dateInterval.startDate === requestStartDate && dateInterval.endDate === requestEndDate;
 
@@ -41,7 +60,12 @@ const Dashboard = () => {
                 setLoading(true);
                 setError(null);
                 
-                const response = await get_all_stats(requestStartDate, requestEndDate, token);
+                const response = await get_all_stats(
+                    filterType,
+                    requestStartDate, 
+                    requestEndDate, 
+                    token
+                );
 
                 if (isRequestValid()) {
                     if (response.data?.data) {
@@ -63,7 +87,7 @@ const Dashboard = () => {
         };
 
         fetchAllData();
-    }, [dateInterval.startDate, dateInterval.endDate, dateInterval.isSetted, token, authLoading]);
+    }, [dateInterval.startDate, dateInterval.endDate, dateInterval.type, dateInterval.isSetted, token, authLoading]);
 
     return (
         <Page headerText={"Дашборды"}>
