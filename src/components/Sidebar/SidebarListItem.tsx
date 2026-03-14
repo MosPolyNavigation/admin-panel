@@ -1,6 +1,4 @@
-import ListItem from "@mui/joy/ListItem";
-import ListItemButton from "@mui/joy/ListItemButton";
-import ListItemContent from "@mui/joy/ListItemContent";
+import {ListItem, ListItemButton, ListItemContent} from "@mui/joy";
 import * as React from "react";
 
 interface SidebarListItemProps {

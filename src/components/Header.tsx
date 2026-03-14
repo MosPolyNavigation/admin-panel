@@ -1,7 +1,6 @@
 import GlobalStyles from '@mui/joy/GlobalStyles';
-import IconButton from '@mui/joy/IconButton';
-import Sheet from '@mui/joy/Sheet';
-import MenuRoundedIcon from '@mui/icons-material/MenuRounded';
+import {IconButton, Sheet} from '@mui/joy';
+import { Menu } from 'lucide-react';
 import { toggleSidebar } from '../utils';
 
 export default function Header() {
@@ -39,7 +38,7 @@ export default function Header() {
                 color="neutral"
                 size="sm"
             >
-                <MenuRoundedIcon />
+                <Menu size={18} />
             </IconButton>
         </Sheet>
     );

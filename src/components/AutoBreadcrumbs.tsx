@@ -1,10 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import Breadcrumbs from '@mui/joy/Breadcrumbs';
-import Link from '@mui/joy/Link';
-import Typography from '@mui/joy/Typography';
-import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import {Breadcrumbs, Link, Typography} from '@mui/joy';
+import { Home, ChevronRight } from 'lucide-react';
 import { BASE_PATH } from '../config.ts';
 
 interface BreadcrumbItem {
@@ -97,7 +94,7 @@ function AutoBreadcrumbs() {
         <Breadcrumbs
             size="sm"
             aria-label="breadcrumbs"
-            separator={<ChevronRightRoundedIcon />}
+            separator={<ChevronRight size={14} />}
             sx={{ pl: 0 }}
         >
             {breadcrumbs.map((crumb, index) => (
@@ -108,7 +105,7 @@ function AutoBreadcrumbs() {
                     onClick={() => handleClick(crumb.href!)}
                     sx={{ fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
                 >
-                    {index === 0 ? <HomeRoundedIcon /> : crumb.label}
+                    {index === 0 ? <Home size={14} /> : crumb.label}
                 </Link>
             ))}
             <Typography color="primary" sx={{ fontWeight: 500, fontSize: 12 }}>

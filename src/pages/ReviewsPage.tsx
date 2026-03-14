@@ -17,15 +17,15 @@ import {
   Badge
 } from '@mui/joy';
 import {
-  Visibility as ViewIcon,
+  Eye as ViewIcon,
   Image as ImageIcon,
-  CalendarToday as DateIcon,
-  ExpandMore as ExpandMoreIcon,
-  FirstPage as FirstPageIcon,
-  LastPage as LastPageIcon,
+  Calendar as DateIcon,
+  ChevronDown as ExpandMoreIcon,
+  ChevronsLeft as FirstPageIcon,
+  ChevronsRight as LastPageIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon
-} from '@mui/icons-material';
+} from 'lucide-react';
 import Page from "../components/Page";
 import { useAuth } from '../contexts/AuthContext';
 import { getReviews, type Review } from '../api';
@@ -174,7 +174,15 @@ function ReviewsPage() {
             <Card key={statusId} variant="outlined" sx={{ overflow: 'hidden' }}>
               <Accordion expanded={expanded[statusId]} onChange={() => toggleExpand(statusId)}>
                 <AccordionSummary
-                  indicator={<ExpandMoreIcon />}
+                  indicator={
+                    <ExpandMoreIcon 
+                      size={18}
+                      style={{
+                        transform: expanded[statusId] ? 'rotate(180deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s'
+                      }}
+                    />
+                  }
                   sx={{ backgroundColor: 'background.level1', '&:hover': { backgroundColor: 'background.level2' } }}
                 >
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
@@ -214,13 +222,18 @@ function ReviewsPage() {
                                 <td style={{ padding: '8px' }}><Typography level="body-sm">{truncateText(review.text)}</Typography></td>
                                 <td style={{ padding: '8px' }}>
                                   <Stack direction="row" spacing={1} alignItems="center">
-                                    <DateIcon sx={{ fontSize: 14, color: 'neutral.500' }} />
+                                    <DateIcon size={14} color="var(--joy-palette-neutral-500)" />
                                     <Typography level="body-sm">{formatDate(review.creationDate)}</Typography>
                                   </Stack>
                                 </td>
                                 <td style={{ padding: '8px' }}>
                                   {review.imageName ? (
-                                    <Chip size="sm" variant="soft" color="success" startDecorator={<ImageIcon sx={{ fontSize: 14 }} />}>
+                                    <Chip 
+                                      size="sm" 
+                                      variant="soft" 
+                                      color="success"
+                                      startDecorator={<ImageIcon size={14} />}
+                                    >
                                       Есть
                                     </Chip>
                                   ) : (
@@ -228,8 +241,13 @@ function ReviewsPage() {
                                   )}
                                 </td>
                                 <td style={{ padding: '8px', textAlign: 'right' }}>
-                                  <IconButton size="sm" color="primary" onClick={() => navigate(`/reviews/${review.id}`)} title="Просмотреть">
-                                    <ViewIcon />
+                                  <IconButton 
+                                    size="sm" 
+                                    color="primary" 
+                                    onClick={() => navigate(`/reviews/${review.id}`)} 
+                                    title="Просмотреть"
+                                  >
+                                    <ViewIcon size={16} />
                                   </IconButton>
                                 </td>
                               </tr>
@@ -240,20 +258,44 @@ function ReviewsPage() {
 
                       {totalPages > 1 && (
                         <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mt: 1, flexWrap: 'wrap' }}>
-                          <IconButton size="sm" variant="outlined" disabled={currentPage === 1} onClick={() => handlePageChange(statusId, 1)} title="Первая">
-                            <FirstPageIcon />
+                          <IconButton 
+                            size="sm" 
+                            variant="outlined" 
+                            disabled={currentPage === 1} 
+                            onClick={() => handlePageChange(statusId, 1)} 
+                            title="Первая"
+                          >
+                            <FirstPageIcon size={16} />
                           </IconButton>
-                          <IconButton size="sm" variant="outlined" disabled={currentPage === 1} onClick={() => handlePageChange(statusId, currentPage - 1)} title="Назад">
-                            <ChevronLeftIcon />
+                          <IconButton 
+                            size="sm" 
+                            variant="outlined" 
+                            disabled={currentPage === 1} 
+                            onClick={() => handlePageChange(statusId, currentPage - 1)} 
+                            title="Назад"
+                          >
+                            <ChevronLeftIcon size={16} />
                           </IconButton>
                           
                           {renderPageNumbers(totalPages, currentPage, page => handlePageChange(statusId, page))}
                           
-                          <IconButton size="sm" variant="outlined" disabled={currentPage === totalPages} onClick={() => handlePageChange(statusId, currentPage + 1)} title="Вперёд">
-                            <ChevronRightIcon />
+                          <IconButton 
+                            size="sm" 
+                            variant="outlined" 
+                            disabled={currentPage === totalPages} 
+                            onClick={() => handlePageChange(statusId, currentPage + 1)} 
+                            title="Вперёд"
+                          >
+                            <ChevronRightIcon size={16} />
                           </IconButton>
-                          <IconButton size="sm" variant="outlined" disabled={currentPage === totalPages} onClick={() => handlePageChange(statusId, totalPages)} title="Последняя">
-                            <LastPageIcon />
+                          <IconButton 
+                            size="sm" 
+                            variant="outlined" 
+                            disabled={currentPage === totalPages} 
+                            onClick={() => handlePageChange(statusId, totalPages)} 
+                            title="Последняя"
+                          >
+                            <LastPageIcon size={16} />
                           </IconButton>
                         </Stack>
                       )}

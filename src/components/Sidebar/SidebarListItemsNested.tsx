@@ -1,11 +1,13 @@
 import * as React from "react";
-import Box from "@mui/joy/Box";
-import ListItemButton from "@mui/joy/ListItemButton";
-import ListItemContent from "@mui/joy/ListItemContent";
-import Typography from "@mui/joy/Typography";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
-import List from "@mui/joy/List";
-import ListItem from "@mui/joy/ListItem";
+import { ChevronDown } from 'lucide-react';
+import {
+    List,
+    ListItem,
+    Typography,
+    ListItemButton,
+    ListItemContent,
+    Box
+} from "@mui/joy";
 
 interface TogglerProps {
     defaultExpanded?: boolean;
@@ -61,10 +63,12 @@ const SidebarListItemsNested = ({defaultExpanded, icon, name, children}: Sidebar
                         <ListItemContent>
                             <Typography level="title-sm">{name}</Typography>
                         </ListItemContent>
-                        <KeyboardArrowDownIcon
-                            sx={[
-                                open ? {transform: 'rotate(180deg)'} : {transform: 'none'},
-                            ]}
+                        <ChevronDown
+                            size={16}
+                            style={{
+                                transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.2s ease'
+                            }}
                         />
                     </ListItemButton>
                 )}

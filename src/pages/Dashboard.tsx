@@ -1,10 +1,9 @@
 import Page from "../components/Page.tsx";
-import {Card, Grid} from "@mui/joy";
+import {Card, Grid, Stack} from "@mui/joy";
 import LineChartWithFilter from "../components/LineChartWithFilter.tsx";
 import DateSelectors from "../components/DateSelectors.tsx";
 import {useState, useEffect} from "react";
 import dayjs from "../dayjs.ts";
-import Stack from "@mui/joy/Stack";
 import { useDateSelectors } from "../hooks/useDateSelectors";
 import {get_all_stats, type EndpointStatistics, type DateFilterType} from "../api.ts";
 import {useAuth} from "../contexts/AuthContext.tsx";

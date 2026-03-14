@@ -21,11 +21,11 @@ import {
 } from '@mui/joy';
 import Page from "../components/Page.tsx";
 import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  Add as AddIcon,
+  Trash2 as DeleteIcon,
+  Pencil as EditIcon,
+  Plus as AddIcon,
   Save as SaveIcon,
-} from '@mui/icons-material';
+} from 'lucide-react';
 
 interface Role {
   id: number;
@@ -188,7 +188,7 @@ const RolesPage = () => {
           Всего ролей: {roles.length}
         </Typography>
         <Button
-          startDecorator={<AddIcon />}
+          startDecorator={<AddIcon size={18} />}
           onClick={() => handleOpenEdit(null)}
         >
           Создать роль
@@ -231,7 +231,7 @@ const RolesPage = () => {
                       onClick={() => handleOpenDelete(role)}
                       title="Удалить"
                     >
-                      <DeleteIcon />
+                      <DeleteIcon size={16} />
                     </IconButton>
                     <IconButton
                       size="sm"
@@ -239,7 +239,7 @@ const RolesPage = () => {
                       onClick={() => handleOpenEdit(role)}
                       title="Редактировать"
                     >
-                      <EditIcon />
+                      <EditIcon size={16} />
                     </IconButton>
                   </Stack>
                 </td>
@@ -334,7 +334,7 @@ const RolesPage = () => {
             <Button 
               onClick={handleSave}
               disabled={!formData.name.trim()}
-              startDecorator={<SaveIcon />}
+              startDecorator={<SaveIcon size={18} />}
             >
               {selectedRole ? 'Сохранить' : 'Создать'}
             </Button>

@@ -11,17 +11,17 @@ import {
   ModalClose,
   ModalDialog,
   Divider,
-  Alert,
-  Link
+  Alert
 } from '@mui/joy';
 import Page from "../components/Page.tsx";
 import {
-  Delete as DeleteIcon,
-  Edit as EditIcon,
-  GroupAdd as RoleIcon,
+  Trash2 as DeleteIcon,
+  Pencil as EditIcon,
+  UserPlus as RoleIcon,
   CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon,
-} from '@mui/icons-material';
+  XCircle as InactiveIcon,
+} from 'lucide-react';
+import { useNavigate } from 'react-router';
 
 interface User {
   id: number;
@@ -35,8 +35,8 @@ function Users() {
     { id: 1, username: 'ivan_petrov', active: true, roles: ['Администратор', 'Модератор'] },
     { id: 2, username: 'anna_smirnova', active: true, roles: ['Редактор'] },
     { id: 3, username: 'sergey_ivanov', active: false, roles: ['Гость', 'Пользователь'] },
-
   ]);
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
@@ -118,7 +118,7 @@ function Users() {
                     size="sm"
                     variant="soft"
                     color={user.active ? 'success' : 'danger'}
-                    startDecorator={user.active ? <ActiveIcon /> : <InactiveIcon />}
+                    startDecorator={user.active ? <ActiveIcon size={16} /> : <InactiveIcon size={16} />}
                   >
                     {user.active ? 'Активен' : 'Неактивен'}
                   </Chip>
@@ -134,32 +134,24 @@ function Users() {
                       onClick={() => handleDelete(user)}
                       title="Удалить"
                     >
-                      <DeleteIcon />
+                      <DeleteIcon size={18} />
                     </IconButton>
-                    <Link
-                      href={`/UserEditPage`}
-                      underline="none"
+                    <IconButton
+                      size="sm"
+                      color="primary"
+                      title="Редактировать"
+                      onClick={() => navigate("/UserEditPage")}
                     >
-                      <IconButton
-                        size="sm"
-                        color="primary"
-                        title="Редактировать"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Link>
-                    <Link
-                      href={`/RoleEditPage`}
-                      underline="none"
+                      <EditIcon size={18} />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      color="neutral"
+                      title="Назначить роль"
+                      onClick={() => navigate("/RoleEditPage")}
                     >
-                      <IconButton
-                        size="sm"
-                        color="neutral"
-                        title="Назначить роль"
-                      >
-                        <RoleIcon />
-                      </IconButton>
-                    </Link>
+                      <RoleIcon size={18} />
+                    </IconButton>
                     <Button
                       size="sm"
                       variant={user.active ? "outlined" : "solid"}

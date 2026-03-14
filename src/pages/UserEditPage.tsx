@@ -15,13 +15,13 @@ import {
   Chip
 } from '@mui/joy';
 import {
-  ArrowBack as BackIcon,
+  ArrowLeft as BackIcon,
   Save as SaveIcon,
-  Cancel as CancelIcon,
-  LockReset as PasswordIcon,
+  X as CancelIcon,
+  KeyRound as PasswordIcon,
   CheckCircle as ActiveIcon,
-  Cancel as InactiveIcon
-} from '@mui/icons-material';
+  XCircle as InactiveIcon
+} from 'lucide-react';
 
 export default function UserEditPage() {
 
@@ -111,7 +111,7 @@ export default function UserEditPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon />}
+          startDecorator={<BackIcon size={18} />}
           onClick={() => window.history.back()}
         >
           Назад
@@ -120,7 +120,7 @@ export default function UserEditPage() {
         <Chip
           variant="soft"
           color={user.isActive ? 'success' : 'danger'}
-          startDecorator={user.isActive ? <ActiveIcon /> : <InactiveIcon />}
+          startDecorator={user.isActive ? <ActiveIcon size={16} /> : <InactiveIcon size={16} />}
         >
           {user.isActive ? 'Активен' : 'Неактивен'}
         </Chip>
@@ -192,7 +192,7 @@ export default function UserEditPage() {
                 <Typography>Смена пароля</Typography>
                 <Button
                   variant="outlined"
-                  startDecorator={<PasswordIcon />}
+                  startDecorator={<PasswordIcon size={18} />}
                   onClick={() => setShowPasswordModal(true)}
                 >
                   Сменить пароль
@@ -224,7 +224,7 @@ export default function UserEditPage() {
       <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button
-            startDecorator={<CancelIcon />}
+            startDecorator={<CancelIcon size={18} />}
             onClick={cancel}
             variant="outlined"
             color="neutral"
@@ -233,7 +233,7 @@ export default function UserEditPage() {
             Отменить
           </Button>
           <Button
-            startDecorator={<SaveIcon />}
+            startDecorator={<SaveIcon size={18} />}
             onClick={save}
             variant="solid"
             color="primary"

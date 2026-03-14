@@ -18,13 +18,13 @@ import {
   ModalClose
 } from '@mui/joy';
 import {
-  ArrowBack as BackIcon,
+  ArrowLeft as BackIcon,
   Save as SaveIcon,
-  CalendarToday as DateIcon,
-  BugReport as ProblemIcon,
+  Calendar as DateIcon,
+  Bug as ProblemIcon,
   Image as ImageIcon,
   ZoomIn as ZoomIcon
-} from '@mui/icons-material';
+} from 'lucide-react';
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import {
@@ -148,7 +148,7 @@ export default function ReviewPage() {
         </Alert>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon />}
+          startDecorator={<BackIcon size={18} />}
           onClick={() => navigate('/reviews')}
           sx={{ mt: 2 }}
         >
@@ -165,7 +165,7 @@ export default function ReviewPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon />}
+          startDecorator={<BackIcon size={18} />}
           onClick={() => navigate('/reviews')}
         >
           Назад
@@ -174,7 +174,7 @@ export default function ReviewPage() {
         <Chip
           variant="soft"
           color="primary"
-          startDecorator={<ProblemIcon sx={{ fontSize: 16 }} />}
+          startDecorator={<ProblemIcon size={16} />}
         >
           Problem ID: {translateProblemId(review.problemId)}
         </Chip>
@@ -196,7 +196,7 @@ export default function ReviewPage() {
             
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <DateIcon sx={{ color: 'neutral.500' }} />
+                <DateIcon size={18} color="var(--joy-palette-neutral-500)" />
                 <Box>
                   <Typography level="body-sm" color="neutral">
                     Дата создания
@@ -249,7 +249,7 @@ export default function ReviewPage() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<SaveIcon />}
+                startDecorator={<SaveIcon size={18} />}
                 onClick={handleStatusChange}
                 loading={statusLoading}
                 disabled={statuses.length === 0 || !selectedStatus}
@@ -280,7 +280,7 @@ export default function ReviewPage() {
                 <Button
                   variant="soft"
                   size="sm"
-                  startDecorator={<ZoomIcon />}
+                  startDecorator={<ZoomIcon size={16} />}
                   onClick={() => setImageModalOpen(true)}
                   sx={{ mt: 2 }}
                 >
@@ -296,7 +296,7 @@ export default function ReviewPage() {
                 py: 4,
                 color: 'neutral.500'
               }}>
-                <ImageIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
+                <ImageIcon size={48} color="var(--joy-palette-neutral-500)" style={{ opacity: 0.5, marginBottom: 4 }} />
                 <Typography level="body-md" color="neutral">
                   Изображение отсутствует
                 </Typography>
@@ -340,4 +340,3 @@ export default function ReviewPage() {
     </Box>
   );
 }
-

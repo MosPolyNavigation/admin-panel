@@ -19,13 +19,13 @@ import {
   IconButton
 } from '@mui/joy';
 import {
-  ArrowBack as BackIcon,
+  ArrowLeft as BackIcon,
   Save as SaveIcon,
-  Person as PersonIcon,
-  Security as SecurityIcon,
-  Group as GroupIcon,
+  User as PersonIcon,
+  Shield as SecurityIcon,
+  Users as GroupIcon,
   Info as InfoIcon
-} from '@mui/icons-material';
+} from 'lucide-react';
 
 interface Role {
   id: string;
@@ -186,7 +186,7 @@ function RolesPage() {
           onClick={handleBack}
           sx={{ alignSelf: 'flex-start' }}
         >
-          <BackIcon />
+          <BackIcon size={18} />
         </IconButton>
         <Typography level="h2">Управление ролями пользователя</Typography>
       </Box>
@@ -196,7 +196,7 @@ function RolesPage() {
           color={notification.type}
           variant="soft" 
           sx={{ mb: 3 }}
-          startDecorator={<InfoIcon />}
+          startDecorator={<InfoIcon size={16} />}
         >
           {notification.message}
         </Alert>
@@ -205,7 +205,11 @@ function RolesPage() {
       <Stack spacing={3}>
         <Card variant="outlined">
           <CardContent>
-            <Typography level="title-lg" startDecorator={<PersonIcon />} sx={{ mb: 2 }}>
+            <Typography 
+              level="title-lg"
+              startDecorator={<PersonIcon size={18} />} 
+              sx={{ mb: 2 }}
+            >
               Информация о пользователе
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -236,7 +240,7 @@ function RolesPage() {
                       variant="soft"
                       color="primary"
                       size="sm"
-                      startDecorator={<SecurityIcon />}
+                      startDecorator={<SecurityIcon size={14} />}
                     >
                       {role.name}
                     </Chip>
@@ -250,7 +254,10 @@ function RolesPage() {
         <Card variant="outlined">
           <CardContent>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography level="title-lg" startDecorator={<GroupIcon />}>
+              <Typography 
+                level="title-lg" 
+                startDecorator={<GroupIcon size={18} />}
+              >
                 Назначение ролей
               </Typography>
               <Badge badgeContent={selectedCount} color="primary" size="lg">
@@ -393,7 +400,7 @@ function RolesPage() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<SaveIcon />}
+                startDecorator={<SaveIcon size={18} />}
                 onClick={handleSave}
                 sx={{ minWidth: 120 }}
               >
