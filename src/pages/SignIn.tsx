@@ -12,7 +12,7 @@ import IconButton from '@mui/joy/IconButton';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router';
 import Alert from '@mui/joy/Alert';
-import { Badge, AlertTriangle } from 'lucide-react';
+import { Contact, AlertTriangle } from 'lucide-react';
 
 interface FormElements extends HTMLFormControlsCollection {
   login: HTMLInputElement;
@@ -74,7 +74,7 @@ export default function SingIn() {
           <Box component="header" sx={{ py: 3, display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ gap: 2, display: 'flex', alignItems: 'center' }}>
               <IconButton variant="soft" color="primary" size="sm">
-                <Badge size={18} />
+                <Contact size={18} />
               </IconButton>
               <Typography level="title-lg">PolyNavigation</Typography>
             </Box>
