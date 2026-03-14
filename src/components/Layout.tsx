@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router';
 import { Box, CircularProgress } from '@mui/joy';
 import Sidebar from './Sidebar/Sidebar.tsx';
 import Header from './Header';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../hooks/useAuth.ts';
 
 function Layout() {
   const { isAuthenticated, loading } = useAuth();

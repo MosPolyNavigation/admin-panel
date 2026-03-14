@@ -27,7 +27,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from 'lucide-react';
 import Page from '../components/Page';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { getReviews, type Review } from '../api';
 import { useNavigate } from 'react-router';
 import { translateProblemId } from '../utils';
@@ -251,6 +251,7 @@ function ReviewsPage() {
                   <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
                     <Badge
                       badgeContent={statusReviews.length}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
                       color={STATUS_COLORS[statusId] as any}
                       size="sm"
                     >

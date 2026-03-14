@@ -12,7 +12,7 @@ import Role from './pages/Role.tsx';
 import RoleEditPage from './pages/RoleEditPage.tsx';
 import ReviewsPage from './pages/ReviewsPage.tsx';
 import ReviewPage from './pages/ReviewPage.tsx';
-import { AuthProvider } from './contexts/AuthContext.tsx';
+import { AuthProvider } from './contexts/AuthProvider.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import { BASE_PATH } from './config.ts';
 

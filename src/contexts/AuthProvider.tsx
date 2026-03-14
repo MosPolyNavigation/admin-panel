@@ -1,0 +1,83 @@
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router';
+import { BASE_API_URL } from '../config.ts';
+import { AuthContext, type User } from './AuthContext.tsx';
+
+// ✅ В файле только один экспорт компонента — идеально для Fast Refresh!
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem('auth_token');
+
+    const initAuth = async () => {
+      if (savedToken) {
+        try {
+          setToken(savedToken);
+          await fetchUser(savedToken);
+        } catch {
+          sessionStorage.removeItem('auth_token');
+          setToken(null);
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    initAuth();
+  }, []);
+
+  const fetchUser = async (token: string) => {
+    try {
+      const response = await axios.get<User>(`${BASE_API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUser(response.data);
+    } catch (error) {
+      console.error('Failed to fetch user:', error);
+      throw error;
+    }
+  };
+
+  const login = async (credentials: { username: string; password: string }) => {
+    try {
+      const response = await axios.post(
+        `${BASE_API_URL}/auth/token`,
+        new URLSearchParams({
+          username: credentials.username,
+          password: credentials.password,
+        }),
+        {
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        }
+      );
+
+      const { access_token } = response.data;
+      sessionStorage.setItem('auth_token', access_token);
+      setToken(access_token);
+      await fetchUser(access_token);
+      navigate('/');
+    } catch (error) {
+      console.error('Login failed:', error);
+      throw error;
+    }
+  };
+
+  const logout = () => {
+    sessionStorage.removeItem('auth_token');
+    setToken(null);
+    setUser(null);
+    navigate('/login');
+  };
+
+  const isAuthenticated = !!user;
+
+  return (
+    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};

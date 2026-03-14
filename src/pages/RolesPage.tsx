@@ -157,6 +157,7 @@ function RolesPage() {
   const handleSave = () => {
     const selectedRoles = availableRoles
       .filter((role) => role.selected)
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .map(({ selected, ...role }) => role);
 
     setUser((prev) => ({ ...prev, currentRoles: selectedRoles }));

@@ -26,7 +26,7 @@ import {
   ZoomIn as ZoomIcon,
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../hooks/useAuth.ts';
 import {
   getReviews,
   getReviewStatuses,

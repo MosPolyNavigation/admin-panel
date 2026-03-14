@@ -23,7 +23,7 @@ import {
 import { useLocation, useNavigate } from 'react-router';
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
 import { closeSidebar } from '../../utils.ts';
-import { useAuth } from '../../contexts/AuthContext.tsx';
+import { useAuth } from '../../hooks/useAuth.ts';
 import SidebarListItem from './SidebarListItem.tsx';
 import SidebarListItemsNested from './SidebarListItemsNested.tsx';
 

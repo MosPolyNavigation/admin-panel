@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import dayjs from '../dayjs.ts';
 import { useDateSelectors } from '../hooks/useDateSelectors';
 import { get_all_stats, type EndpointStatistics, type DateFilterType } from '../api.ts';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../hooks/useAuth.ts';
 import { DateIntervalType } from '../components/defs.ts';
 
 const Dashboard = () => {
@@ -74,6 +74,7 @@ const Dashboard = () => {
             setError('Данные в ответе отсутствуют или имеют неверный формат.');
           }
         }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         if (isRequestValid()) {
           console.error('Ошибка при запросе GraphQL:', err);

@@ -9,7 +9,7 @@ import Typography from '@mui/joy/Typography';
 import Stack from '@mui/joy/Stack';
 import ColorSchemeToggle from '../components/ColorSchemeToggle.tsx';
 import IconButton from '@mui/joy/IconButton';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router';
 import Alert from '@mui/joy/Alert';
 import { Badge, AlertTriangle } from 'lucide-react';

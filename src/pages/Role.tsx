@@ -137,6 +137,7 @@ const RolesPage = () => {
     handleCloseModals();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFormChange = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -165,6 +166,7 @@ const RolesPage = () => {
     );
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderSelectedValues = (selectedOptions: any) => {
     const selectedValues = Array.isArray(selectedOptions)
       ? selectedOptions.map((option) =>

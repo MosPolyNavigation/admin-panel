@@ -157,6 +157,7 @@ const RoleEditPage = () => {
     mockRoles.find((r) => r.id === roleId) || mockRoles[0]
   );
   const [role, setRole] = useState<Role>(originalRole);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [_isEditing, setIsEditing] = useState(true);
   const [notification, setNotification] = useState('');
   const [showAddEntity, setShowAddEntity] = useState(false);
