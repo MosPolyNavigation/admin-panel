@@ -1,50 +1,50 @@
-import {Navigate, Outlet} from "react-router";
+import { Navigate, Outlet } from 'react-router';
 import { Box, CircularProgress } from '@mui/joy';
 import Sidebar from './Sidebar/Sidebar.tsx';
 import Header from './Header';
-import {useAuth} from "../contexts/AuthContext.tsx";
+import { useAuth } from '../contexts/AuthContext.tsx';
 
 function Layout() {
-    const {isAuthenticated, loading} = useAuth();
-        if (loading) {
-        return (
-            <Box 
-                sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'center', 
-                    alignItems: 'center', 
-                    height: '100vh' 
-                }}
-            >
-                <CircularProgress />
-            </Box>
-        );
-    }
-
-    if (!isAuthenticated) return <Navigate to="/login" replace></Navigate>
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) {
     return (
-        <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
-            <Sidebar />
-            <Header />
-            <Box
-                component="main"
-                className="MainContent"
-                sx={{
-                    pt: { xs: 'calc(12px + var(--Header-height))', md: 3 },
-                    pb: { xs: 2, sm: 2, md: 3 },
-                    flex: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    minWidth: 0,
-                    height: '100dvh',
-                    gap: 1,
-                    overflow: 'auto',
-                }}
-            >
-                <Outlet />
-            </Box>
-        </Box>
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+        }}
+      >
+        <CircularProgress />
+      </Box>
     );
+  }
+
+  if (!isAuthenticated) return <Navigate to="/login" replace></Navigate>;
+  return (
+    <Box sx={{ display: 'flex', minHeight: '100dvh' }}>
+      <Sidebar />
+      <Header />
+      <Box
+        component="main"
+        className="MainContent"
+        sx={{
+          pt: { xs: 'calc(12px + var(--Header-height))', md: 3 },
+          pb: { xs: 2, sm: 2, md: 3 },
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0,
+          height: '100dvh',
+          gap: 1,
+          overflow: 'auto',
+        }}
+      >
+        <Outlet />
+      </Box>
+    </Box>
+  );
 }
 
 export default Layout;

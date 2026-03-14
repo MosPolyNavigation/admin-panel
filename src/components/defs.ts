@@ -1,6 +1,4 @@
-import { type SxProps } from "@mui/joy/styles/types";
-
-
+import { type SxProps } from '@mui/joy/styles/types';
 
 export const DateIntervalType = {
   Today: 'Today',
@@ -11,9 +9,8 @@ export const DateIntervalType = {
   Year: 'Year',
   AllTime: 'AllTime',
   Custom: 'Custom',
-} as const; 
-export type DateIntervalType = typeof DateIntervalType[keyof typeof DateIntervalType];
-
+} as const;
+export type DateIntervalType = (typeof DateIntervalType)[keyof typeof DateIntervalType];
 
 export const months = [
   ['Январь', 'Янв'],
@@ -28,13 +25,13 @@ export const months = [
   ['Октябрь', 'Окт'],
   ['Ноябрь', 'Ноя'],
   ['Декабрь', 'Дек'],
-]
+];
 
-export const weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ']
+export const weekDays = ['ВС', 'ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ'];
 
 export type DateInterval = {
   /** Тип диапазона */
-  type: DateIntervalType; 
+  type: DateIntervalType;
   /** Начальная дата */
   startDate: string;
   /** Конечная дата */
@@ -42,7 +39,6 @@ export type DateInterval = {
   /** Флаг, что значение установлено */
   isSetted?: boolean;
 };
-
 
 export const datePickerRangeStylesLocal: SxProps = (theme) => ({
   '*': {

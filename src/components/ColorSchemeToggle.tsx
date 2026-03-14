@@ -1,43 +1,32 @@
 import * as React from 'react';
 import { useColorScheme as useJoyColorScheme } from '@mui/joy/styles';
-import {IconButton, type IconButtonProps } from '@mui/joy';
+import { IconButton, type IconButtonProps } from '@mui/joy';
 import { Moon, Sun } from 'lucide-react';
 
 export default function ColorSchemeToggle(props: IconButtonProps) {
-    const { onClick, sx, ...other } = props;
-    const { mode, setMode: setJoyMode } = useJoyColorScheme();
-    const [mounted, setMounted] = React.useState(false);
-    React.useEffect(() => {
-        setMounted(true);
-    }, []);
-    if (!mounted) {
-        return (
-            <IconButton
-                size="sm"
-                variant="outlined"
-                color="neutral"
-                {...other}
-                sx={sx}
-                disabled
-            />
-        );
-    }
-    return (
-        <IconButton
-            data-screenshot="toggle-mode"
-            size="sm"
-            variant="outlined"
-            color="neutral"
-            {...props}
-            onClick={(event) => {
-                setJoyMode(mode === 'dark' ? 'light' : 'dark');
-                onClick?.(event);
-            }}
-            sx={[
-                ...(Array.isArray(sx) ? sx : [sx]),
-            ]}
-        >
-            {mode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
-        </IconButton>
-    );
+  const { onClick, sx, ...other } = props;
+  const { mode, setMode: setJoyMode } = useJoyColorScheme();
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return <IconButton size="sm" variant="outlined" color="neutral" {...other} sx={sx} disabled />;
+  }
+  return (
+    <IconButton
+      data-screenshot="toggle-mode"
+      size="sm"
+      variant="outlined"
+      color="neutral"
+      {...props}
+      onClick={(event) => {
+        setJoyMode(mode === 'dark' ? 'light' : 'dark');
+        onClick?.(event);
+      }}
+      sx={[...(Array.isArray(sx) ? sx : [sx])]}
+    >
+      {mode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+    </IconButton>
+  );
 }

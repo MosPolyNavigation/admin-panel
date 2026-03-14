@@ -16,7 +16,7 @@ import {
   Sheet,
   Checkbox,
   Badge,
-  IconButton
+  IconButton,
 } from '@mui/joy';
 import {
   ArrowLeft as BackIcon,
@@ -24,7 +24,7 @@ import {
   User as PersonIcon,
   Shield as SecurityIcon,
   Users as GroupIcon,
-  Info as InfoIcon
+  Info as InfoIcon,
 } from 'lucide-react';
 
 interface Role {
@@ -49,7 +49,7 @@ interface AvailableRole extends Role {
 function RolesPage() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  
+
   const [user, setUser] = useState<User>({
     id: userId || '1',
     username: 'ivan_petrov',
@@ -60,15 +60,15 @@ function RolesPage() {
         id: '1',
         name: 'Администратор',
         description: 'Полный доступ ко всем функциям',
-        permissions: ['all']
+        permissions: ['all'],
       },
       {
         id: '2',
         name: 'Модератор',
         description: 'Управление контентом',
-        permissions: ['content_manage', 'users_view']
-      }
-    ]
+        permissions: ['content_manage', 'users_view'],
+      },
+    ],
   });
 
   const [availableRoles, setAvailableRoles] = useState<AvailableRole[]>([
@@ -77,92 +77,95 @@ function RolesPage() {
       name: 'Администратор',
       description: 'Полный доступ ко всем функциям системы',
       permissions: ['users_manage', 'roles_manage', 'content_manage', 'settings_manage'],
-      selected: true
+      selected: true,
     },
     {
       id: '2',
       name: 'Редактор',
       description: 'Создание и редактирование контента',
       permissions: ['content_create', 'content_edit', 'content_publish'],
-      selected: false
+      selected: false,
     },
     {
       id: '3',
       name: 'Модератор',
       description: 'Модерация и проверка контента',
       permissions: ['content_moderate', 'users_view', 'reports_view'],
-      selected: true
+      selected: true,
     },
     {
       id: '4',
       name: 'Наблюдатель',
       description: 'Только просмотр контента и аналитики',
       permissions: ['content_view', 'reports_view', 'analytics_view'],
-      selected: false
+      selected: false,
     },
     {
       id: '5',
       name: 'Аналитик',
       description: 'Доступ к аналитике и отчетам',
       permissions: ['analytics_view', 'reports_generate', 'data_export'],
-      selected: false
+      selected: false,
     },
     {
       id: '6',
       name: 'Гость',
       description: 'Ограниченный доступ',
       permissions: ['content_view'],
-      selected: false
-    }
+      selected: false,
+    },
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [notification, setNotification] = useState<{ 
-    type: 'success' | 'danger' | 'warning' | 'neutral' | 'primary', 
-    message: string 
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'danger' | 'warning' | 'neutral' | 'primary';
+    message: string;
   } | null>(null);
 
   useEffect(() => {
-    setAvailableRoles(prev => prev.map(role => ({
-      ...role,
-      selected: user.currentRoles.some(userRole => userRole.id === role.id)
-    })));
+    setAvailableRoles((prev) =>
+      prev.map((role) => ({
+        ...role,
+        selected: user.currentRoles.some((userRole) => userRole.id === role.id),
+      }))
+    );
   }, [user.currentRoles]);
 
   // Фильтрация ролей по поиску
-  const filteredRoles = availableRoles.filter(role =>
-    role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    role.description.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRoles = availableRoles.filter(
+    (role) =>
+      role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      role.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Переключение роли
   const handleRoleToggle = (roleId: string) => {
-    setAvailableRoles(prev => prev.map(role =>
-      role.id === roleId ? { ...role, selected: !role.selected } : role
-    ));
+    setAvailableRoles((prev) =>
+      prev.map((role) => (role.id === roleId ? { ...role, selected: !role.selected } : role))
+    );
   };
 
   const handleSelectAll = () => {
-    setAvailableRoles(prev => prev.map(role => ({ ...role, selected: true })));
+    setAvailableRoles((prev) => prev.map((role) => ({ ...role, selected: true })));
   };
 
   const handleDeselectAll = () => {
-    setAvailableRoles(prev => prev.map(role => ({ ...role, selected: false })));
+    setAvailableRoles((prev) => prev.map((role) => ({ ...role, selected: false })));
   };
 
   // Сохранение изменений
   const handleSave = () => {
     const selectedRoles = availableRoles
-      .filter(role => role.selected)
+      .filter((role) => role.selected)
       .map(({ selected, ...role }) => role);
 
-    setUser(prev => ({ ...prev, currentRoles: selectedRoles }));
-    
-    setNotification({ 
-      type: 'success', 
-      message: `Роли для пользователя ${user.fullName} успешно обновлены!` 
+    setUser((prev) => ({ ...prev, currentRoles: selectedRoles }));
+
+    setNotification({
+      type: 'success',
+      message: `Роли для пользователя ${user.fullName} успешно обновлены!`,
     });
-    
+
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -176,25 +179,21 @@ function RolesPage() {
   };
 
   // Подсчет выбранных ролей
-  const selectedCount = availableRoles.filter(role => role.selected).length;
+  const selectedCount = availableRoles.filter((role) => role.selected).length;
 
   return (
     <Box sx={{ p: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <IconButton
-          variant="outlined"
-          onClick={handleBack}
-          sx={{ alignSelf: 'flex-start' }}
-        >
+        <IconButton variant="outlined" onClick={handleBack} sx={{ alignSelf: 'flex-start' }}>
           <BackIcon size={18} />
         </IconButton>
         <Typography level="h2">Управление ролями пользователя</Typography>
       </Box>
 
       {notification && (
-        <Alert 
+        <Alert
           color={notification.type}
-          variant="soft" 
+          variant="soft"
           sx={{ mb: 3 }}
           startDecorator={<InfoIcon size={16} />}
         >
@@ -205,11 +204,7 @@ function RolesPage() {
       <Stack spacing={3}>
         <Card variant="outlined">
           <CardContent>
-            <Typography 
-              level="title-lg"
-              startDecorator={<PersonIcon size={18} />} 
-              sx={{ mb: 2 }}
-            >
+            <Typography level="title-lg" startDecorator={<PersonIcon size={18} />} sx={{ mb: 2 }}>
               Информация о пользователе
             </Typography>
             <Divider sx={{ mb: 2 }} />
@@ -228,13 +223,13 @@ function RolesPage() {
                   <Typography level="title-sm">{user.email}</Typography>
                 </Box>
               </Box>
-              
+
               <Box>
                 <Typography level="body-xs" sx={{ mb: 1 }}>
                   Текущие роли ({user.currentRoles.length}):
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {user.currentRoles.map(role => (
+                  {user.currentRoles.map((role) => (
                     <Chip
                       key={role.id}
                       variant="soft"
@@ -253,11 +248,10 @@ function RolesPage() {
 
         <Card variant="outlined">
           <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography 
-                level="title-lg" 
-                startDecorator={<GroupIcon size={18} />}
-              >
+            <Box
+              sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+            >
+              <Typography level="title-lg" startDecorator={<GroupIcon size={18} />}>
                 Назначение ролей
               </Typography>
               <Badge badgeContent={selectedCount} color="primary" size="lg">
@@ -284,20 +278,12 @@ function RolesPage() {
                   }
                 />
               </FormControl>
-              
+
               <Stack direction="row" spacing={1}>
-                <Button
-                  variant="outlined"
-                  size="sm"
-                  onClick={handleSelectAll}
-                >
+                <Button variant="outlined" size="sm" onClick={handleSelectAll}>
                   Выбрать все
                 </Button>
-                <Button
-                  variant="outlined"
-                  size="sm"
-                  onClick={handleDeselectAll}
-                >
+                <Button variant="outlined" size="sm" onClick={handleDeselectAll}>
                   Снять все
                 </Button>
               </Stack>
@@ -311,13 +297,21 @@ function RolesPage() {
                   p: 2,
                   borderBottom: '1px solid',
                   borderColor: 'divider',
-                  bgcolor: 'background.level1'
+                  bgcolor: 'background.level1',
                 }}
               >
-                <Typography level="body-sm" fontWeight="lg">Выбор</Typography>
-                <Typography level="body-sm" fontWeight="lg">Роль</Typography>
-                <Typography level="body-sm" fontWeight="lg">Описание</Typography>
-                <Typography level="body-sm" fontWeight="lg">Разрешения</Typography>
+                <Typography level="body-sm" fontWeight="lg">
+                  Выбор
+                </Typography>
+                <Typography level="body-sm" fontWeight="lg">
+                  Роль
+                </Typography>
+                <Typography level="body-sm" fontWeight="lg">
+                  Описание
+                </Typography>
+                <Typography level="body-sm" fontWeight="lg">
+                  Разрешения
+                </Typography>
               </Box>
 
               {filteredRoles.map((role) => (
@@ -330,11 +324,11 @@ function RolesPage() {
                     borderBottom: '1px solid',
                     borderColor: 'divider',
                     '&:hover': {
-                      bgcolor: 'background.level1'
+                      bgcolor: 'background.level1',
                     },
                     '&:last-child': {
-                      borderBottom: 'none'
-                    }
+                      borderBottom: 'none',
+                    },
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -356,12 +350,7 @@ function RolesPage() {
                   <Box sx={{ display: 'flex', alignItems: 'center' }}>
                     <Stack direction="row" spacing={0.5} flexWrap="wrap">
                       {role.permissions.slice(0, 3).map((perm, index) => (
-                        <Chip
-                          key={index}
-                          size="sm"
-                          variant="soft"
-                          color="neutral"
-                        >
+                        <Chip key={index} size="sm" variant="soft" color="neutral">
                           {perm}
                         </Chip>
                       ))}
