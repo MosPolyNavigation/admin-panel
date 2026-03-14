@@ -29,7 +29,6 @@ export default defineConfig(
     },
     languageOptions: {
       globals: globals.browser,
-      // ❌ УБРАЛИ parserOptions.project — теперь не будет ошибок парсинга
     },
   },
   eslintConfigPrettier,
