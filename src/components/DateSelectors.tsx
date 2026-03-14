@@ -1,4 +1,3 @@
-import {tc} from './theme.ts'
 import {useFirstDay} from '../hooks/useFirstDay.ts'
 import dayjs from '../dayjs.ts'
 import {configDsFirstDay, configDsToday} from './config.ts'
@@ -207,23 +206,23 @@ const DateSelectors = ({
     const getStyle = (
         type: DateIntervalType,
         sx?: SxProps,
-    ): { variant: 'soft' | 'plain'; color: 'primary' | 'neutral'; sx: SxProps } => {
-        const selected = type === dateInterval.type
+    ): { variant: 'soft' | 'plain'; color: 'primary' | 'neutral'; sx?: SxProps } => {
+        const selected = type === dateInterval.type;
 
         return {
-            variant: 'plain',
+            // Joy UI сам подберёт цвета из палитры!
+            variant: selected ? 'soft' : 'plain',
             color: selected ? 'primary' : 'neutral',
             sx: {
-                fontWeight: 400,
-                backgroundColor: selected ? tc.primary[100] : tc.common.white,
-                border: selected ? `1px solid ${tc.primary[400]}` : undefined,
-                m: selected ? '-1px' : 0,
-                zIndex: selected ? 1 : 0,
-                color: selected ? tc.primary[800] : tc.neutral[800],
-                ...sx,
+            fontWeight: 400,
+            // Компенсация границы для выравнивания кнопок
+            m: selected ? '-1px' : 0,
+            zIndex: selected ? 1 : 0,
+            // Любые кастомные правки (опционально)
+            ...sx,
             },
-        }
-    }
+        };
+    };
 
     return (
         <Sheet
