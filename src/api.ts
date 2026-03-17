@@ -340,3 +340,87 @@ export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
 
   return response.data.data;
 };
+
+export interface BanInfo {
+  user_id: string;
+  banned: boolean;
+  ban_reason: string | null;
+  ban_timestamp: string | null;
+  violation_count: number;
+  requests_count: number;
+  last_request: string | null;
+}
+
+export interface BanListResponse {
+  items: BanInfo[];
+  total: number;
+  page: number;
+  size: number;
+  pages: number;
+}
+
+export interface UnbanRequest {
+  reason?: string;
+}
+
+export interface UnbanResponse {
+  status: string;
+}
+
+// Получить список забаненных пользователей
+export const getBannedUsers = async (
+  token: string,
+  page: number = 1,
+  size: number = 100,
+  signal?: AbortSignal
+): Promise<BanListResponse> => {
+  const response = await axios.get<BanListResponse>(`${BASE_API_URL}/admin/review-bans`, {
+    params: { page, size },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    signal,
+  });
+  return response.data;
+};
+
+// Получить информацию о бане конкретного пользователя
+export const getBanInfo = async (
+  token: string,
+  user_id: string,
+  signal?: AbortSignal
+): Promise<BanInfo | null> => {
+  try {
+    const response = await axios.get<BanInfo>(`${BASE_API_URL}/admin/review-bans/${user_id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      signal,
+    });
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+// Разбанить пользователя
+export const unbanUser = async (
+  token: string,
+  user_id: string,
+  reason?: string
+): Promise<UnbanResponse> => {
+  const response = await axios.post<UnbanResponse>(
+    `${BASE_API_URL}/admin/review-bans/${user_id}/unban`,
+    reason ? { reason } : {},
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data;
+};

@@ -19,6 +19,7 @@ import {
   LogOut,
   Contact,
   MessageSquare,
+  ShieldAlert as ShieldIcon,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router';
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
@@ -195,6 +196,17 @@ export default function Sidebar() {
           >
             <Typography level="title-sm">Роли</Typography>
           </SidebarListItem>
+          <SidebarListItemsNested
+            defaultExpanded={isPartOf('/admin')}
+            icon={<ShieldIcon size={18} />}
+            name={'Администрирование'}
+          >
+            <ListItem>
+              <ListItemButton selected={isActive('/bans')} onClick={() => handleNavigate('/bans')}>
+                Забаненные пользователи
+              </ListItemButton>
+            </ListItem>
+          </SidebarListItemsNested>
         </List>
       </Box>
       <Divider />

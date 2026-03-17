@@ -14,6 +14,8 @@ import ReviewsPage from './pages/ReviewsPage.tsx';
 import ReviewPage from './pages/ReviewPage.tsx';
 import { AuthProvider } from './contexts/AuthProvider.tsx';
 import Dashboard from './pages/Dashboard.tsx';
+import BannedUsersPage from './pages/BannedUsersPage.tsx';
+import BannedUserDetails from './pages/BannedUserDetails.tsx';
 import { BASE_PATH } from './config.ts';
 
 export default function App() {
@@ -38,6 +40,10 @@ export default function App() {
               <Route path="reviews">
                 <Route index element={<ReviewsPage />} />
                 <Route path=":id" element={<ReviewPage />} />
+              </Route>
+              <Route path="bans">
+                <Route index element={<BannedUsersPage />} />
+                <Route path=":user_id" element={<BannedUserDetails />} />
               </Route>
             </Route>
           </Routes>
