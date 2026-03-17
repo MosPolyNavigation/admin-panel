@@ -17,6 +17,11 @@ const PATH_LABELS: Record<string, string> = {
   '/profile': 'Мой профиль',
   '/dashboards': 'Дашборды',
   '/reviews': 'Отзывы',
+  '/reviews/:id': 'Просмотр отзыва',
+  '/roles': 'Роли',
+  '/roles/:id': 'Редактирование роли',
+  '/bans': 'Забаненные пользователи',
+  '/bans/:id': 'Информация о бане',
 };
 
 function matchRoute(path: string, pattern: string): boolean {
