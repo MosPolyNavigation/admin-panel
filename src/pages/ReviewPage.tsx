@@ -15,25 +15,25 @@ import {
   AspectRatio,
   Modal,
   ModalDialog,
-  ModalClose
+  ModalClose,
 } from '@mui/joy';
 import {
-  ArrowBack as BackIcon,
+  ArrowLeft as BackIcon,
   Save as SaveIcon,
-  CalendarToday as DateIcon,
-  BugReport as ProblemIcon,
+  Calendar as DateIcon,
+  Bug as ProblemIcon,
   Image as ImageIcon,
-  ZoomIn as ZoomIcon
-} from '@mui/icons-material';
+  ZoomIn as ZoomIcon,
+} from 'lucide-react';
 import { useParams, useNavigate } from 'react-router';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { useAuth } from '../hooks/useAuth.ts';
 import {
-  getReviews,
+  getReview,
   getReviewStatuses,
   getReviewImageUrl,
   setReviewStatus,
   type Review,
-  type ReviewStatus
+  type ReviewStatus,
 } from '../api.ts';
 import { translateProblemId } from '../utils.ts';
 
@@ -57,17 +57,17 @@ export default function ReviewPage() {
 
       try {
         setLoading(true);
-        
-        const reviews = await getReviews(token);
-        
+
+        const reviews = await getReview(token, id);
+
         const reviewId = Number(id);
-        const foundReview = reviews.find(r => Number(r.id) === reviewId);
-        
+        const foundReview = reviews.find((r) => Number(r.id) === reviewId);
+
         if (!foundReview) {
           setError('Отзыв не найден');
           return;
         }
-        
+
         setReview(foundReview);
 
         try {
@@ -125,7 +125,7 @@ export default function ReviewPage() {
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch {
       return dateString;
@@ -134,7 +134,15 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+      <Box
+        sx={{
+          p: 3,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '300px',
+        }}
+      >
         <CircularProgress />
       </Box>
     );
@@ -148,7 +156,7 @@ export default function ReviewPage() {
         </Alert>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon />}
+          startDecorator={<BackIcon size={18} />}
           onClick={() => navigate('/reviews')}
           sx={{ mt: 2 }}
         >
@@ -165,17 +173,13 @@ export default function ReviewPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon />}
+          startDecorator={<BackIcon size={18} />}
           onClick={() => navigate('/reviews')}
         >
           Назад
         </Button>
         <Typography level="h2">Отзыв #{review.id}</Typography>
-        <Chip
-          variant="soft"
-          color="primary"
-          startDecorator={<ProblemIcon sx={{ fontSize: 16 }} />}
-        >
+        <Chip variant="soft" color="primary" startDecorator={<ProblemIcon size={16} />}>
           Problem ID: {translateProblemId(review.problemId)}
         </Chip>
       </Box>
@@ -193,17 +197,15 @@ export default function ReviewPage() {
               Информация об отзыве
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <DateIcon sx={{ color: 'neutral.500' }} />
+                <DateIcon size={18} color="var(--joy-palette-neutral-500)" />
                 <Box>
                   <Typography level="body-sm" color="neutral">
                     Дата создания
                   </Typography>
-                  <Typography level="body-md">
-                    {formatDate(review.creationDate)}
-                  </Typography>
+                  <Typography level="body-md">{formatDate(review.creationDate)}</Typography>
                 </Box>
               </Box>
 
@@ -227,8 +229,12 @@ export default function ReviewPage() {
               Управление статусом
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'stretch', sm: 'flex-end' }}>
+
+            <Stack
+              direction={{ xs: 'column', sm: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', sm: 'flex-end' }}
+            >
               <Box sx={{ flex: 1, minWidth: 200 }}>
                 <Typography level="body-sm" color="neutral" sx={{ mb: 1 }}>
                   Статус отзыва
@@ -249,7 +255,7 @@ export default function ReviewPage() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<SaveIcon />}
+                startDecorator={<SaveIcon size={18} />}
                 onClick={handleStatusChange}
                 loading={statusLoading}
                 disabled={statuses.length === 0 || !selectedStatus}
@@ -266,10 +272,13 @@ export default function ReviewPage() {
               Изображение
             </Typography>
             <Divider sx={{ mb: 3 }} />
-            
+
             {imageUrl ? (
               <Box>
-                <AspectRatio ratio="16/9" sx={{ maxWidth: 600, borderRadius: 'sm', overflow: 'hidden' }}>
+                <AspectRatio
+                  ratio="16/9"
+                  sx={{ maxWidth: 600, borderRadius: 'sm', overflow: 'hidden' }}
+                >
                   <img
                     src={imageUrl}
                     alt="Изображение отзыва"
@@ -280,7 +289,7 @@ export default function ReviewPage() {
                 <Button
                   variant="soft"
                   size="sm"
-                  startDecorator={<ZoomIcon />}
+                  startDecorator={<ZoomIcon size={16} />}
                   onClick={() => setImageModalOpen(true)}
                   sx={{ mt: 2 }}
                 >
@@ -288,15 +297,21 @@ export default function ReviewPage() {
                 </Button>
               </Box>
             ) : (
-              <Box sx={{ 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                py: 4,
-                color: 'neutral.500'
-              }}>
-                <ImageIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  py: 4,
+                  color: 'neutral.500',
+                }}
+              >
+                <ImageIcon
+                  size={48}
+                  color="var(--joy-palette-neutral-500)"
+                  style={{ opacity: 0.5, marginBottom: 4 }}
+                />
                 <Typography level="body-md" color="neutral">
                   Изображение отсутствует
                 </Typography>
@@ -312,25 +327,27 @@ export default function ReviewPage() {
             maxWidth: '90vw',
             maxHeight: '90vh',
             p: 1,
-            overflow: 'hidden'
+            overflow: 'hidden',
           }}
         >
           <ModalClose />
           {imageUrl && (
-            <Box sx={{ 
-              display: 'flex', 
-              justifyContent: 'center', 
-              alignItems: 'center',
-              maxHeight: 'calc(90vh - 60px)',
-              overflow: 'auto'
-            }}>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                maxHeight: 'calc(90vh - 60px)',
+                overflow: 'auto',
+              }}
+            >
               <img
                 src={imageUrl}
                 alt="Изображение отзыва"
-                style={{ 
-                  maxWidth: '100%', 
+                style={{
+                  maxWidth: '100%',
                   maxHeight: 'calc(90vh - 60px)',
-                  objectFit: 'contain' 
+                  objectFit: 'contain',
                 }}
               />
             </Box>
@@ -340,4 +357,3 @@ export default function ReviewPage() {
     </Box>
   );
 }
-
