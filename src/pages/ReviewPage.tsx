@@ -28,7 +28,7 @@ import {
 import { useParams, useNavigate } from 'react-router';
 import { useAuth } from '../hooks/useAuth.ts';
 import {
-  getReviews,
+  getReview,
   getReviewStatuses,
   getReviewImageUrl,
   setReviewStatus,
@@ -58,7 +58,7 @@ export default function ReviewPage() {
       try {
         setLoading(true);
 
-        const reviews = await getReviews(token);
+        const reviews = await getReview(token, id);
 
         const reviewId = Number(id);
         const foundReview = reviews.find((r) => Number(r.id) === reviewId);

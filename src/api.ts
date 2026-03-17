@@ -115,6 +115,31 @@ export const getReviews = async (token: string): Promise<Review[]> => {
   return response.data.data.reviews;
 };
 
+export const getReview = async (token: string, id: string): Promise<Review[]> => {
+  const response = await axios.post<ReviewsGqlResponse>(
+    `${BASE_API_URL}/graphql`,
+    {
+      query: `{
+                reviews (reviewId: ${id}) {
+                    id,
+                    problemId,
+                    creationDate,
+                    text,
+                    imageName,
+                    statusId
+                }
+            }`,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+  return response.data.data.reviews;
+};
+
 export const getReviewStatuses = async (token: string): Promise<ReviewStatus[]> => {
   try {
     const response = await axios.post<ReviewStatusesGqlResponse>(
