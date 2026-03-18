@@ -29,7 +29,7 @@ export default function SingIn() {
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  const handleSubmit = async (event: React.FormEvent<SignInFormElement>) => {
+  const handleSubmit = async (event: React.SubmitEvent<SignInFormElement>) => {
     event.preventDefault();
     setError('');
     const formElements = event.currentTarget.elements;
