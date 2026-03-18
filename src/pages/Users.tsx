@@ -15,12 +15,12 @@ import {
 } from '@mui/joy';
 import Page from '../components/Page.tsx';
 import {
-  Trash2 as DeleteIcon,
-  Pencil as EditIcon,
-  UserPlus as RoleIcon,
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  GroupAdd as RoleIcon,
   CheckCircle as ActiveIcon,
-  XCircle as InactiveIcon,
-} from 'lucide-react';
+  Cancel as InactiveIcon,
+} from '@mui/icons-material';
 import { useNavigate } from 'react-router';
 
 interface User {
@@ -122,9 +122,7 @@ function Users() {
                     size="sm"
                     variant="soft"
                     color={user.active ? 'success' : 'danger'}
-                    startDecorator={
-                      user.active ? <ActiveIcon size={16} /> : <InactiveIcon size={16} />
-                    }
+                    startDecorator={user.active ? <ActiveIcon /> : <InactiveIcon />}
                   >
                     {user.active ? 'Активен' : 'Неактивен'}
                   </Chip>
@@ -138,7 +136,7 @@ function Users() {
                       onClick={() => handleDelete(user)}
                       title="Удалить"
                     >
-                      <DeleteIcon size={18} />
+                      <DeleteIcon />
                     </IconButton>
                     <IconButton
                       size="sm"
@@ -146,7 +144,7 @@ function Users() {
                       title="Редактировать"
                       onClick={() => navigate('/UserEditPage')}
                     >
-                      <EditIcon size={18} />
+                      <EditIcon />
                     </IconButton>
                     <IconButton
                       size="sm"
@@ -154,7 +152,7 @@ function Users() {
                       title="Назначить роль"
                       onClick={() => navigate('/RoleEditPage')}
                     >
-                      <RoleIcon size={18} />
+                      <RoleIcon />
                     </IconButton>
                     <Button
                       size="sm"

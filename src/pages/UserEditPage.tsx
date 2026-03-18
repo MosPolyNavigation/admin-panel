@@ -15,13 +15,13 @@ import {
   Chip,
 } from '@mui/joy';
 import {
-  ArrowLeft as BackIcon,
+  ArrowBack as BackIcon,
   Save as SaveIcon,
-  X as CancelIcon,
-  KeyRound as PasswordIcon,
+  Cancel as CancelIcon,
+  LockReset as PasswordIcon,
   CheckCircle as ActiveIcon,
-  XCircle as InactiveIcon,
-} from 'lucide-react';
+  Cancel as InactiveIcon,
+} from '@mui/icons-material';
 
 export default function UserEditPage() {
   const [user, setUser] = useState({
@@ -109,7 +109,7 @@ export default function UserEditPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon size={18} />}
+          startDecorator={<BackIcon />}
           onClick={() => window.history.back()}
         >
           Назад
@@ -118,7 +118,7 @@ export default function UserEditPage() {
         <Chip
           variant="soft"
           color={user.isActive ? 'success' : 'danger'}
-          startDecorator={user.isActive ? <ActiveIcon size={16} /> : <InactiveIcon size={16} />}
+          startDecorator={user.isActive ? <ActiveIcon /> : <InactiveIcon />}
         >
           {user.isActive ? 'Активен' : 'Неактивен'}
         </Chip>
@@ -180,7 +180,7 @@ export default function UserEditPage() {
                 <Typography>Смена пароля</Typography>
                 <Button
                   variant="outlined"
-                  startDecorator={<PasswordIcon size={18} />}
+                  startDecorator={<PasswordIcon />}
                   onClick={() => setShowPasswordModal(true)}
                 >
                   Сменить пароль
@@ -211,7 +211,7 @@ export default function UserEditPage() {
       <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button
-            startDecorator={<CancelIcon size={18} />}
+            startDecorator={<CancelIcon />}
             onClick={cancel}
             variant="outlined"
             color="neutral"
@@ -220,7 +220,7 @@ export default function UserEditPage() {
             Отменить
           </Button>
           <Button
-            startDecorator={<SaveIcon size={18} />}
+            startDecorator={<SaveIcon />}
             onClick={save}
             variant="solid"
             color="primary"

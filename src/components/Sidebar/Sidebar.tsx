@@ -12,15 +12,15 @@ import {
   Sheet,
 } from '@mui/joy';
 import {
-  Home,
-  LayoutDashboard,
-  Table as TableIcon,
-  Users,
-  LogOut,
-  Contact,
-  MessageSquare,
-  ShieldAlert as ShieldIcon,
-} from 'lucide-react';
+  HomeRounded,
+  DashboardRounded,
+  TableView,
+  GroupRounded,
+  LogoutRounded,
+  AssignmentIndRounded,
+  RateReviewRounded,
+  ShieldRounded,
+} from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router';
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
 import { closeSidebar } from '../../utils.ts';
@@ -123,7 +123,7 @@ export default function Sidebar() {
           }}
         >
           <SidebarListItem
-            icon={<Home size={18} />}
+            icon={<HomeRounded />}
             selected={isActive('/')}
             onClick={() => handleNavigate('/')}
           >
@@ -131,7 +131,7 @@ export default function Sidebar() {
           </SidebarListItem>
 
           <SidebarListItem
-            icon={<LayoutDashboard size={18} />}
+            icon={<DashboardRounded />}
             selected={isActive('/dashboards')}
             onClick={() => handleNavigate('/dashboards')}
           >
@@ -139,7 +139,7 @@ export default function Sidebar() {
           </SidebarListItem>
 
           <SidebarListItem
-            icon={<MessageSquare size={18} />}
+            icon={<RateReviewRounded />}
             selected={isPartOf('/reviews')}
             onClick={() => handleNavigate('/reviews')}
           >
@@ -148,7 +148,7 @@ export default function Sidebar() {
 
           <SidebarListItemsNested
             defaultExpanded={isPartOf('/tables')}
-            icon={<TableIcon size={18} />}
+            icon={<TableView />}
             name={'Таблицы'}
           >
             <ListItem sx={{ mt: 0.5 }}>
@@ -173,7 +173,7 @@ export default function Sidebar() {
 
           <SidebarListItemsNested
             defaultExpanded={isPartOf('/users')}
-            icon={<Users size={18} />}
+            icon={<GroupRounded />}
             name={'Пользователи'}
           >
             <ListItem>
@@ -190,7 +190,7 @@ export default function Sidebar() {
           </SidebarListItemsNested>
 
           <SidebarListItem
-            icon={<Contact size={18} />}
+            icon={<AssignmentIndRounded />}
             selected={isActive('/roles')}
             onClick={() => handleNavigate('/roles')}
           >
@@ -198,7 +198,7 @@ export default function Sidebar() {
           </SidebarListItem>
           <SidebarListItemsNested
             defaultExpanded={isPartOf('/admin')}
-            icon={<ShieldIcon size={18} />}
+            icon={<ShieldRounded />}
             name={'Администрирование'}
           >
             <ListItem>
@@ -219,7 +219,7 @@ export default function Sidebar() {
           <Typography level="title-sm">{user?.login}</Typography>
         </Box>
         <IconButton size="sm" variant="plain" color="neutral" onClick={handleLogout}>
-          <LogOut size={18} />
+          <LogoutRounded />
         </IconButton>
       </Box>
     </Sheet>

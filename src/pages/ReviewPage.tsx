@@ -18,14 +18,14 @@ import {
   ModalClose,
 } from '@mui/joy';
 import {
-  ArrowLeft as BackIcon,
+  ArrowBack as BackIcon,
   Save as SaveIcon,
-  Calendar as DateIcon,
-  Bug as ProblemIcon,
+  CalendarToday as DateIcon,
+  BugReport as ProblemIcon,
   Image as ImageIcon,
   ZoomIn as ZoomIcon,
-} from 'lucide-react';
-import { useParams, useNavigate } from 'react-router';
+} from '@mui/icons-material';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth.ts';
 import {
   getReview,
@@ -40,6 +40,7 @@ import { translateProblemId } from '../utils.ts';
 export default function ReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useAuth();
 
   const [review, setReview] = useState<Review | null>(null);
@@ -156,7 +157,7 @@ export default function ReviewPage() {
         </Alert>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon size={18} />}
+          startDecorator={<BackIcon />}
           onClick={() => navigate('/reviews')}
           sx={{ mt: 2 }}
         >
@@ -173,13 +174,13 @@ export default function ReviewPage() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3, flexWrap: 'wrap' }}>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon size={18} />}
-          onClick={() => navigate('/reviews')}
+          startDecorator={<BackIcon />}
+          onClick={() => navigate(`/reviews${location.search}`)} // ← сохраняем params
         >
           Назад
         </Button>
         <Typography level="h2">Отзыв #{review.id}</Typography>
-        <Chip variant="soft" color="primary" startDecorator={<ProblemIcon size={16} />}>
+        <Chip variant="soft" color="primary" startDecorator={<ProblemIcon sx={{ fontSize: 16 }} />}>
           Problem ID: {translateProblemId(review.problemId)}
         </Chip>
       </Box>
@@ -200,7 +201,7 @@ export default function ReviewPage() {
 
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <DateIcon size={18} color="var(--joy-palette-neutral-500)" />
+                <DateIcon sx={{ color: 'neutral.500' }} />
                 <Box>
                   <Typography level="body-sm" color="neutral">
                     Дата создания
@@ -255,7 +256,7 @@ export default function ReviewPage() {
               <Button
                 variant="solid"
                 color="primary"
-                startDecorator={<SaveIcon size={18} />}
+                startDecorator={<SaveIcon />}
                 onClick={handleStatusChange}
                 loading={statusLoading}
                 disabled={statuses.length === 0 || !selectedStatus}
@@ -289,7 +290,7 @@ export default function ReviewPage() {
                 <Button
                   variant="soft"
                   size="sm"
-                  startDecorator={<ZoomIcon size={16} />}
+                  startDecorator={<ZoomIcon />}
                   onClick={() => setImageModalOpen(true)}
                   sx={{ mt: 2 }}
                 >
@@ -307,11 +308,7 @@ export default function ReviewPage() {
                   color: 'neutral.500',
                 }}
               >
-                <ImageIcon
-                  size={48}
-                  color="var(--joy-palette-neutral-500)"
-                  style={{ opacity: 0.5, marginBottom: 4 }}
-                />
+                <ImageIcon sx={{ fontSize: 48, mb: 1, opacity: 0.5 }} />
                 <Typography level="body-md" color="neutral">
                   Изображение отсутствует
                 </Typography>

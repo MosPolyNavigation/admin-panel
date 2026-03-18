@@ -18,16 +18,16 @@ import {
   Divider,
 } from '@mui/joy';
 import {
-  Eye as ViewIcon,
-  UserX as BanIcon,
+  Visibility as ViewIcon,
+  PersonOff as BanIcon,
   Search as SearchIcon,
-  ChevronsLeft as FirstPageIcon,
-  ChevronsRight as LastPageIcon,
+  FirstPage as FirstPageIcon,
+  LastPage as LastPageIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-  RefreshCw as RefreshIcon,
-  Filter as FilterIcon,
-} from 'lucide-react';
+  Refresh as RefreshIcon,
+  FilterList as FilterIcon,
+} from '@mui/icons-material';
 import Page from '../components/Page';
 import { useAuth } from '../hooks/useAuth';
 import { getBannedUsers, type BanInfo } from '../api';
@@ -233,7 +233,7 @@ function BannedUsersPage() {
                 <Typography level="title-lg">Забаненные пользователи</Typography>
               </Badge>
               <Chip size="sm" variant="soft" color="neutral">
-                <BanIcon size={14} />
+                <BanIcon fontSize="small" sx={{ mr: 0.5 }} />
                 Всего: {total}
               </Chip>
             </Stack>
@@ -244,7 +244,7 @@ function BannedUsersPage() {
               disabled={refreshing}
               title="Обновить"
             >
-              <RefreshIcon size={16} />
+              <RefreshIcon fontSize="small" />
             </IconButton>
           </Stack>
 
@@ -253,7 +253,7 @@ function BannedUsersPage() {
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <Input
               placeholder="Поиск по user_id или причине..."
-              startDecorator={<SearchIcon size={16} />}
+              startDecorator={<SearchIcon fontSize="small" />}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               sx={{ flexGrow: 1, minWidth: '200px' }}
@@ -261,7 +261,7 @@ function BannedUsersPage() {
             <Select
               value={filterReason}
               onChange={(_, val) => setFilterReason(val || 'all')}
-              startDecorator={<FilterIcon size={16} />}
+              startDecorator={<FilterIcon fontSize="small" />}
               sx={{ minWidth: '200px' }}
             >
               <Option value="all">Все причины</Option>
@@ -287,9 +287,12 @@ function BannedUsersPage() {
         <Card variant="outlined">
           <Box sx={{ p: 4, textAlign: 'center' }}>
             <BanIcon
-              size={48}
-              color="var(--joy-palette-neutral-400)"
-              style={{ margin: '0 auto 16px' }}
+              fontSize="large"
+              sx={{
+                color: 'var(--joy-palette-neutral-400)',
+                display: 'block',
+                margin: '0 auto 16px',
+              }}
             />
             <Typography level="title-md" color="neutral">
               {searchQuery || filterReason !== 'all'
@@ -348,12 +351,11 @@ function BannedUsersPage() {
                       <td style={{ padding: '8px', textAlign: 'right' }}>
                         <Stack direction="row" spacing={1} justifyContent="flex-end">
                           <IconButton
-                            size="sm"
                             color="primary"
                             onClick={() => navigate(`/bans/${ban.user_id}`)}
                             title="Подробнее"
                           >
-                            <ViewIcon size={16} />
+                            <ViewIcon fontSize="small" />
                           </IconButton>
                         </Stack>
                       </td>
@@ -368,43 +370,39 @@ function BannedUsersPage() {
             <Card variant="outlined" sx={{ mt: 2 }}>
               <Stack direction="row" spacing={1} justifyContent="center" alignItems="center">
                 <IconButton
-                  size="sm"
                   variant="outlined"
                   disabled={currentPage === 1}
                   onClick={() => handlePageChange(1)}
                   title="Первая"
                 >
-                  <FirstPageIcon size={16} />
+                  <FirstPageIcon fontSize="small" />
                 </IconButton>
                 <IconButton
-                  size="sm"
                   variant="outlined"
                   disabled={currentPage === 1}
                   onClick={() => handlePageChange(currentPage - 1)}
                   title="Назад"
                 >
-                  <ChevronLeftIcon size={16} />
+                  <ChevronLeftIcon fontSize="small" />
                 </IconButton>
 
                 {renderPageNumbers()}
 
                 <IconButton
-                  size="sm"
                   variant="outlined"
                   disabled={currentPage === totalPages}
                   onClick={() => handlePageChange(currentPage + 1)}
                   title="Вперёд"
                 >
-                  <ChevronRightIcon size={16} />
+                  <ChevronRightIcon fontSize="small" />
                 </IconButton>
                 <IconButton
-                  size="sm"
                   variant="outlined"
                   disabled={currentPage === totalPages}
                   onClick={() => handlePageChange(totalPages)}
                   title="Последняя"
                 >
-                  <LastPageIcon size={16} />
+                  <LastPageIcon fontSize="small" />
                 </IconButton>
               </Stack>
               <Typography level="body-xs" sx={{ mt: 1, textAlign: 'center', color: 'neutral.500' }}>
