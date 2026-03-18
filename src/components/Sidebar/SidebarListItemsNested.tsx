@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ChevronDown } from 'lucide-react';
+import { KeyboardArrowDown } from '@mui/icons-material';
 import { List, ListItem, Typography, ListItemButton, ListItemContent, Box } from '@mui/joy';
 
 interface TogglerProps {
@@ -57,12 +57,8 @@ const SidebarListItemsNested = ({
             <ListItemContent>
               <Typography level="title-sm">{name}</Typography>
             </ListItemContent>
-            <ChevronDown
-              size={16}
-              style={{
-                transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.2s ease',
-              }}
+            <KeyboardArrowDown
+              sx={[open ? { transform: 'rotate(180deg)' } : { transform: 'none' }]}
             />
           </ListItemButton>
         )}

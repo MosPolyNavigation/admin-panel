@@ -1,5 +1,3 @@
-// app/frontend/src/pages/BannedUserDetails.tsx
-
 import { useState, useEffect } from 'react';
 import {
   Typography,
@@ -18,13 +16,13 @@ import {
   Badge,
 } from '@mui/joy';
 import {
-  ArrowLeft as BackIcon,
-  UserX as BanIcon,
+  ArrowBack as BackIcon,
+  PersonOff as BanIcon,
   CheckCircle as UnbanIcon,
-  Calendar as DateIcon,
-  AlertTriangle as WarningIcon,
-  Activity as ActivityIcon,
-} from 'lucide-react';
+  CalendarToday as DateIcon,
+  ReportProblem as WarningIcon,
+  Insights as ActivityIcon,
+} from '@mui/icons-material';
 import Page from '../components/Page';
 import { useAuth } from '../hooks/useAuth';
 import { getBanInfo, unbanUser, type BanInfo } from '../api';
@@ -126,7 +124,7 @@ function BannedUserDetails() {
         </Alert>
         <Button
           variant="outlined"
-          startDecorator={<BackIcon size={16} />}
+          startDecorator={<BackIcon fontSize="small" />}
           onClick={() => navigate('/bans')}
         >
           Назад к списку
@@ -139,7 +137,7 @@ function BannedUserDetails() {
     <Page headerText="Информация о бане">
       <Button
         variant="outlined"
-        startDecorator={<BackIcon size={16} />}
+        startDecorator={<BackIcon fontSize="small" />}
         onClick={() => navigate('/bans')}
         sx={{ mb: 2 }}
       >
@@ -165,7 +163,7 @@ function BannedUserDetails() {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 color={getReasonColor(banInfo.ban_reason) as any}
               >
-                <BanIcon size={14} />
+                <BanIcon fontSize="small" sx={{ mr: 0.5 }} />
                 {banInfo.ban_reason || 'Неизвестная причина'}
               </Chip>
             </Stack>
@@ -183,7 +181,7 @@ function BannedUserDetails() {
               </Stack>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                <DateIcon size={16} color="var(--joy-palette-neutral-500)" />
+                <DateIcon fontSize="small" sx={{ color: 'var(--joy-palette-neutral-500)' }} />
                 <Typography level="body-sm" color="neutral">
                   Дата бана:
                 </Typography>
@@ -193,7 +191,7 @@ function BannedUserDetails() {
               </Stack>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                <WarningIcon size={16} color="var(--joy-palette-warning-500)" />
+                <WarningIcon fontSize="small" sx={{ color: 'var(--joy-palette-warning-500)' }} />
                 <Typography level="body-sm" color="neutral">
                   Нарушений:
                 </Typography>
@@ -203,7 +201,7 @@ function BannedUserDetails() {
               </Stack>
 
               <Stack direction="row" spacing={2} alignItems="center">
-                <ActivityIcon size={16} color="var(--joy-palette-primary-500)" />
+                <ActivityIcon fontSize="small" sx={{ color: 'var(--joy-palette-primary-500)' }} />
                 <Typography level="body-sm" color="neutral">
                   Запросов в истории:
                 </Typography>
@@ -232,7 +230,7 @@ function BannedUserDetails() {
               <Button
                 color="success"
                 variant="solid"
-                startDecorator={<UnbanIcon size={16} />}
+                startDecorator={<UnbanIcon fontSize="small" />}
                 onClick={() => setUnbanModalOpen(true)}
               >
                 Разбанить пользователя

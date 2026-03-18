@@ -11,7 +11,12 @@ export default defineConfig({
       output: {
         manualChunks: {
           // Выносим MUI Material в отдельный файл (тяжёлый)
-          'mui-material': ['@mui/material', '@emotion/react', '@emotion/styled'],
+          'mui-material': [
+            '@mui/material',
+            '@emotion/react',
+            '@emotion/styled',
+            '@mui/icons-material',
+          ],
           // Выносим MUI Joy отдельно (если используется)
           'mui-joy': ['@mui/joy'],
           // Выносим графики отдельно

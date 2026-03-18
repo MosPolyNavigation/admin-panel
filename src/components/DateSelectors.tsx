@@ -16,7 +16,7 @@ import {
   months,
   weekDays,
 } from './defs.ts';
-import { CalendarDaysIcon } from 'lucide-react';
+import { CalendarTodayRounded } from '@mui/icons-material';
 
 interface DateSelectorProps {
   dateInterval: DateInterval;
@@ -318,7 +318,7 @@ const DateSelectors = ({
             return (
               <Button {...getStyle(DateIntervalType.Custom, { gap: 1 })} onClick={openCalendar}>
                 {formatDateRange(dateInterval.startDate, dateInterval.endDate, dateInterval.type)}
-                <CalendarDaysIcon />
+                <CalendarTodayRounded />
               </Button>
             );
           }}

@@ -17,15 +17,15 @@ import {
   Badge,
 } from '@mui/joy';
 import {
-  Eye as ViewIcon,
+  Visibility as ViewIcon,
   Image as ImageIcon,
-  Calendar as DateIcon,
-  ChevronDown as ExpandMoreIcon,
-  ChevronsLeft as FirstPageIcon,
-  ChevronsRight as LastPageIcon,
+  CalendarToday as DateIcon,
+  ExpandMore as ExpandMoreIcon,
+  FirstPage as FirstPageIcon,
+  LastPage as LastPageIcon,
   ChevronLeft as ChevronLeftIcon,
   ChevronRight as ChevronRightIcon,
-} from 'lucide-react';
+} from '@mui/icons-material';
 import Page from '../components/Page';
 import { useAuth } from '../hooks/useAuth';
 import { getReviews, type Review } from '../api';
@@ -234,15 +234,7 @@ function ReviewsPage() {
             <Card key={statusId} variant="outlined" sx={{ overflow: 'hidden' }}>
               <Accordion expanded={expanded[statusId]} onChange={() => toggleExpand(statusId)}>
                 <AccordionSummary
-                  indicator={
-                    <ExpandMoreIcon
-                      size={18}
-                      style={{
-                        transform: expanded[statusId] ? 'rotate(180deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s',
-                      }}
-                    />
-                  }
+                  indicator={<ExpandMoreIcon />}
                   sx={{
                     backgroundColor: 'background.level1',
                     '&:hover': { backgroundColor: 'background.level2' },
@@ -306,7 +298,7 @@ function ReviewsPage() {
                                 </td>
                                 <td style={{ padding: '8px' }}>
                                   <Stack direction="row" spacing={1} alignItems="center">
-                                    <DateIcon size={14} color="var(--joy-palette-neutral-500)" />
+                                    <DateIcon sx={{ fontSize: 14, color: 'neutral.500' }} />
                                     <Typography level="body-sm">
                                       {formatDate(review.creationDate)}
                                     </Typography>
@@ -318,7 +310,7 @@ function ReviewsPage() {
                                       size="sm"
                                       variant="soft"
                                       color="success"
-                                      startDecorator={<ImageIcon size={14} />}
+                                      startDecorator={<ImageIcon sx={{ fontSize: 14 }} />}
                                     >
                                       Есть
                                     </Chip>
@@ -335,7 +327,7 @@ function ReviewsPage() {
                                     onClick={() => navigate(`/reviews/${review.id}`)}
                                     title="Просмотреть"
                                   >
-                                    <ViewIcon size={16} />
+                                    <ViewIcon />
                                   </IconButton>
                                 </td>
                               </tr>
@@ -359,7 +351,7 @@ function ReviewsPage() {
                             onClick={() => handlePageChange(statusId, 1)}
                             title="Первая"
                           >
-                            <FirstPageIcon size={16} />
+                            <FirstPageIcon />
                           </IconButton>
                           <IconButton
                             size="sm"
@@ -368,7 +360,7 @@ function ReviewsPage() {
                             onClick={() => handlePageChange(statusId, currentPage - 1)}
                             title="Назад"
                           >
-                            <ChevronLeftIcon size={16} />
+                            <ChevronLeftIcon />
                           </IconButton>
 
                           {renderPageNumbers(totalPages, currentPage, (page) =>
@@ -382,7 +374,7 @@ function ReviewsPage() {
                             onClick={() => handlePageChange(statusId, currentPage + 1)}
                             title="Вперёд"
                           >
-                            <ChevronRightIcon size={16} />
+                            <ChevronRightIcon />
                           </IconButton>
                           <IconButton
                             size="sm"
@@ -391,7 +383,7 @@ function ReviewsPage() {
                             onClick={() => handlePageChange(statusId, totalPages)}
                             title="Последняя"
                           >
-                            <LastPageIcon size={16} />
+                            <LastPageIcon />
                           </IconButton>
                         </Stack>
                       )}
