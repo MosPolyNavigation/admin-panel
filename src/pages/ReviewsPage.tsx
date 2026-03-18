@@ -6,7 +6,7 @@ import { getReviews, type Review } from '../api';
 import { useNavigate, useSearchParams } from 'react-router';
 import { translateProblemId } from '../utils';
 import { STATUS_MAP } from '../constants';
-import { ReviewStatusCard } from '../components/ReviewStatusCard';
+import ReviewStatusCard from '../components/ReviewStatusCard';
 
 const ROWS_PER_PAGE = 5;
 
@@ -45,6 +45,42 @@ function ReviewsPage() {
     };
     fetchReviews();
   }, [token]);
+
+  useEffect(() => {
+    if (loading || reviews.length === 0) return;
+
+    const newParams = new URLSearchParams(searchParams);
+    let hasChanges = false;
+
+    const grouped = reviews.reduce(
+      (acc, review) => {
+        const statusId = review.statusId || 1;
+        (acc[statusId] ||= []).push(review);
+        return acc;
+      },
+      {} as Record<number, Review[]>
+    );
+
+    const statusIds = Object.keys(STATUS_MAP).map(Number);
+
+    statusIds.forEach((statusId) => {
+      const count = grouped[statusId]?.length || 0;
+      const totalPages = Math.ceil(count / ROWS_PER_PAGE) || 1;
+      const currentPage = Number(searchParams.get(`page_${statusId}`)) || 1;
+
+      if (currentPage > totalPages) {
+        newParams.set(`page_${statusId}`, String(totalPages));
+        hasChanges = true;
+      } else if (currentPage < 1) {
+        newParams.set(`page_${statusId}`, '1');
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [loading, reviews, setSearchParams, searchParams]);
 
   const groupedReviews = reviews.reduce(
     (acc, review) => {
@@ -124,8 +160,9 @@ function ReviewsPage() {
         {statusIds.map((statusId) => {
           const statusName = STATUS_MAP[statusId];
           const statusReviews = groupedReviews[statusId] || [];
-          const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE);
-          const currentPage = getPage(statusId);
+          const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE) || 1;
+          const urlPage = getPage(statusId);
+          const safePage = Math.max(1, Math.min(urlPage, totalPages));
           const isExpanded = getExpanded(statusId);
 
           return (
@@ -134,7 +171,7 @@ function ReviewsPage() {
               statusId={statusId}
               statusName={statusName}
               reviews={statusReviews}
-              currentPage={currentPage}
+              currentPage={safePage}
               totalPages={totalPages}
               isExpanded={isExpanded}
               onPageChange={handlePageChange}

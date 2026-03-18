@@ -3,7 +3,6 @@ import {
   Table,
   Sheet,
   IconButton,
-  Button,
   Stack,
   Box,
   Chip,
@@ -18,13 +17,10 @@ import {
   Image as ImageIcon,
   CalendarToday as DateIcon,
   ExpandMore as ExpandMoreIcon,
-  FirstPage as FirstPageIcon,
-  LastPage as LastPageIcon,
-  ChevronLeft as ChevronLeftIcon,
-  ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import { type Review } from '../api';
 import { STATUS_COLORS } from '../constants';
+import PaginationControls from './PaginationControls';
 
 const ROWS_PER_PAGE = 5;
 
@@ -44,7 +40,7 @@ interface ReviewStatusCardProps {
   searchParams: URLSearchParams;
 }
 
-export function ReviewStatusCard({
+const ReviewStatusCard = ({
   statusId,
   statusName,
   reviews,
@@ -57,79 +53,11 @@ export function ReviewStatusCard({
   formatDate,
   truncateText,
   translateProblemId,
-}: ReviewStatusCardProps) {
+}: ReviewStatusCardProps) => {
   const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
   const currentReviews = reviews.slice(startIndex, startIndex + ROWS_PER_PAGE);
-
-  // Вспомогательная функция для рендера пагинации
-  const renderPageNumbers = () => {
-    if (totalPages <= 5) {
-      return Array.from({ length: totalPages }, (_, i) => i + 1).map((i) => (
-        <Button
-          key={i}
-          size="sm"
-          variant={currentPage === i ? 'solid' : 'outlined'}
-          onClick={() => onPageChange(statusId, i)}
-        >
-          {i}
-        </Button>
-      ));
-    }
-
-    const pages = [
-      <Button
-        key={1}
-        size="sm"
-        variant={currentPage === 1 ? 'solid' : 'outlined'}
-        onClick={() => onPageChange(statusId, 1)}
-      >
-        1
-      </Button>,
-    ];
-
-    if (currentPage > 3)
-      pages.push(
-        <Typography key="e1" sx={{ alignSelf: 'center' }}>
-          ...
-        </Typography>
-      );
-
-    const start = Math.max(2, currentPage - 1);
-    const end = Math.min(totalPages - 1, currentPage + 1);
-    for (let i = start; i <= end; i++) {
-      if (i > 1 && i < totalPages) {
-        pages.push(
-          <Button
-            key={i}
-            size="sm"
-            variant={currentPage === i ? 'solid' : 'outlined'}
-            onClick={() => onPageChange(statusId, i)}
-          >
-            {i}
-          </Button>
-        );
-      }
-    }
-
-    if (currentPage < totalPages - 2)
-      pages.push(
-        <Typography key="e2" sx={{ alignSelf: 'center' }}>
-          ...
-        </Typography>
-      );
-
-    pages.push(
-      <Button
-        key={totalPages}
-        size="sm"
-        variant={currentPage === totalPages ? 'solid' : 'outlined'}
-        onClick={() => onPageChange(statusId, totalPages)}
-      >
-        {totalPages}
-      </Button>
-    );
-
-    return pages;
+  const handlePageChange = (page: number) => {
+    onPageChange(statusId, page);
   };
 
   return (
@@ -234,64 +162,20 @@ export function ReviewStatusCard({
                 </Table>
               </Sheet>
 
-              {totalPages > 1 && (
-                <Stack
-                  direction="row"
-                  spacing={1}
-                  justifyContent="center"
-                  alignItems="center"
-                  sx={{ mt: 1, flexWrap: 'wrap' }}
-                >
-                  <IconButton
-                    size="sm"
-                    variant="outlined"
-                    disabled={currentPage === 1}
-                    onClick={() => onPageChange(statusId, 1)}
-                    title="Первая"
-                  >
-                    <FirstPageIcon />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    variant="outlined"
-                    disabled={currentPage === 1}
-                    onClick={() => onPageChange(statusId, currentPage - 1)}
-                    title="Назад"
-                  >
-                    <ChevronLeftIcon />
-                  </IconButton>
-
-                  {renderPageNumbers()}
-
-                  <IconButton
-                    size="sm"
-                    variant="outlined"
-                    disabled={currentPage === totalPages}
-                    onClick={() => onPageChange(statusId, currentPage + 1)}
-                    title="Вперёд"
-                  >
-                    <ChevronRightIcon />
-                  </IconButton>
-                  <IconButton
-                    size="sm"
-                    variant="outlined"
-                    disabled={currentPage === totalPages}
-                    onClick={() => onPageChange(statusId, totalPages)}
-                    title="Последняя"
-                  >
-                    <LastPageIcon />
-                  </IconButton>
-                </Stack>
-              )}
-
-              <Typography level="body-xs" sx={{ mt: 1, textAlign: 'right', color: 'neutral.500' }}>
-                Показано {currentReviews.length} из {reviews.length} отзывов • Страница{' '}
-                {currentPage} из {totalPages}
-              </Typography>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={reviews.length}
+                itemsPerPage={ROWS_PER_PAGE}
+                onPageChange={handlePageChange}
+                compact
+              />
             </>
           )}
         </AccordionDetails>
       </Accordion>
     </Card>
   );
-}
+};
+
+export default ReviewStatusCard;
