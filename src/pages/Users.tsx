@@ -12,9 +12,8 @@ import {
   ModalDialog,
   Divider,
   Alert,
-  Link
 } from '@mui/joy';
-import Page from "../components/Page.tsx";
+import Page from '../components/Page.tsx';
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -22,6 +21,7 @@ import {
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
 } from '@mui/icons-material';
+import { useNavigate } from 'react-router';
 
 interface User {
   id: number;
@@ -35,8 +35,8 @@ function Users() {
     { id: 1, username: 'ivan_petrov', active: true, roles: ['Администратор', 'Модератор'] },
     { id: 2, username: 'anna_smirnova', active: true, roles: ['Редактор'] },
     { id: 3, username: 'sergey_ivanov', active: false, roles: ['Гость', 'Пользователь'] },
-
   ]);
+  const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
@@ -55,7 +55,7 @@ function Users() {
 
   const confirmDelete = () => {
     if (selectedUser) {
-      setUsers(users.filter(u => u.id !== selectedUser.id));
+      setUsers(users.filter((u) => u.id !== selectedUser.id));
       setNotification(`Пользователь ${selectedUser.username} удален`);
       setTimeout(() => setNotification(''), 3000);
       setDeleteModalOpen(false);
@@ -63,12 +63,12 @@ function Users() {
   };
 
   const toggleActive = (id: number) => {
-    const user = users.find(u => u.id === id);
+    const user = users.find((u) => u.id === id);
     if (user) {
-      setUsers(users.map(user => 
-        user.id === id ? { ...user, active: !user.active } : user
-      ));
-      setNotification(`Пользователь ${user.username} ${user.active ? 'деактивирован' : 'активирован'}`);
+      setUsers(users.map((user) => (user.id === id ? { ...user, active: !user.active } : user)));
+      setNotification(
+        `Пользователь ${user.username} ${user.active ? 'деактивирован' : 'активирован'}`
+      );
       setTimeout(() => setNotification(''), 3000);
     }
   };
@@ -76,7 +76,7 @@ function Users() {
   const renderRoles = (roles: string[]) => {
     const visible = roles.slice(0, 2);
     const hasMore = roles.length > 2;
-    
+
     return (
       <Stack direction="row" spacing={0.5}>
         {visible.map((role, i) => (
@@ -84,7 +84,11 @@ function Users() {
             {role}
           </Chip>
         ))}
-        {hasMore && <Chip size="sm" variant="plain">...</Chip>}
+        {hasMore && (
+          <Chip size="sm" variant="plain">
+            ...
+          </Chip>
+        )}
       </Stack>
     );
   };
@@ -123,9 +127,7 @@ function Users() {
                     {user.active ? 'Активен' : 'Неактивен'}
                   </Chip>
                 </td>
-                <td style={{ padding: '12px' }}>
-                  {renderRoles(user.roles)}
-                </td>
+                <td style={{ padding: '12px' }}>{renderRoles(user.roles)}</td>
                 <td style={{ padding: '12px', textAlign: 'right' }}>
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <IconButton
@@ -136,34 +138,26 @@ function Users() {
                     >
                       <DeleteIcon />
                     </IconButton>
-                    <Link
-                      href={`/UserEditPage`}
-                      underline="none"
+                    <IconButton
+                      size="sm"
+                      color="primary"
+                      title="Редактировать"
+                      onClick={() => navigate('/UserEditPage')}
                     >
-                      <IconButton
-                        size="sm"
-                        color="primary"
-                        title="Редактировать"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Link>
-                    <Link
-                      href={`/RoleEditPage`}
-                      underline="none"
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      color="neutral"
+                      title="Назначить роль"
+                      onClick={() => navigate('/RoleEditPage')}
                     >
-                      <IconButton
-                        size="sm"
-                        color="neutral"
-                        title="Назначить роль"
-                      >
-                        <RoleIcon />
-                      </IconButton>
-                    </Link>
+                      <RoleIcon />
+                    </IconButton>
                     <Button
                       size="sm"
-                      variant={user.active ? "outlined" : "solid"}
-                      color={user.active ? "warning" : "success"}
+                      variant={user.active ? 'outlined' : 'solid'}
+                      color={user.active ? 'warning' : 'success'}
                       onClick={() => toggleActive(user.id)}
                     >
                       {user.active ? 'Деактивировать' : 'Активировать'}
@@ -182,7 +176,7 @@ function Users() {
           <Button
             key={i}
             size="sm"
-            variant={page === i + 1 ? "solid" : "outlined"}
+            variant={page === i + 1 ? 'solid' : 'outlined'}
             onClick={() => setPage(i + 1)}
           >
             {i + 1}
@@ -195,9 +189,7 @@ function Users() {
           <ModalClose />
           <Typography level="h4">Удалить пользователя?</Typography>
           <Divider sx={{ my: 2 }} />
-          <Typography>
-            Удалить пользователя {selectedUser?.username}?
-          </Typography>
+          <Typography>Удалить пользователя {selectedUser?.username}?</Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
             <Button variant="outlined" onClick={() => setDeleteModalOpen(false)}>
               Отмена

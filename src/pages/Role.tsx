@@ -19,7 +19,7 @@ import {
   Option,
   Checkbox,
 } from '@mui/joy';
-import Page from "../components/Page.tsx";
+import Page from '../components/Page.tsx';
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -35,13 +35,18 @@ interface Role {
 }
 
 const initialRoles: Role[] = [
-  { id: 1, name: 'Администратор', entities: ['Пользователи', 'Роли', 'Настройки', 'Логи'], users: 5 },
+  {
+    id: 1,
+    name: 'Администратор',
+    entities: ['Пользователи', 'Роли', 'Настройки', 'Логи'],
+    users: 5,
+  },
   { id: 2, name: 'Модератор', entities: ['Контент', 'Комментарии'], users: 12 },
 ];
 
 const allEntities = [
   'Пользователи',
-  'Роли', 
+  'Роли',
   'Настройки',
   'Медиа',
   'Комментарии',
@@ -49,19 +54,19 @@ const allEntities = [
   'Категории',
   'Отчеты',
   'Дашборды',
-  'Логи'
+  'Логи',
 ];
 
 const RolesPage = () => {
   const [roles, setRoles] = useState<Role[]>(initialRoles);
   const [page, setPage] = useState(1);
   const rowsPerPage = 5;
-  
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [notification, setNotification] = useState('');
-  
+
   const [formData, setFormData] = useState<{
     name: string;
     entities: string[];
@@ -105,7 +110,7 @@ const RolesPage = () => {
 
   const handleDelete = () => {
     if (selectedRole) {
-      setRoles(roles.filter(role => role.id !== selectedRole.id));
+      setRoles(roles.filter((role) => role.id !== selectedRole.id));
       setNotification(`Роль "${selectedRole.name}" удалена`);
       setTimeout(() => setNotification(''), 3000);
       handleCloseModals();
@@ -114,11 +119,9 @@ const RolesPage = () => {
 
   const handleSave = () => {
     if (selectedRole) {
-      setRoles(roles.map(role => 
-        role.id === selectedRole.id 
-          ? { ...role, ...formData }
-          : role
-      ));
+      setRoles(
+        roles.map((role) => (role.id === selectedRole.id ? { ...role, ...formData } : role))
+      );
       setNotification(`Роль "${formData.name}" обновлена`);
     } else {
       const newRole: Role = {
@@ -134,8 +137,9 @@ const RolesPage = () => {
     handleCloseModals();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleFormChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleEntitiesChange = (_event: React.SyntheticEvent | null, newValue: string[]) => {
@@ -145,7 +149,7 @@ const RolesPage = () => {
   const renderEntities = (entities: string[]) => {
     const visible = entities.slice(0, 3);
     const hasMore = entities.length > 3;
-    
+
     return (
       <Stack direction="row" spacing={0.5}>
         {visible.map((entity, i) => (
@@ -153,17 +157,23 @@ const RolesPage = () => {
             {entity}
           </Chip>
         ))}
-        {hasMore && <Chip size="sm" variant="plain">...</Chip>}
+        {hasMore && (
+          <Chip size="sm" variant="plain">
+            ...
+          </Chip>
+        )}
       </Stack>
     );
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const renderSelectedValues = (selectedOptions: any) => {
-
-    const selectedValues = Array.isArray(selectedOptions) 
-      ? selectedOptions.map(option => typeof option === 'string' ? option : option.value || option)
+    const selectedValues = Array.isArray(selectedOptions)
+      ? selectedOptions.map((option) =>
+          typeof option === 'string' ? option : option.value || option
+        )
       : [];
-    
+
     return (
       <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
         {selectedValues.map((value, index) => (
@@ -184,13 +194,8 @@ const RolesPage = () => {
       )}
 
       <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography level="body-sm">
-          Всего ролей: {roles.length}
-        </Typography>
-        <Button
-          startDecorator={<AddIcon />}
-          onClick={() => handleOpenEdit(null)}
-        >
+        <Typography level="body-sm">Всего ролей: {roles.length}</Typography>
+        <Button startDecorator={<AddIcon />} onClick={() => handleOpenEdit(null)}>
           Создать роль
         </Button>
       </Stack>
@@ -211,15 +216,9 @@ const RolesPage = () => {
                 <td style={{ padding: '12px', width: '25%' }}>
                   <Typography>{role.name}</Typography>
                 </td>
-                <td style={{ padding: '12px', width: '45%' }}>
-                  {renderEntities(role.entities)}
-                </td>
+                <td style={{ padding: '12px', width: '45%' }}>{renderEntities(role.entities)}</td>
                 <td style={{ padding: '12px', width: '15%', textAlign: 'center' }}>
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    color="neutral"
-                  >
+                  <Chip size="sm" variant="soft" color="neutral">
                     {role.users} чел.
                   </Chip>
                 </td>
@@ -254,7 +253,7 @@ const RolesPage = () => {
           <Button
             key={i}
             size="sm"
-            variant={page === i + 1 ? "solid" : "outlined"}
+            variant={page === i + 1 ? 'solid' : 'outlined'}
             onClick={() => setPage(i + 1)}
           >
             {i + 1}
@@ -279,8 +278,8 @@ const RolesPage = () => {
             <Button variant="outlined" onClick={handleCloseModals}>
               Отмена
             </Button>
-            <Button 
-              color="danger" 
+            <Button
+              color="danger"
               onClick={handleDelete}
               disabled={selectedRole?.users ? selectedRole.users > 0 : false}
             >
@@ -297,7 +296,7 @@ const RolesPage = () => {
             {selectedRole ? 'Редактирование роли' : 'Создание новой роли'}
           </Typography>
           <Divider sx={{ my: 2 }} />
-          
+
           <FormControl sx={{ mb: 2 }}>
             <FormLabel>Название роли</FormLabel>
             <Input
@@ -317,10 +316,7 @@ const RolesPage = () => {
             >
               {allEntities.map((entity) => (
                 <Option key={entity} value={entity}>
-                  <Checkbox
-                    checked={formData.entities.includes(entity)}
-                    sx={{ mr: 1 }}
-                  />
+                  <Checkbox checked={formData.entities.includes(entity)} sx={{ mr: 1 }} />
                   {entity}
                 </Option>
               ))}
@@ -331,7 +327,7 @@ const RolesPage = () => {
             <Button variant="outlined" onClick={handleCloseModals}>
               Отмена
             </Button>
-            <Button 
+            <Button
               onClick={handleSave}
               disabled={!formData.name.trim()}
               startDecorator={<SaveIcon />}
