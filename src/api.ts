@@ -41,7 +41,6 @@ export interface ReviewStatusesGqlResponse {
         reviewStatuses: ReviewStatus[];
     };
 }
-
 export interface ReviewStatus {
     id: number;
     name: string;
@@ -62,6 +61,33 @@ export interface BatchGqlResponse {
         plans: EndpointStatistics[];
     };
 }
+
+export interface AggregatedEndpointStats {
+    TotalVisits: number;
+    TotalUnique: number;
+    TotalVisitorCount: number;
+    AvgVisits: number;
+    AvgUnique: number;
+    AvgVisitorCount: number;
+    EntriesCount: number;
+}
+
+export interface BatchAggregatedGqlResponse {
+    data: {
+        site: AggregatedEndpointStats;
+        auds: AggregatedEndpointStats;
+        ways: AggregatedEndpointStats;
+        plans: AggregatedEndpointStats;
+    } | null;
+    errors?: Array<{
+        message: string;
+        locations?: Array<{ line: number; column: number }>;
+        path?: string[];
+        extensions?: any;
+    }>;
+}
+
+export type DateFilterType = 'byDate' | 'byMonth' | 'byYear';
 
 export const get_stat = async (endpoint: string, normalizedStartDate: string, normalizedEndDate: string, token: string) => {
     return await axios.post<GqlResponse>(
@@ -130,7 +156,6 @@ export const getReviewStatuses = async (token: string): Promise<ReviewStatus[]> 
         );
         return response.data.data.reviewStatuses;
     } catch (error) {
-        console.error('Ошибка загрузки статусов:', error);
         return [];
     }
 }
@@ -151,10 +176,8 @@ export const setReviewStatus = async (review_id: string, status_id: string, toke
                 },
             }
         );
-        return response.data
-    }
-    catch (error) {
-        console.error('Ошибка загрузки статусов:', error);
+        return response.data;
+    } catch (error) {
         return null;
     }
 }
@@ -197,5 +220,83 @@ export const get_all_stats = async (normalizedStartDate: string, normalizedEndDa
             },
             signal,
         }
-    )
-}
+    );
+};
+
+export const get_all_stats_aggregated = async (
+    filterType: DateFilterType,
+    startDate: string, 
+    endDate: string, 
+    token: string, 
+    signal?: AbortSignal
+) => {
+    try {
+        let filterString = '';
+        switch (filterType) {
+            case 'byDate':
+                filterString = `by_date: {start: "${startDate}", end: "${endDate}"}`;
+                break;
+            case 'byMonth':
+                filterString = `by_month: {start: "${startDate}", end: "${endDate}"}`;
+                break;
+            case 'byYear':
+                filterString = `by_year: {start: "${startDate}", end: "${endDate}"}`;
+                break;
+        }
+
+        const query = `{
+            site: EndpointStatsAvg(endpoint: "site", ${filterString}) {
+                TotalVisits
+                TotalUnique
+                TotalVisitorCount
+                AvgVisits
+                AvgUnique
+                AvgVisitorCount
+                EntriesCount
+            }
+            auds: EndpointStatsAvg(endpoint: "auds", ${filterString}) {
+                TotalVisits
+                TotalUnique
+                TotalVisitorCount
+                AvgVisits
+                AvgUnique
+                AvgVisitorCount
+                EntriesCount
+            }
+            ways: EndpointStatsAvg(endpoint: "ways", ${filterString}) {
+                TotalVisits
+                TotalUnique
+                TotalVisitorCount
+                AvgVisits
+                AvgUnique
+                AvgVisitorCount
+                EntriesCount
+            }
+            plans: EndpointStatsAvg(endpoint: "plans", ${filterString}) {
+                TotalVisits
+                TotalUnique
+                TotalVisitorCount
+                AvgVisits
+                AvgUnique
+                AvgVisitorCount
+                EntriesCount
+            }
+        }`;
+
+        const response = await axios.post<BatchAggregatedGqlResponse>(
+            `${BASE_API_URL}/graphql`,
+            { query },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                signal,
+            }
+        );
+        
+        return response;
+    } catch (error) {
+        throw error;
+    }
+};
