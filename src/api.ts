@@ -41,7 +41,6 @@ export interface ReviewStatusesGqlResponse {
     reviewStatuses: ReviewStatus[];
   };
 }
-
 export interface ReviewStatus {
   id: number;
   name: string;
@@ -63,6 +62,34 @@ export interface BatchGqlResponse {
   };
 }
 
+export interface AggregatedEndpointStats {
+  totalVisits: number;
+  totalUnique: number;
+  totalVisitorCount: number;
+  avgVisits: number;
+  avgUnique: number;
+  avgVisitorCount: number;
+  entriesCount: number;
+}
+
+export interface BatchAggregatedGqlResponse {
+  data: {
+    site: AggregatedEndpointStats;
+    auds: AggregatedEndpointStats;
+    ways: AggregatedEndpointStats;
+    plans: AggregatedEndpointStats;
+  } | null;
+  errors?: Array<{
+    message: string;
+    locations?: Array<{ line: number; column: number }>;
+    path?: string[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    extensions?: any;
+  }>;
+}
+
+export type DateFilterType = 'byDate' | 'byMonth' | 'byYear';
+
 export const get_stat = async (
   endpoint: string,
   normalizedStartDate: string,
@@ -73,13 +100,13 @@ export const get_stat = async (
     `${BASE_API_URL}/graphql`,
     {
       query: `{
-    endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
-        allVisits
-        period
-        uniqueVisitors
-        visitorCount
-    }
-}`,
+                endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") {
+                  allVisits
+                  period
+                  uniqueVisitors
+                  visitorCount
+                }
+              }`,
     },
     {
       headers: {
@@ -96,14 +123,14 @@ export const getReviews = async (token: string): Promise<Review[]> => {
     {
       query: `{
                 reviews {
-                    id,
-                    problemId,
-                    creationDate,
-                    text,
-                    imageName,
-                    statusId
+                  id,
+                  problemId,
+                  creationDate,
+                  text,
+                  imageName,
+                  statusId
                 }
-            }`,
+              }`,
     },
     {
       headers: {
@@ -191,8 +218,6 @@ export const setReviewStatus = async (
     return null;
   }
 };
-
-export type DateFilterType = 'byDate' | 'byMonth' | 'byYear';
 
 export const get_all_stats = async (
   filterType: DateFilterType,
@@ -339,6 +364,69 @@ export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
   );
 
   return response.data.data;
+};
+
+export const get_all_stats_aggregated = async (
+  filterType: DateFilterType,
+  startDate: string,
+  endDate: string,
+  token: string,
+  signal?: AbortSignal
+) => {
+  const filterString = `${filterType}: {start: "${startDate}", end: "${endDate}"}`;
+
+  const query = `{
+          site: endpointStatisticsAvg(endpoint: "site", ${filterString}) {
+            totalVisits
+            totalUnique
+            totalVisitorCount
+            avgVisits
+            avgUnique
+            avgVisitorCount
+            entriesCount
+          }
+          auds: endpointStatisticsAvg(endpoint: "auds", ${filterString}) {
+            totalVisits
+            totalUnique
+            totalVisitorCount
+            avgVisits
+            avgUnique
+            avgVisitorCount
+            entriesCount
+          }
+          ways: endpointStatisticsAvg(endpoint: "ways", ${filterString}) {
+            totalVisits
+            totalUnique
+            totalVisitorCount
+            avgVisits
+            avgUnique
+            avgVisitorCount
+            entriesCount
+          }
+          plans: endpointStatisticsAvg(endpoint: "plans", ${filterString}) {
+            totalVisits
+            totalUnique
+            totalVisitorCount
+            avgVisits
+            avgUnique
+            avgVisitorCount
+            entriesCount
+          }
+      }`;
+
+  const response = await axios.post<BatchAggregatedGqlResponse>(
+    `${BASE_API_URL}/graphql`,
+    { query },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      signal,
+    }
+  );
+
+  return response;
 };
 
 export interface BanInfo {
