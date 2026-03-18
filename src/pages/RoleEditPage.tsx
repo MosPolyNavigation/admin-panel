@@ -26,18 +26,18 @@ import {
 } from '@mui/joy';
 import Page from '../components/Page.tsx';
 import {
-  ArrowLeft as ArrowBackIcon,
-  Trash2 as DeleteIcon,
-  Plus as AddIcon,
+  ArrowBack as ArrowBackIcon,
+  Delete as DeleteIcon,
+  Add as AddIcon,
   Save as SaveIcon,
-  X as CancelIcon,
+  Cancel as CancelIcon,
   Lock as LockIcon,
-  User as PersonIcon,
+  Person as PersonIcon,
   Info as InfoIcon,
   CheckCircle as CheckCircleIcon,
-  Ban as DoNotDisturbIcon,
-  ChevronDown as ExpandMoreIcon,
-} from 'lucide-react';
+  DoNotDisturb as DoNotDisturbIcon,
+  ExpandMore as ExpandMoreIcon,
+} from '@mui/icons-material';
 
 // Типы данных
 interface Permission {
@@ -296,7 +296,7 @@ const RoleEditPage = () => {
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 4 }}>
         <Stack spacing={2}>
           <Button
-            startDecorator={<ArrowBackIcon size={18} />}
+            startDecorator={<ArrowBackIcon />}
             onClick={handleBack}
             variant="outlined"
             sx={{ alignSelf: 'flex-start' }}
@@ -309,17 +309,12 @@ const RoleEditPage = () => {
               {role.name}
             </Typography>
             {role.isDefault && (
-              <Chip
-                startDecorator={<LockIcon size={14} />}
-                variant="soft"
-                color="neutral"
-                size="sm"
-              >
+              <Chip startDecorator={<LockIcon />} variant="soft" color="neutral" size="sm">
                 Системная роль
               </Chip>
             )}
             <Badge badgeContent={role.userCount} color="primary">
-              <PersonIcon size={16} />
+              <PersonIcon />
             </Badge>
           </Stack>
         </Stack>
@@ -329,7 +324,7 @@ const RoleEditPage = () => {
         <CardContent>
           <Typography level="h4" gutterBottom>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <InfoIcon size={18} color="primary" />
+              <InfoIcon color="primary" />
               <span>Основная информация</span>
             </Stack>
           </Typography>
@@ -350,7 +345,7 @@ const RoleEditPage = () => {
             <FormControl>
               <FormLabel>Количество пользователей</FormLabel>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <PersonIcon size={20} color="primary" />
+                <PersonIcon color="primary" />
                 <Typography level="h4">{role.userCount}</Typography>
                 <Chip variant="outlined" color="primary" size="sm">
                   Пользователей
@@ -382,12 +377,7 @@ const RoleEditPage = () => {
                 ID: {role.id}
               </Chip>
               {role.isDefault && (
-                <Chip
-                  startDecorator={<LockIcon size={14} />}
-                  variant="soft"
-                  color="warning"
-                  size="lg"
-                >
+                <Chip startDecorator={<LockIcon />} variant="soft" color="warning" size="lg">
                   Системная роль
                 </Chip>
               )}
@@ -397,7 +387,7 @@ const RoleEditPage = () => {
               <Alert
                 color="warning"
                 variant="soft"
-                startDecorator={<LockIcon size={16} />}
+                startDecorator={<LockIcon />}
                 sx={{ gridColumn: { xs: 'span 1', md: 'span 2' } }}
               >
                 Системная роль не может быть отредактирована или удалена
@@ -414,7 +404,7 @@ const RoleEditPage = () => {
 
             {!role.isDefault && (
               <Button
-                startDecorator={<AddIcon size={18} />}
+                startDecorator={<AddIcon />}
                 onClick={() => setShowAddEntity(true)}
                 variant="outlined"
               >
@@ -439,7 +429,7 @@ const RoleEditPage = () => {
               </Typography>
               {!role.isDefault && (
                 <Button
-                  startDecorator={<AddIcon size={18} />}
+                  startDecorator={<AddIcon />}
                   onClick={() => setShowAddEntity(true)}
                   variant="outlined"
                   sx={{ mt: 2 }}
@@ -466,8 +456,7 @@ const RoleEditPage = () => {
                           size="sm"
                         >
                           <ExpandMoreIcon
-                            size={18}
-                            style={{
+                            sx={{
                               transform: expandedEntities.includes(entity.id)
                                 ? 'rotate(180deg)'
                                 : 'rotate(0deg)',
@@ -497,7 +486,7 @@ const RoleEditPage = () => {
                               size="sm"
                               variant="plain"
                             >
-                              <DeleteIcon size={16} />
+                              <DeleteIcon />
                             </IconButton>
                           </Tooltip>
                         )}
@@ -561,9 +550,9 @@ const RoleEditPage = () => {
                                       size="sm"
                                       startDecorator={
                                         permission.checked ? (
-                                          <CheckCircleIcon size={14} />
+                                          <CheckCircleIcon fontSize="small" />
                                         ) : (
-                                          <DoNotDisturbIcon size={14} />
+                                          <DoNotDisturbIcon fontSize="small" />
                                         )
                                       }
                                     >
@@ -666,7 +655,7 @@ const RoleEditPage = () => {
       <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
         <Stack direction="row" spacing={2} justifyContent="flex-end">
           <Button
-            startDecorator={<CancelIcon size={18} />}
+            startDecorator={<CancelIcon />}
             onClick={handleCancel}
             variant="outlined"
             color="neutral"
@@ -675,7 +664,7 @@ const RoleEditPage = () => {
             Отменить
           </Button>
           <Button
-            startDecorator={<SaveIcon size={18} />}
+            startDecorator={<SaveIcon />}
             onClick={handleSave}
             variant="solid"
             color="primary"

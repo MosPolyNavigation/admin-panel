@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useColorScheme as useJoyColorScheme } from '@mui/joy/styles';
 import { IconButton, type IconButtonProps } from '@mui/joy';
-import { Moon, Sun } from 'lucide-react';
+import { LightModeRounded, DarkModeRounded } from '@mui/icons-material';
 
 export default function ColorSchemeToggle(props: IconButtonProps) {
   const { onClick, sx, ...other } = props;
@@ -26,7 +26,7 @@ export default function ColorSchemeToggle(props: IconButtonProps) {
       }}
       sx={[...(Array.isArray(sx) ? sx : [sx])]}
     >
-      {mode === 'dark' ? <Moon size={16} /> : <Sun size={16} />}
+      {mode === 'dark' ? <DarkModeRounded /> : <LightModeRounded />}
     </IconButton>
   );
 }

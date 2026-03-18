@@ -12,7 +12,7 @@ import IconButton from '@mui/joy/IconButton';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router';
 import Alert from '@mui/joy/Alert';
-import { Contact, AlertTriangle } from 'lucide-react';
+import { BadgeRounded, Warning } from '@mui/icons-material';
 
 interface FormElements extends HTMLFormControlsCollection {
   login: HTMLInputElement;
@@ -29,7 +29,7 @@ export default function SingIn() {
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
-  const handleSubmit = async (event: React.FormEvent<SignInFormElement>) => {
+  const handleSubmit = async (event: React.SubmitEvent<SignInFormElement>) => {
     event.preventDefault();
     setError('');
     const formElements = event.currentTarget.elements;
@@ -74,7 +74,7 @@ export default function SingIn() {
           <Box component="header" sx={{ py: 3, display: 'flex', justifyContent: 'space-between' }}>
             <Box sx={{ gap: 2, display: 'flex', alignItems: 'center' }}>
               <IconButton variant="soft" color="primary" size="sm">
-                <Contact size={18} />
+                <BadgeRounded />
               </IconButton>
               <Typography level="title-lg">PolyNavigation</Typography>
             </Box>
@@ -112,12 +112,7 @@ export default function SingIn() {
             </Stack>
 
             {error && (
-              <Alert
-                color="danger"
-                variant="soft"
-                startDecorator={<AlertTriangle size={16} />}
-                sx={{ mb: 2 }}
-              >
+              <Alert color="danger" variant="soft" startDecorator={<Warning />} sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
