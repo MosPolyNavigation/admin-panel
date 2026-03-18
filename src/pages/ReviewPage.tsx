@@ -25,7 +25,7 @@ import {
   Image as ImageIcon,
   ZoomIn as ZoomIcon,
 } from '@mui/icons-material';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { useAuth } from '../hooks/useAuth.ts';
 import {
   getReview,
@@ -40,6 +40,7 @@ import { translateProblemId } from '../utils.ts';
 export default function ReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { token } = useAuth();
 
   const [review, setReview] = useState<Review | null>(null);
@@ -174,7 +175,7 @@ export default function ReviewPage() {
         <Button
           variant="outlined"
           startDecorator={<BackIcon />}
-          onClick={() => navigate('/reviews')}
+          onClick={() => navigate(`/reviews${location.search}`)} // ← сохраняем params
         >
           Назад
         </Button>

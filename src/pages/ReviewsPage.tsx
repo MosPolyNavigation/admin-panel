@@ -29,7 +29,7 @@ import {
 import Page from '../components/Page';
 import { useAuth } from '../hooks/useAuth';
 import { getReviews, type Review } from '../api';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { translateProblemId } from '../utils';
 
 // Константы
@@ -56,13 +56,23 @@ const STATUS_COLORS: Record<number, string> = {
 const ROWS_PER_PAGE = 5;
 
 function ReviewsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [pages, setPages] = useState<Record<number, number>>({});
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({ 1: true });
+
+  const getPage = (statusId: number): number => {
+    const page = searchParams.get(`page_${statusId}`);
+    return page ? Number(page) : 1;
+  };
+
+  const getExpanded = (statusId: number): boolean => {
+    const val = searchParams.get(`expanded_${statusId}`);
+    if (val !== null) return val === 'true';
+    return statusId === 1; // дефолт: первый статус раскрыт
+  };
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -71,15 +81,6 @@ function ReviewsPage() {
         setLoading(true);
         const data = await getReviews(token);
         setReviews(data);
-
-        const initialPages: Record<number, number> = {};
-        const initialExpanded: Record<number, boolean> = {};
-        Object.keys(STATUS_MAP).forEach((statusId) => {
-          initialPages[Number(statusId)] = 1;
-          initialExpanded[Number(statusId)] = Number(statusId) === 1 ? true : false;
-        });
-        setPages(initialPages);
-        setExpanded(initialExpanded);
         setError(null);
       } catch {
         setError('Ошибка загрузки отзывов');
@@ -120,11 +121,20 @@ function ReviewsPage() {
   const truncateText = (text: string, maxLength = 100) =>
     text.length <= maxLength ? text : text.slice(0, maxLength) + '...';
 
-  const handlePageChange = (statusId: number, newPage: number) =>
-    setPages((prev) => ({ ...prev, [statusId]: newPage }));
+  const handlePageChange = (statusId: number, newPage: number) => {
+    setSearchParams((prev) => {
+      prev.set(`page_${statusId}`, String(newPage));
+      return prev;
+    });
+  };
 
-  const toggleExpand = (statusId: number) =>
-    setExpanded((prev) => ({ ...prev, [statusId]: !prev[statusId] }));
+  const toggleExpand = (statusId: number) => {
+    setSearchParams((params) => {
+      const current = getExpanded(statusId);
+      params.set(`expanded_${statusId}`, String(!current));
+      return params;
+    });
+  };
 
   const renderPageNumbers = (total: number, current: number, onChange: (page: number) => void) => {
     if (total <= 5) {
@@ -226,13 +236,14 @@ function ReviewsPage() {
           const statusName = STATUS_MAP[statusId];
           const statusReviews = groupedReviews[statusId] || [];
           const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE);
-          const currentPage = pages[statusId] || 1;
+          const currentPage = getPage(statusId);
+          const isExpanded = getExpanded(statusId);
           const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
           const currentReviews = statusReviews.slice(startIndex, startIndex + ROWS_PER_PAGE);
 
           return (
             <Card key={statusId} variant="outlined" sx={{ overflow: 'hidden' }}>
-              <Accordion expanded={expanded[statusId]} onChange={() => toggleExpand(statusId)}>
+              <Accordion expanded={isExpanded} onChange={() => toggleExpand(statusId)}>
                 <AccordionSummary
                   indicator={<ExpandMoreIcon />}
                   sx={{
@@ -324,7 +335,9 @@ function ReviewsPage() {
                                   <IconButton
                                     size="sm"
                                     color="primary"
-                                    onClick={() => navigate(`/reviews/${review.id}`)}
+                                    onClick={() =>
+                                      navigate(`/reviews/${review.id}?${searchParams.toString()}`)
+                                    }
                                     title="Просмотреть"
                                   >
                                     <ViewIcon />
