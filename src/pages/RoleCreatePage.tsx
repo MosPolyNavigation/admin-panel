@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Typography,
   Box,
@@ -25,15 +25,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import {
-  getRole,
-  updateRole,
-  getRights,
-  getGoals,
-  type Right,
-  type Goal,
-  type Role,
-} from '../api.ts';
+import { createRole, getRights, getGoals, type Right, type Goal } from '../api.ts';
 
 // Доступные права для каждой цели (из миграции)
 const GOAL_RIGHTS_MAP: Record<number, number[]> = {
@@ -57,14 +49,12 @@ const RIGHT_NAMES: Record<number, string> = {
   5: 'grant',
 };
 
-export default function RoleEditPage() {
-  const { id } = useParams<{ id: string }>();
+export default function RoleCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { token, loading: authLoading } = useAuth();
 
   // State
-  const [role, setRole] = useState<Role | null>(null);
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,37 +69,15 @@ export default function RoleEditPage() {
   const [rights, setRights] = useState<Right[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
 
-  // Load role, rights and goals
+  // Load rights and goals
   useEffect(() => {
     const loadData = async () => {
-      if (!token || !id) return;
+      if (!token) return;
       setDataLoading(true);
       try {
-        const [roleData, rightsData, goalsData] = await Promise.all([
-          getRole(token, parseInt(id)),
-          getRights(token),
-          getGoals(token),
-        ]);
-
-        if (!roleData) {
-          setError('Роль не найдена');
-          return;
-        }
-
-        setRole(roleData);
-        setRoleName(roleData.name);
+        const [rightsData, goalsData] = await Promise.all([getRights(token), getGoals(token)]);
         setRights(rightsData);
         setGoals(goalsData);
-
-        // Загружаем выбранные права из роли
-        const initialRights: Record<number, number[]> = {};
-        roleData.roleRightGoals?.forEach((rrg) => {
-          if (!initialRights[rrg.goalId]) {
-            initialRights[rrg.goalId] = [];
-          }
-          initialRights[rrg.goalId].push(rrg.rightId);
-        });
-        setSelectedRights(initialRights);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
@@ -117,7 +85,7 @@ export default function RoleEditPage() {
       }
     };
     loadData();
-  }, [id, token]);
+  }, [token]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -131,15 +99,15 @@ export default function RoleEditPage() {
     setSelectedRights((prev) => {
       const goalRights = prev[goalId] || [];
       const newGoalRights = goalRights.includes(rightId)
-        ? goalRights.filter((rId) => rId !== rightId)
+        ? goalRights.filter((id) => id !== rightId)
         : [...goalRights, rightId];
       return { ...prev, [goalId]: newGoalRights };
     });
   };
 
-  // Handle update
-  const update = async () => {
-    if (!token || !id) return;
+  // Handle create
+  const create = async () => {
+    if (!token) return;
     if (!roleName.trim()) {
       showNotification('Название роли обязательно', 'danger');
       return;
@@ -156,12 +124,12 @@ export default function RoleEditPage() {
         });
       });
 
-      await updateRole(token, parseInt(id), {
+      await createRole(token, {
         name: roleName.trim(),
         roleRightGoals: roleRightGoals.length > 0 ? roleRightGoals : undefined,
       });
 
-      showNotification('Роль успешно обновлена', 'success');
+      showNotification('Роль успешно создана', 'success');
 
       // Возвращаемся на страницу ролей с сохранением параметров
       const from = searchParams.get('from') || '/roles';
@@ -174,7 +142,7 @@ export default function RoleEditPage() {
       const query = returnParams.toString();
       navigate(query ? `${from}?${query}` : from);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ошибка обновления роли';
+      const message = err instanceof Error ? err.message : 'Ошибка создания роли';
       setError(message);
       showNotification(message, 'danger');
     } finally {
@@ -230,21 +198,8 @@ export default function RoleEditPage() {
     );
   }
 
-  if (!role || error) {
-    return (
-      <Page headerText="Роль не найдена">
-        <Alert color="danger" variant="soft" sx={{ mb: 2 }}>
-          {error || 'Роль не найдена'}
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
-      </Page>
-    );
-  }
-
   return (
-    <Page headerText="Редактирование роли">
+    <Page headerText="Создание роли">
       {/* Notification */}
       {notification && (
         <Alert color={notificationType} variant="soft" sx={{ mb: 2 }}>
@@ -267,10 +222,7 @@ export default function RoleEditPage() {
         <Button variant="outlined" startDecorator={<BackIcon />} onClick={handleBack}>
           Назад
         </Button>
-        <Typography level="h3">Редактирование роли</Typography>
-        <Chip size="sm" variant="soft" color="primary">
-          ID: {role.id}
-        </Chip>
+        <Typography level="h3">Создание новой роли</Typography>
       </Box>
 
       <Stack spacing={3}>
@@ -372,7 +324,7 @@ export default function RoleEditPage() {
         {/* Info Alert */}
         <Alert color="primary" variant="soft">
           <Typography level="body-sm">
-            Измените права для каждой цели. Вы можете назначать только те права, которые есть у вас.
+            Выберите права для каждой цели. Вы можете назначать только те права, которые есть у вас.
           </Typography>
         </Alert>
 
@@ -391,13 +343,13 @@ export default function RoleEditPage() {
             </Button>
             <Button
               startDecorator={<SaveIcon />}
-              onClick={update}
+              onClick={create}
               variant="solid"
               color="primary"
               size="lg"
               loading={loading}
             >
-              Сохранить
+              Создать
             </Button>
           </Stack>
         </Box>
