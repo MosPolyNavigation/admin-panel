@@ -11,6 +11,9 @@ import UserEditPage from './pages/UserEditPage.tsx';
 import UserViewPage from './pages/UserViewPage.tsx';
 import UserCreatePage from './pages/UserCreatePage.tsx';
 import Role from './pages/Role.tsx';
+import RoleCreatePage from './pages/RoleCreatePage.tsx';
+import RoleViewPage from './pages/RoleViewPage.tsx';
+import RoleEditPage from './pages/RoleEditPage.tsx';
 import ReviewsPage from './pages/ReviewsPage.tsx';
 import ReviewPage from './pages/ReviewPage.tsx';
 import { AuthProvider } from './contexts/AuthProvider.tsx';
@@ -37,7 +40,12 @@ export default function App() {
                 <Route path=":id/edit" element={<UserEditPage />} />
               </Route>
               <Route path="profile" element={<Profile />} />
-              <Route path="roles" element={<Role />} />
+              <Route path="roles">
+                <Route index element={<Role />} />
+                <Route path="create" element={<RoleCreatePage />} />
+                <Route path=":id" element={<RoleViewPage />} />
+                <Route path=":id/edit" element={<RoleEditPage />} />
+              </Route>
               <Route path="reviews">
                 <Route index element={<ReviewsPage />} />
                 <Route path=":id" element={<ReviewPage />} />

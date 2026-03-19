@@ -171,23 +171,13 @@ export default function Sidebar() {
             </ListItem>
           </SidebarListItemsNested>
 
-          <SidebarListItemsNested
-            defaultExpanded={isPartOf('/users')}
+          <SidebarListItem
             icon={<GroupRounded />}
-            name={'Пользователи'}
+            selected={isActive('/users')}
+            onClick={() => handleNavigate('/users')}
           >
-            <ListItem>
-              <ListItemButton
-                selected={isActive('/users')}
-                onClick={() => handleNavigate('/users')}
-              >
-                Все пользователи
-              </ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton selected={isActive('/roles')}>Права и разрешения</ListItemButton>
-            </ListItem>
-          </SidebarListItemsNested>
+            <Typography level="title-sm">Пользователи</Typography>
+          </SidebarListItem>
 
           <SidebarListItem
             icon={<AssignmentIndRounded />}
@@ -196,6 +186,7 @@ export default function Sidebar() {
           >
             <Typography level="title-sm">Роли</Typography>
           </SidebarListItem>
+
           <SidebarListItemsNested
             defaultExpanded={isPartOf('/admin')}
             icon={<ShieldRounded />}

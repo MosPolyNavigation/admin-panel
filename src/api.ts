@@ -27,6 +27,7 @@ export interface UserRole {
   userId: number;
   roleId: number;
   role: Role | null;
+  user: User | null;
 }
 
 export interface User {
@@ -41,6 +42,12 @@ export interface User {
 
 export interface UserConnection {
   nodes: User[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface UserRoleConnection {
+  nodes: UserRole[];
   pageInfo: PageInfo;
   paginationInfo: PaginationInfo;
 }
@@ -121,6 +128,79 @@ export interface DeleteUserGqlResponse {
 
 export interface GrantRoleGqlResponse {
   grantRole: GrantRoleResult;
+}
+
+// ============================================================================
+// Role Types
+// ============================================================================
+
+export interface Role {
+  id: number;
+  name: string;
+  roleRightGoals: RoleRightGoal[] | null;
+  userRoles: UserRole[] | null;
+}
+
+export interface RoleRightGoal {
+  roleId: number;
+  rightId: number;
+  goalId: number;
+  right: Right | null;
+  goal: Goal | null;
+}
+
+export interface Right {
+  id: number;
+  name: string;
+}
+
+export interface Goal {
+  id: number;
+  name: string;
+}
+
+export interface RoleConnection {
+  nodes: Role[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+// ============================================================================
+// Role Inputs
+// ============================================================================
+
+export interface RoleFilterInput {
+  id?: number;
+  name?: string;
+}
+
+export interface CreateRoleInput {
+  name: string;
+  roleRightGoals?: RoleRightGoalInput[];
+}
+
+export interface RoleRightGoalInput {
+  rightId: number;
+  goalId: number;
+}
+
+export interface UpdateRoleInput {
+  name?: string;
+  roleRightGoals?: RoleRightGoalInput[];
+}
+
+// ============================================================================
+// Role Types (дополнение)
+// ============================================================================
+
+export interface RoleRightGoalInput {
+  rightId: number;
+  goalId: number;
+}
+
+export interface CreateRoleInput {
+  name: string;
+  roleRightGoals?: RoleRightGoalInput[];
 }
 
 export interface EndpointStatistics {
@@ -927,10 +1007,189 @@ export const grantRole = async (
   return response.data.data.grantRole;
 };
 
-export const getRoles = async (token: string, signal?: AbortSignal): Promise<Role[]> => {
+// ============================================================================
+// Role API Functions
+// ============================================================================
+
+export const getRoles = async (
+  token: string,
+  pagination: PaginationInput,
+  filter?: RoleFilterInput,
+  signal?: AbortSignal
+): Promise<RoleConnection> => {
   const query = `
-    query GetRoles {
-      roles(pagination: { limit: 100 }) {
+    query GetRoles($pagination: PaginationInput, $filter: RoleFilterInput) {
+      roles(pagination: $pagination, filter: $filter) {
+        nodes {
+          id
+          name
+          roleRightGoals {
+            roleId
+            rightId
+            goalId
+          }
+          userRoles {
+            userId
+            roleId
+          }
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor
+        }
+        paginationInfo {
+          totalCount
+          currentPage
+          totalPages
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ roles: RoleConnection }>>(
+    '/graphql',
+    { query, variables: { pagination, filter } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.roles;
+};
+
+export const getRole = async (
+  token: string,
+  roleId: number,
+  signal?: AbortSignal
+): Promise<Role | null> => {
+  const query = `
+    query GetRole($roleId: Int!) {
+      role(roleId: $roleId) {
+        id
+        name
+        roleRightGoals {
+          roleId
+          rightId
+          goalId
+          right {
+            id
+            name
+          }
+          goal {
+            id
+            name
+          }
+        }
+        userRoles {
+          userId
+          roleId
+          user {
+            id
+            login
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ role: Role | null }>>(
+    '/graphql',
+    { query, variables: { roleId } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.role;
+};
+
+export const updateRole = async (
+  token: string,
+  roleId: number,
+  data: UpdateRoleInput,
+  signal?: AbortSignal
+): Promise<Role> => {
+  const query = `
+    mutation UpdateRole($roleId: Int!, $data: UpdateRoleInput!) {
+      updateRole(roleId: $roleId, data: $data) {
+        id
+        name
+        roleRightGoals {
+          roleId
+          rightId
+          goalId
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ updateRole: Role }>>(
+    '/graphql',
+    { query, variables: { roleId, data } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.updateRole;
+};
+
+export const deleteRole = async (
+  token: string,
+  roleId: number,
+  signal?: AbortSignal
+): Promise<DeleteResult> => {
+  const query = `
+    mutation DeleteRole($roleId: Int!) {
+      deleteRole(roleId: $roleId) {
+        success
+        message
+        deletedId
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ deleteRole: DeleteResult }>>(
+    '/graphql',
+    { query, variables: { roleId } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.deleteRole;
+};
+
+// ============================================================================
+// Rights and Goals API Functions
+// ============================================================================
+
+export const getRights = async (token: string, signal?: AbortSignal): Promise<Right[]> => {
+  const query = `
+    query GetRights {
+      rights(pagination: { limit: 100 }) {
         nodes {
           id
           name
@@ -939,7 +1198,7 @@ export const getRoles = async (token: string, signal?: AbortSignal): Promise<Rol
     }
   `;
 
-  const response = await graphqlClient.post<GqlResponseU<{ roles: { nodes: Role[] } }>>(
+  const response = await graphqlClient.post<GqlResponseU<{ rights: { nodes: Right[] } }>>(
     '/graphql',
     { query },
     {
@@ -952,5 +1211,119 @@ export const getRoles = async (token: string, signal?: AbortSignal): Promise<Rol
     throw new Error(response.data.errors[0].message);
   }
 
-  return response.data.data.roles.nodes;
+  return response.data.data.rights.nodes;
+};
+
+export const getGoals = async (token: string, signal?: AbortSignal): Promise<Goal[]> => {
+  const query = `
+    query GetGoals {
+      goals(pagination: { limit: 100 }) {
+        nodes {
+          id
+          name
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ goals: { nodes: Goal[] } }>>(
+    '/graphql',
+    { query },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.goals.nodes;
+};
+
+export const createRole = async (
+  token: string,
+  data: CreateRoleInput,
+  signal?: AbortSignal
+): Promise<Role> => {
+  const query = `
+    mutation CreateRole($data: CreateRoleInput!) {
+      createRole(data: $data) {
+        id
+        name
+        roleRightGoals {
+          roleId
+          rightId
+          goalId
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ createRole: Role }>>(
+    '/graphql',
+    { query, variables: { data } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.createRole;
+};
+
+export const getUsersByRole = async (
+  token: string,
+  roleId: number,
+  pagination: PaginationInput,
+  signal?: AbortSignal
+): Promise<UserRoleConnection> => {
+  const query = `
+    query GetUserRoles($filter: UserRoleFilterInput, $pagination: PaginationInput) {
+      userRoles(filter: $filter, pagination: $pagination) {
+        nodes {
+          userId
+          roleId
+          user {
+            id
+            login
+            fio
+            isActive
+            registrationDate
+          }
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor
+        }
+        paginationInfo {
+          totalCount
+          currentPage
+          totalPages
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ userRoles: UserRoleConnection }>>(
+    '/graphql',
+    { query, variables: { filter: { roleId }, pagination } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.userRoles;
 };
