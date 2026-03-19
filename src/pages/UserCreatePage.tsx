@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import {
   Typography,
   Box,
@@ -27,6 +27,7 @@ import { createUser } from '../api.ts';
 
 export default function CreateUserPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { token, loading: authLoading } = useAuth();
 
   // State
@@ -121,9 +122,22 @@ export default function CreateUserPage() {
     }
   };
 
+  // Handle back navigation with preserved state from URL params
+  const handleBack = () => {
+    const from = searchParams.get('from') || '/users';
+    const returnParams = new URLSearchParams();
+    for (const [key, value] of searchParams.entries()) {
+      if (key !== 'from') {
+        returnParams.set(key, value);
+      }
+    }
+    const query = returnParams.toString();
+    navigate(query ? `${from}?${query}` : from);
+  };
+
   // Handle cancel
   const cancel = () => {
-    navigate('/users');
+    handleBack();
   };
 
   // Show loading while auth is checking

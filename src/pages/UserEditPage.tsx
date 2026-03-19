@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   Typography,
   Box,
@@ -34,6 +34,7 @@ import { getUser, updateUser, changeUserPassword, type User } from '../api.ts';
 export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { token, loading: authLoading } = useAuth();
 
   // State
@@ -54,6 +55,19 @@ export default function UserEditPage() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [password, setPassword] = useState({ new: '', confirm: '' });
   const [passwordError, setPasswordError] = useState<string | null>(null);
+
+  // Handle back navigation with preserved state from URL params
+  const handleBack = () => {
+    const from = searchParams.get('from') || '/users';
+    const returnParams = new URLSearchParams();
+    for (const [key, value] of searchParams.entries()) {
+      if (key !== 'from') {
+        returnParams.set(key, value);
+      }
+    }
+    const query = returnParams.toString();
+    navigate(query ? `${from}?${query}` : from);
+  };
 
   // Load user
   useEffect(() => {
@@ -232,7 +246,7 @@ export default function UserEditPage() {
 
       {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button variant="outlined" startDecorator={<BackIcon />} onClick={() => navigate('/users')}>
+        <Button variant="outlined" startDecorator={<BackIcon />} onClick={handleBack}>
           Назад
         </Button>
         <Typography level="h3">Редактирование пользователя</Typography>

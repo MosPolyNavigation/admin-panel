@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Typography,
   Table,
@@ -35,7 +35,7 @@ import {
   FilterList as FilterIcon,
   PersonAdd as AddUserIcon,
 } from '@mui/icons-material';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useAuth } from '../hooks/useAuth.ts';
 import {
   getUsers,
@@ -46,8 +46,11 @@ import {
   type UserFilterInput,
 } from '../api.ts';
 
+const ITEMS_PER_PAGE = 10;
+
 function Users() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token, loading: authLoading } = useAuth();
 
   // State
@@ -57,22 +60,77 @@ function Users() {
   const [notification, setNotification] = useState<string | null>(null);
   const [notificationType, setNotificationType] = useState<'success' | 'danger'>('success');
 
-  // Pagination
-  const [pagination, setPagination] = useState<PaginationInput>({ limit: 10, offset: 0 });
+  // Pagination - читаем из URL
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = searchParams.get('page');
+    return page ? Math.max(1, parseInt(page)) : 1;
+  });
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
-  // Filters
-  const [filter, setFilter] = useState<UserFilterInput>({});
-  const [searchLogin, setSearchLogin] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
-  const [showFilters, setShowFilters] = useState(false);
+  // Filters - читаем из URL
+  const [searchLogin, setSearchLogin] = useState(() => searchParams.get('login') || '');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>(() => {
+    const status = searchParams.get('status');
+    if (status === 'active' || status === 'inactive') return status;
+    return 'all';
+  });
+  const [showFilters, setShowFilters] = useState(() => {
+    return searchParams.get('showFilters') === 'true';
+  });
 
   // Modals
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // Синхронизация состояния с URL
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+
+    if (currentPage > 1) {
+      newParams.set('page', String(currentPage));
+    } else {
+      newParams.delete('page');
+    }
+
+    if (searchLogin) {
+      newParams.set('login', searchLogin);
+    } else {
+      newParams.delete('login');
+    }
+
+    if (statusFilter !== 'all') {
+      newParams.set('status', statusFilter);
+    } else {
+      newParams.delete('status');
+    }
+
+    if (showFilters) {
+      newParams.set('showFilters', 'true');
+    } else {
+      newParams.delete('showFilters');
+    }
+
+    setSearchParams(newParams, { replace: true });
+  }, [currentPage, searchLogin, statusFilter, showFilters, setSearchParams, searchParams]);
+
+  // Вычисляем pagination из параметров (мемоизируем)
+  const pagination = useMemo<PaginationInput>(
+    () => ({
+      limit: ITEMS_PER_PAGE,
+      offset: (currentPage - 1) * ITEMS_PER_PAGE,
+    }),
+    [currentPage]
+  );
+
+  // Вычисляем filter из параметров (мемоизируем)
+  const filter = useMemo<UserFilterInput>(
+    () => ({
+      login: searchLogin || undefined,
+      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
+    }),
+    [searchLogin, statusFilter]
+  );
 
   // Load users
   const loadUsers = useCallback(async () => {
@@ -85,7 +143,6 @@ function Users() {
       setUsers(result.nodes);
       setTotalCount(result.paginationInfo.totalCount);
       setTotalPages(result.paginationInfo.totalPages);
-      setCurrentPage(result.paginationInfo.currentPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки пользователей');
       showNotification('Ошибка загрузки пользователей', 'danger');
@@ -144,28 +201,36 @@ function Users() {
 
   // Handle search
   const handleSearch = () => {
-    const newFilter: UserFilterInput = {
-      login: searchLogin || undefined,
-      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
-    };
-    setFilter(newFilter);
-    setPagination({ ...pagination, offset: 0 });
     setCurrentPage(1);
+    loadUsers();
   };
 
   // Handle reset filters
   const handleResetFilters = () => {
     setSearchLogin('');
     setStatusFilter('all');
-    setFilter({});
-    setPagination({ ...pagination, offset: 0 });
+    setShowFilters(false);
     setCurrentPage(1);
   };
 
   // Handle page change
   const handlePageChange: PaginationControlsProps['onPageChange'] = (page) => {
-    setPagination({ ...pagination, offset: (page - 1) * itemsPerPage });
     setCurrentPage(page);
+  };
+
+  // Handle navigate with preserved state via URL params
+  const handleNavigate = (path: string) => {
+    // Создаём строку параметров для возврата
+    const returnParams = new URLSearchParams();
+    if (currentPage > 1) returnParams.set('page', String(currentPage));
+    if (searchLogin) returnParams.set('login', searchLogin);
+    if (statusFilter !== 'all') returnParams.set('status', statusFilter);
+    if (showFilters) returnParams.set('showFilters', 'true');
+
+    const returnQuery = returnParams.toString();
+    const targetPath = returnQuery ? `${path}?from=/users&${returnQuery}` : `${path}?from=/users`;
+
+    navigate(targetPath);
   };
 
   // Format date
@@ -215,7 +280,7 @@ function Users() {
           variant="solid"
           color="primary"
           startDecorator={<AddUserIcon />}
-          onClick={() => navigate('/users/create')}
+          onClick={() => handleNavigate('/users/create')}
         >
           Создать пользователя
         </Button>
@@ -354,7 +419,7 @@ function Users() {
                       size="sm"
                       color="primary"
                       variant="outlined"
-                      onClick={() => navigate(`/users/${user.id}`)}
+                      onClick={() => handleNavigate(`/users/${user.id}`)}
                       title="Просмотр"
                     >
                       <ViewIcon />
@@ -362,7 +427,7 @@ function Users() {
                     <IconButton
                       size="sm"
                       color="primary"
-                      onClick={() => navigate(`/users/${user.id}/edit`)}
+                      onClick={() => handleNavigate(`/users/${user.id}/edit`)}
                       title="Редактировать"
                     >
                       <EditIcon />
@@ -371,7 +436,7 @@ function Users() {
                       size="sm"
                       color="neutral"
                       variant="outlined"
-                      onClick={() => navigate(`/users/${user.id}/roles`)}
+                      onClick={() => handleNavigate(`/users/${user.id}/roles`)}
                       title="Назначить роли"
                     >
                       <RoleIcon />
@@ -406,7 +471,7 @@ function Users() {
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={totalCount}
-        itemsPerPage={itemsPerPage}
+        itemsPerPage={ITEMS_PER_PAGE}
         onPageChange={handlePageChange}
         showInfo={true}
         compact={false}
