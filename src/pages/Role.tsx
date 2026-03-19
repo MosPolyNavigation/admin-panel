@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Typography,
   Table,
@@ -12,233 +12,360 @@ import {
   ModalDialog,
   Divider,
   Alert,
+  LinearProgress,
   Input,
-  FormControl,
   FormLabel,
-  Select,
-  Option,
-  Checkbox,
+  FormControl,
+  Box,
 } from '@mui/joy';
 import Page from '../components/Page.tsx';
+import PaginationControls, {
+  type PaginationControlsProps,
+} from '../components/PaginationControls.tsx';
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
+  Visibility as ViewIcon,
+  Search as SearchIcon,
+  FilterList as FilterIcon,
   Add as AddIcon,
-  Save as SaveIcon,
 } from '@mui/icons-material';
+import { useNavigate, useSearchParams } from 'react-router';
+import { useAuth } from '../hooks/useAuth.ts';
+import {
+  getRoles,
+  deleteRole,
+  type Role,
+  type PaginationInput,
+  type RoleFilterInput,
+} from '../api.ts';
 
-interface Role {
-  id: number;
-  name: string;
-  entities: string[];
-  users: number;
-}
+const ITEMS_PER_PAGE = 10;
 
-const initialRoles: Role[] = [
-  {
-    id: 1,
-    name: 'Администратор',
-    entities: ['Пользователи', 'Роли', 'Настройки', 'Логи'],
-    users: 5,
-  },
-  { id: 2, name: 'Модератор', entities: ['Контент', 'Комментарии'], users: 12 },
-];
+function Roles() {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { token, loading: authLoading } = useAuth();
 
-const allEntities = [
-  'Пользователи',
-  'Роли',
-  'Настройки',
-  'Медиа',
-  'Комментарии',
-  'Контент',
-  'Категории',
-  'Отчеты',
-  'Дашборды',
-  'Логи',
-];
+  // State
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [notificationType, setNotificationType] = useState<'success' | 'danger'>('success');
 
-const RolesPage = () => {
-  const [roles, setRoles] = useState<Role[]>(initialRoles);
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 5;
+  // Pagination - читаем из URL
+  const [currentPage, setCurrentPage] = useState(() => {
+    const page = searchParams.get('page');
+    return page ? Math.max(1, parseInt(page)) : 1;
+  });
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [notification, setNotification] = useState('');
-
-  const [formData, setFormData] = useState<{
-    name: string;
-    entities: string[];
-  }>({
-    name: '',
-    entities: [],
+  // Filters - читаем из URL
+  const [searchName, setSearchName] = useState(() => searchParams.get('name') || '');
+  const [showFilters, setShowFilters] = useState(() => {
+    return searchParams.get('showFilters') === 'true';
   });
 
-  // Пагинация
-  const totalPages = Math.ceil(roles.length / rowsPerPage);
-  const startIndex = (page - 1) * rowsPerPage;
-  const displayedRoles = roles.slice(startIndex, startIndex + rowsPerPage);
+  // Modals
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
 
-  const handleOpenDelete = (role: Role) => {
+  // Синхронизация состояния с URL
+  useEffect(() => {
+    const newParams = new URLSearchParams(searchParams);
+
+    if (currentPage > 1) {
+      newParams.set('page', String(currentPage));
+    } else {
+      newParams.delete('page');
+    }
+
+    if (searchName) {
+      newParams.set('name', searchName);
+    } else {
+      newParams.delete('name');
+    }
+
+    if (showFilters) {
+      newParams.set('showFilters', 'true');
+    } else {
+      newParams.delete('showFilters');
+    }
+
+    setSearchParams(newParams, { replace: true });
+  }, [currentPage, searchName, showFilters, setSearchParams, searchParams]);
+
+  // Вычисляем pagination из параметров (мемоизируем)
+  const pagination = useMemo<PaginationInput>(
+    () => ({
+      limit: ITEMS_PER_PAGE,
+      offset: (currentPage - 1) * ITEMS_PER_PAGE,
+    }),
+    [currentPage]
+  );
+
+  // Вычисляем filter из параметров (мемоизируем)
+  const filter = useMemo<RoleFilterInput>(
+    () => ({
+      name: searchName || undefined,
+    }),
+    [searchName]
+  );
+
+  // Load roles
+  const loadRoles = useCallback(async () => {
+    if (!token) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await getRoles(token, pagination, filter);
+      setRoles(result.nodes);
+      setTotalCount(result.paginationInfo.totalCount);
+      setTotalPages(result.paginationInfo.totalPages);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки ролей');
+      showNotification('Ошибка загрузки ролей', 'danger');
+    } finally {
+      setLoading(false);
+    }
+  }, [token, pagination, filter]);
+
+  useEffect(() => {
+    if (!authLoading && token) {
+      loadRoles();
+    }
+  }, [loadRoles, authLoading, token]);
+
+  // Show notification
+  const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
+    setNotification(message);
+    setNotificationType(type);
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Handle delete
+  const handleDelete = (role: Role) => {
     setSelectedRole(role);
     setDeleteModalOpen(true);
   };
 
-  const handleOpenEdit = (role: Role | null) => {
-    if (role) {
-      setSelectedRole(role);
-      setFormData({
-        name: role.name,
-        entities: [...role.entities],
-      });
-    } else {
+  const confirmDelete = async () => {
+    if (!selectedRole || !token) return;
+    try {
+      await deleteRole(token, selectedRole.id);
+      showNotification(`Роль ${selectedRole.name} удалена`, 'success');
+      loadRoles();
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Ошибка удаления', 'danger');
+    } finally {
+      setDeleteModalOpen(false);
       setSelectedRole(null);
-      setFormData({
-        name: '',
-        entities: [],
-      });
-    }
-    setEditModalOpen(true);
-  };
-
-  const handleCloseModals = () => {
-    setDeleteModalOpen(false);
-    setEditModalOpen(false);
-    setSelectedRole(null);
-  };
-
-  const handleDelete = () => {
-    if (selectedRole) {
-      setRoles(roles.filter((role) => role.id !== selectedRole.id));
-      setNotification(`Роль "${selectedRole.name}" удалена`);
-      setTimeout(() => setNotification(''), 3000);
-      handleCloseModals();
     }
   };
 
-  const handleSave = () => {
-    if (selectedRole) {
-      setRoles(
-        roles.map((role) => (role.id === selectedRole.id ? { ...role, ...formData } : role))
-      );
-      setNotification(`Роль "${formData.name}" обновлена`);
-    } else {
-      const newRole: Role = {
-        id: roles.length + 1,
-        name: formData.name,
-        entities: formData.entities,
-        users: 0,
-      };
-      setRoles([...roles, newRole]);
-      setNotification(`Роль "${formData.name}" создана`);
-    }
-    setTimeout(() => setNotification(''), 3000);
-    handleCloseModals();
+  // Handle search
+  const handleSearch = () => {
+    setCurrentPage(1);
+    loadRoles();
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleFormChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+  // Handle reset filters
+  const handleResetFilters = () => {
+    setSearchName('');
+    setShowFilters(false);
+    setCurrentPage(1);
   };
 
-  const handleEntitiesChange = (_event: React.SyntheticEvent | null, newValue: string[]) => {
-    handleFormChange('entities', newValue);
+  // Handle page change
+  const handlePageChange: PaginationControlsProps['onPageChange'] = (page) => {
+    setCurrentPage(page);
   };
 
-  const renderEntities = (entities: string[]) => {
-    const visible = entities.slice(0, 3);
-    const hasMore = entities.length > 3;
+  // Handle navigate with preserved state via URL params
+  const handleNavigate = (path: string) => {
+    const returnParams = new URLSearchParams();
+    if (currentPage > 1) returnParams.set('page', String(currentPage));
+    if (searchName) returnParams.set('name', searchName);
+    if (showFilters) returnParams.set('showFilters', 'true');
 
+    const returnQuery = returnParams.toString();
+    const targetPath = returnQuery ? `${path}?from=/roles&${returnQuery}` : `${path}?from=/roles`;
+
+    navigate(targetPath);
+  };
+
+  // Helper: count rights for role
+  const getRightsCount = (role: Role): number => {
+    return role.roleRightGoals?.length || 0;
+  };
+
+  // Helper: count users for role
+  const getUsersCount = (role: Role): number => {
+    return role.userRoles?.length || 0;
+  };
+
+  // Show loading while auth is checking
+  if (authLoading) {
     return (
-      <Stack direction="row" spacing={0.5}>
-        {visible.map((entity, i) => (
-          <Chip key={i} size="sm" variant="soft" color="primary">
-            {entity}
-          </Chip>
-        ))}
-        {hasMore && (
-          <Chip size="sm" variant="plain">
-            ...
-          </Chip>
-        )}
-      </Stack>
+      <Page headerText="Управление ролями">
+        <LinearProgress />
+      </Page>
     );
-  };
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const renderSelectedValues = (selectedOptions: any) => {
-    const selectedValues = Array.isArray(selectedOptions)
-      ? selectedOptions.map((option) =>
-          typeof option === 'string' ? option : option.value || option
-        )
-      : [];
-
+  // Show message if not authenticated
+  if (!token) {
     return (
-      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap>
-        {selectedValues.map((value, index) => (
-          <Chip key={index} size="sm" variant="soft">
-            {value}
-          </Chip>
-        ))}
-      </Stack>
+      <Page headerText="Управление ролями">
+        <Alert color="danger" variant="soft">
+          Требуется авторизация для доступа к этой странице
+        </Alert>
+      </Page>
     );
-  };
+  }
 
   return (
     <Page headerText="Управление ролями">
+      {/* Notification */}
       {notification && (
-        <Alert color="success" variant="soft" sx={{ mb: 2 }}>
+        <Alert color={notificationType} variant="soft" sx={{ mb: 2 }}>
           {notification}
         </Alert>
       )}
 
-      <Stack direction="row" justifyContent="space-between" sx={{ mb: 2 }}>
-        <Typography level="body-sm">Всего ролей: {roles.length}</Typography>
-        <Button startDecorator={<AddIcon />} onClick={() => handleOpenEdit(null)}>
+      {/* Header with Create Button */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Typography level="h4">Список ролей</Typography>
+        <Button
+          variant="solid"
+          color="primary"
+          startDecorator={<AddIcon />}
+          onClick={() => handleNavigate('/roles/create')}
+        >
           Создать роль
         </Button>
-      </Stack>
+      </Box>
 
-      <Sheet variant="outlined" sx={{ borderRadius: 'sm' }}>
-        <Table>
+      {/* Search and Filters Bar */}
+      <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mb: 2 }}>
+        <Stack spacing={2}>
+          {/* Main search row */}
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Input
+              placeholder="Поиск по названию..."
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              startDecorator={<SearchIcon />}
+              sx={{ flexGrow: 1 }}
+            />
+            <Button onClick={handleSearch} variant="solid">
+              Найти
+            </Button>
+            <Button
+              onClick={() => setShowFilters(!showFilters)}
+              variant="outlined"
+              startDecorator={<FilterIcon />}
+            >
+              {showFilters ? 'Скрыть фильтры' : 'Фильтры'}
+            </Button>
+            <Button onClick={handleResetFilters} variant="outlined">
+              Сбросить
+            </Button>
+          </Stack>
+
+          {/* Additional filters row */}
+          {showFilters && (
+            <Stack
+              direction="row"
+              spacing={2}
+              alignItems="center"
+              sx={{ pt: 2, borderTop: '1px solid', borderColor: 'divider' }}
+            >
+              <FormControl>
+                <FormLabel>ID роли</FormLabel>
+                <Input
+                  type="number"
+                  placeholder="Например: 1"
+                  sx={{ minWidth: 100 }}
+                  // Можно добавить обработку по ID при необходимости
+                />
+              </FormControl>
+            </Stack>
+          )}
+        </Stack>
+      </Sheet>
+
+      {/* Loading */}
+      {loading && <LinearProgress />}
+
+      {/* Error */}
+      {error && (
+        <Alert color="danger" variant="soft" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Roles Table */}
+      <Sheet variant="outlined" sx={{ borderRadius: 'sm', overflow: 'auto' }}>
+        <Table stickyHeader>
           <thead>
             <tr>
-              <th style={{ padding: '12px', width: '25%' }}>Название роли</th>
-              <th style={{ padding: '12px', width: '45%' }}>Сущности</th>
-              <th style={{ padding: '12px', width: '15%', textAlign: 'center' }}>Пользователи</th>
-              <th style={{ padding: '12px', width: '15%', textAlign: 'right' }}>Действия</th>
+              <th style={{ padding: '12px', width: '10%' }}>ID</th>
+              <th style={{ padding: '12px', width: '25%' }}>Название</th>
+              <th style={{ padding: '12px', width: '15%' }}>Количество прав</th>
+              <th style={{ padding: '12px', width: '15%' }}>Пользователей</th>
+              <th style={{ padding: '12px', width: '35%', textAlign: 'right' }}>Действия</th>
             </tr>
           </thead>
           <tbody>
-            {displayedRoles.map((role) => (
+            {roles.map((role) => (
               <tr key={role.id}>
-                <td style={{ padding: '12px', width: '25%' }}>
-                  <Typography>{role.name}</Typography>
+                <td style={{ padding: '12px' }}>
+                  <Typography>{role.id}</Typography>
                 </td>
-                <td style={{ padding: '12px', width: '45%' }}>{renderEntities(role.entities)}</td>
-                <td style={{ padding: '12px', width: '15%', textAlign: 'center' }}>
-                  <Chip size="sm" variant="soft" color="neutral">
-                    {role.users} чел.
+                <td style={{ padding: '12px' }}>
+                  <Typography fontWeight="md">{role.name}</Typography>
+                </td>
+                <td style={{ padding: '12px' }}>
+                  <Chip size="sm" variant="soft" color="primary">
+                    {getRightsCount(role)}
                   </Chip>
                 </td>
-                <td style={{ padding: '12px', width: '15%', textAlign: 'right' }}>
+                <td style={{ padding: '12px' }}>
+                  <Chip size="sm" variant="soft" color="neutral">
+                    {getUsersCount(role)}
+                  </Chip>
+                </td>
+                <td style={{ padding: '12px', textAlign: 'right' }}>
                   <Stack direction="row" spacing={1} justifyContent="flex-end">
                     <IconButton
                       size="sm"
-                      color="danger"
-                      onClick={() => handleOpenDelete(role)}
-                      title="Удалить"
+                      color="primary"
+                      variant="outlined"
+                      onClick={() => handleNavigate(`/roles/${role.id}`)}
+                      title="Просмотр"
                     >
-                      <DeleteIcon />
+                      <ViewIcon />
                     </IconButton>
                     <IconButton
                       size="sm"
                       color="primary"
-                      onClick={() => handleOpenEdit(role)}
+                      onClick={() => handleNavigate(`/roles/${role.id}/edit`)}
                       title="Редактировать"
                     >
                       <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="sm"
+                      color="danger"
+                      onClick={() => handleDelete(role)}
+                      title="Удалить"
+                    >
+                      <DeleteIcon />
                     </IconButton>
                   </Stack>
                 </td>
@@ -248,97 +375,38 @@ const RolesPage = () => {
         </Table>
       </Sheet>
 
-      <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-        {[...Array(totalPages)].map((_, i) => (
-          <Button
-            key={i}
-            size="sm"
-            variant={page === i + 1 ? 'solid' : 'outlined'}
-            onClick={() => setPage(i + 1)}
-          >
-            {i + 1}
-          </Button>
-        ))}
-      </Stack>
+      {/* Pagination */}
+      <PaginationControls
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalCount}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onPageChange={handlePageChange}
+        showInfo={true}
+        compact={false}
+      />
 
-      <Modal open={deleteModalOpen} onClose={handleCloseModals}>
+      {/* Delete Modal */}
+      <Modal open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
         <ModalDialog>
           <ModalClose />
           <Typography level="h4">Удалить роль?</Typography>
           <Divider sx={{ my: 2 }} />
           <Typography>
-            Вы уверены, что хотите удалить роль "{selectedRole?.name}"?
-            {selectedRole?.users && selectedRole.users > 0 && (
-              <Typography color="danger" level="body-sm" sx={{ mt: 1 }}>
-                Внимание: у этой роли есть {selectedRole.users} пользователей!
-              </Typography>
-            )}
+            Удалить роль <strong>{selectedRole?.name}</strong>? Это действие нельзя отменить.
           </Typography>
           <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-            <Button variant="outlined" onClick={handleCloseModals}>
+            <Button variant="outlined" onClick={() => setDeleteModalOpen(false)}>
               Отмена
             </Button>
-            <Button
-              color="danger"
-              onClick={handleDelete}
-              disabled={selectedRole?.users ? selectedRole.users > 0 : false}
-            >
+            <Button color="danger" onClick={confirmDelete}>
               Удалить
-            </Button>
-          </Stack>
-        </ModalDialog>
-      </Modal>
-
-      <Modal open={editModalOpen} onClose={handleCloseModals}>
-        <ModalDialog sx={{ minWidth: 400 }}>
-          <ModalClose />
-          <Typography level="h4">
-            {selectedRole ? 'Редактирование роли' : 'Создание новой роли'}
-          </Typography>
-          <Divider sx={{ my: 2 }} />
-
-          <FormControl sx={{ mb: 2 }}>
-            <FormLabel>Название роли</FormLabel>
-            <Input
-              value={formData.name}
-              onChange={(e) => handleFormChange('name', e.target.value)}
-              placeholder="Введите название роли"
-            />
-          </FormControl>
-
-          <FormControl>
-            <FormLabel>Доступные сущности</FormLabel>
-            <Select
-              multiple
-              value={formData.entities}
-              onChange={handleEntitiesChange}
-              renderValue={renderSelectedValues}
-            >
-              {allEntities.map((entity) => (
-                <Option key={entity} value={entity}>
-                  <Checkbox checked={formData.entities.includes(entity)} sx={{ mr: 1 }} />
-                  {entity}
-                </Option>
-              ))}
-            </Select>
-          </FormControl>
-
-          <Stack direction="row" spacing={1} sx={{ mt: 3 }}>
-            <Button variant="outlined" onClick={handleCloseModals}>
-              Отмена
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={!formData.name.trim()}
-              startDecorator={<SaveIcon />}
-            >
-              {selectedRole ? 'Сохранить' : 'Создать'}
             </Button>
           </Stack>
         </ModalDialog>
       </Modal>
     </Page>
   );
-};
+}
 
-export default RolesPage;
+export default Roles;

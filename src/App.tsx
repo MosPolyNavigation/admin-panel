@@ -8,7 +8,12 @@ import Home from './pages/Home.tsx';
 import Profile from './pages/Profile.tsx';
 import Users from './pages/Users.tsx';
 import UserEditPage from './pages/UserEditPage.tsx';
+import UserViewPage from './pages/UserViewPage.tsx';
+import UserCreatePage from './pages/UserCreatePage.tsx';
+import UserGrantPage from './pages/UserGrantPage.tsx';
 import Role from './pages/Role.tsx';
+import RoleCreatePage from './pages/RoleCreatePage.tsx';
+import RoleViewPage from './pages/RoleViewPage.tsx';
 import RoleEditPage from './pages/RoleEditPage.tsx';
 import ReviewsPage from './pages/ReviewsPage.tsx';
 import ReviewPage from './pages/ReviewPage.tsx';
@@ -31,12 +36,18 @@ export default function App() {
               <Route path="dashboards" element={<Dashboard />} />
               <Route path="users">
                 <Route index element={<Users />} />
-                <Route path=":id" element={<Profile />} />
+                <Route path="create" element={<UserCreatePage />} />
+                <Route path=":id" element={<UserViewPage />} />
+                <Route path=":id/edit" element={<UserEditPage />} />
+                <Route path=":id/grant" element={<UserGrantPage />} />
               </Route>
               <Route path="profile" element={<Profile />} />
-              <Route path="UserEditPage" element={<UserEditPage />} />
-              <Route path="roles" element={<Role />} />
-              <Route path="RoleEditPage" element={<RoleEditPage />} />
+              <Route path="roles">
+                <Route index element={<Role />} />
+                <Route path="create" element={<RoleCreatePage />} />
+                <Route path=":id" element={<RoleViewPage />} />
+                <Route path=":id/edit" element={<RoleEditPage />} />
+              </Route>
               <Route path="reviews">
                 <Route index element={<ReviewsPage />} />
                 <Route path=":id" element={<ReviewPage />} />
