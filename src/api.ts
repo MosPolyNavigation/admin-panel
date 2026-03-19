@@ -1,6 +1,128 @@
 import axios from 'axios';
 import { BASE_API_URL } from './config.ts';
 
+// ============================================================================
+// GraphQL Response Types
+// ============================================================================
+
+export interface PageInfo {
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  startCursor: string | null;
+  endCursor: string | null;
+}
+
+export interface PaginationInfo {
+  totalCount: number;
+  currentPage: number;
+  totalPages: number;
+}
+
+export interface Role {
+  id: number;
+  name: string;
+}
+
+export interface UserRole {
+  userId: number;
+  roleId: number;
+  role: Role | null;
+}
+
+export interface User {
+  id: number;
+  login: string;
+  fio: string | null;
+  isActive: boolean;
+  registrationDate: string;
+  updatedAt: string;
+  roles: UserRole[] | null;
+}
+
+export interface UserConnection {
+  nodes: User[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface DeleteResult {
+  success: boolean;
+  message: string;
+  deletedId: number | null;
+}
+
+export interface GrantRoleResult {
+  success: boolean;
+  message: string;
+  user: User | null;
+}
+
+// ============================================================================
+// GraphQL Query/Mutation Inputs
+// ============================================================================
+
+export interface PaginationInput {
+  limit: number;
+  offset: number;
+}
+
+export interface UserFilterInput {
+  id?: number;
+  login?: string;
+  isActive?: boolean;
+}
+
+export interface CreateUserInput {
+  login: string;
+  password: string;
+  fio?: string;
+  isActive: boolean;
+}
+
+export interface UpdateUserInput {
+  fio?: string;
+  isActive?: boolean;
+}
+
+export interface ChangeUserPasswordInput {
+  userId: number;
+  newPassword: string;
+}
+
+export interface GrantRoleInput {
+  userId: number;
+  roleIds: number[];
+}
+
+// ============================================================================
+// GraphQL Response Wrappers
+// ============================================================================
+
+export interface GqlResponseU<T> {
+  data: T;
+  errors?: Array<{
+    message: string;
+    locations?: Array<{ line: number; column: number }>;
+    path?: string[];
+  }>;
+}
+
+export interface UsersGqlResponse {
+  users: UserConnection;
+}
+
+export interface UserGqlResponse {
+  user: User | null;
+}
+
+export interface DeleteUserGqlResponse {
+  deleteUser: DeleteResult;
+}
+
+export interface GrantRoleGqlResponse {
+  grantRole: GrantRoleResult;
+}
+
 export interface EndpointStatistics {
   allVisits: number;
   period: string;
@@ -511,4 +633,324 @@ export const unbanUser = async (
     }
   );
   return response.data;
+};
+
+// ============================================================================
+// API Functions User/Role
+// ============================================================================
+
+const graphqlClient = axios.create({
+  baseURL: BASE_API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+export const getUsers = async (
+  token: string,
+  pagination: PaginationInput,
+  filter?: UserFilterInput,
+  signal?: AbortSignal
+): Promise<UserConnection> => {
+  const query = `
+    query GetUsers($pagination: PaginationInput, $filter: UserFilterInput) {
+      users(pagination: $pagination, filter: $filter) {
+        nodes {
+          id
+          login
+          fio
+          isActive
+          registrationDate
+          updatedAt
+          roles {
+            userId
+            roleId
+            role {
+              id
+              name
+            }
+          }
+        }
+        pageInfo {
+          hasPreviousPage
+          hasNextPage
+          startCursor
+          endCursor
+        }
+        paginationInfo {
+          totalCount
+          currentPage
+          totalPages
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<UsersGqlResponse>>(
+    '/graphql',
+    { query, variables: { pagination, filter } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.users;
+};
+
+export const getUser = async (
+  token: string,
+  userId: number,
+  signal?: AbortSignal
+): Promise<User | null> => {
+  const query = `
+    query GetUser($userId: Int!) {
+      user(userId: $userId) {
+        id
+        login
+        fio
+        isActive
+        registrationDate
+        updatedAt
+        roles {
+          userId
+          roleId
+          role {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<UserGqlResponse>>(
+    '/graphql',
+    { query, variables: { userId } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.user;
+};
+
+export const createUser = async (
+  token: string,
+  data: CreateUserInput,
+  signal?: AbortSignal
+): Promise<User> => {
+  const query = `
+    mutation CreateUser($data: CreateUserInput!) {
+      createUser(data: $data) {
+        id
+        login
+        fio
+        isActive
+        registrationDate
+        updatedAt
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ createUser: User }>>(
+    '/graphql',
+    { query, variables: { data } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.createUser;
+};
+
+export const updateUser = async (
+  token: string,
+  userId: number,
+  data: UpdateUserInput,
+  signal?: AbortSignal
+): Promise<User> => {
+  const query = `
+    mutation UpdateUser($userId: Int!, $data: UpdateUserInput!) {
+      updateUser(userId: $userId, data: $data) {
+        id
+        login
+        fio
+        isActive
+        registrationDate
+        updatedAt
+        roles {
+          userId
+          roleId
+          role {
+            id
+            name
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ updateUser: User }>>(
+    '/graphql',
+    { query, variables: { userId, data } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.updateUser;
+};
+
+export const deleteUser = async (
+  token: string,
+  userId: number,
+  signal?: AbortSignal
+): Promise<DeleteResult> => {
+  const query = `
+    mutation DeleteUser($userId: Int!) {
+      deleteUser(userId: $userId) {
+        success
+        message
+        deletedId
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<DeleteUserGqlResponse>>(
+    '/graphql',
+    { query, variables: { userId } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.deleteUser;
+};
+
+export const changeUserPassword = async (
+  token: string,
+  userId: number,
+  newPassword: string,
+  signal?: AbortSignal
+): Promise<{ success: boolean; message: string }> => {
+  const query = `
+    mutation ChangeUserPassword($data: ChangeUserPasswordInput!) {
+      changeUserPassword(data: $data) {
+        success
+        message
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<
+    GqlResponseU<{ changeUserPassword: { success: boolean; message: string } }>
+  >(
+    '/graphql',
+    { query, variables: { data: { userId, newPassword } } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.changeUserPassword;
+};
+
+export const grantRole = async (
+  token: string,
+  userId: number,
+  roleIds: number[],
+  signal?: AbortSignal
+): Promise<GrantRoleResult> => {
+  const query = `
+    mutation GrantRole($data: GrantRoleInput!) {
+      grantRole(data: $data) {
+        success
+        message
+        user {
+          id
+          login
+          roles {
+            roleId
+            role {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<GrantRoleGqlResponse>>(
+    '/graphql',
+    { query, variables: { data: { userId, roleIds } } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.grantRole;
+};
+
+export const getRoles = async (token: string, signal?: AbortSignal): Promise<Role[]> => {
+  const query = `
+    query GetRoles {
+      roles(pagination: { limit: 100 }) {
+        nodes {
+          id
+          name
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ roles: { nodes: Role[] } }>>(
+    '/graphql',
+    { query },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.roles.nodes;
 };

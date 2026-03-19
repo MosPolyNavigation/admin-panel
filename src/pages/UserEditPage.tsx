@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router';
 import {
   Typography,
   Box,
@@ -13,6 +14,10 @@ import {
   Divider,
   Alert,
   Chip,
+  LinearProgress,
+  Modal,
+  ModalClose,
+  ModalDialog,
 } from '@mui/joy';
 import {
   ArrowBack as BackIcon,
@@ -22,99 +27,215 @@ import {
   CheckCircle as ActiveIcon,
   Cancel as InactiveIcon,
 } from '@mui/icons-material';
+import Page from '../components/Page.tsx';
+import { useAuth } from '../hooks/useAuth.ts';
+import { getUser, updateUser, changeUserPassword, type User } from '../api.ts';
 
 export default function UserEditPage() {
-  const [user, setUser] = useState({
-    id: 1,
-    name: 'Иван Петров',
-    email: 'ivan@example.com',
-    isActive: true,
-    roles: ['Администратор', 'Модератор'],
-  });
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { token, loading: authLoading } = useAuth();
 
+  // State
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [notificationType, setNotificationType] = useState<'success' | 'danger'>('success');
+
+  // Form data
   const [formData, setFormData] = useState({
-    name: user.name,
-    email: user.email,
+    fio: '',
+    isActive: true,
   });
 
+  // Password modal
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showRolesModal, setShowRolesModal] = useState(false);
+  const [password, setPassword] = useState({ new: '', confirm: '' });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  const [password, setPassword] = useState({
-    new: '',
-    confirm: '',
-  });
+  // Load user
+  useEffect(() => {
+    const loadUser = async () => {
+      if (!id || !token) return;
+      setLoading(true);
+      try {
+        const result = await getUser(token, parseInt(id));
+        if (result) {
+          setUser(result);
+          setFormData({
+            fio: result.fio || '',
+            isActive: result.isActive,
+          });
+        } else {
+          setError('Пользователь не найден');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUser();
+  }, [id, token]);
 
-  const allRoles = ['Администратор', 'Модератор', 'Пользователь', 'Гость'];
-  const [selectedRoles, setSelectedRoles] = useState<string[]>(user.roles);
+  // Show notification
+  const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
+    setNotification(message);
+    setNotificationType(type);
+    setTimeout(() => setNotification(null), 4000);
+  };
 
-  const [alert, setAlert] = useState('');
-
+  // Handle form change
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [field]: e.target.value });
   };
 
+  // Handle toggle active
   const toggleActive = () => {
-    const newStatus = !user.isActive;
-    setUser({ ...user, isActive: newStatus });
-    showAlert(`Пользователь ${newStatus ? 'активирован' : 'деактивирован'}`);
+    setFormData({ ...formData, isActive: !formData.isActive });
   };
 
-  const changePassword = () => {
-    if (password.new !== password.confirm) {
-      showAlert('Пароли не совпадают');
-      return;
+  // Handle save
+  const save = async () => {
+    if (!id || !user || !token) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await updateUser(token, user.id, formData);
+      showNotification('Данные сохранены', 'success');
+      // Reload user data
+      const result = await getUser(token, user.id);
+      if (result) {
+        setUser(result);
+        setFormData({
+          fio: result.fio || '',
+          isActive: result.isActive,
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Ошибка сохранения';
+      setError(message);
+      showNotification(message, 'danger');
+    } finally {
+      setSaving(false);
     }
-    if (password.new.length < 6) {
-      showAlert('Пароль слишком короткий');
-      return;
-    }
-    setShowPasswordModal(false);
-    setPassword({ new: '', confirm: '' });
-    showAlert('Пароль изменен');
   };
 
-  const toggleRole = (role: string) => {
-    if (selectedRoles.includes(role)) {
-      setSelectedRoles(selectedRoles.filter((r) => r !== role));
-    } else {
-      setSelectedRoles([...selectedRoles, role]);
-    }
-  };
-
-  const saveRoles = () => {
-    setUser({ ...user, roles: selectedRoles });
-    setShowRolesModal(false);
-    showAlert('Роли обновлены');
-  };
-
-  const save = () => {
-    setUser({ ...user, ...formData });
-    showAlert('Данные сохранены');
-  };
-
+  // Handle cancel
   const cancel = () => {
-    setFormData({ name: user.name, email: user.email });
-    setSelectedRoles(user.roles);
-    showAlert('Изменения отменены');
+    if (user) {
+      setFormData({
+        fio: user.fio || '',
+        isActive: user.isActive,
+      });
+    }
+    showNotification('Изменения отменены', 'success');
   };
 
-  const showAlert = (message: string) => {
-    setAlert(message);
-    setTimeout(() => setAlert(''), 3000);
+  // Handle change password
+  const changePassword = async () => {
+    if (!id || !user || !token) return;
+    if (password.new !== password.confirm) {
+      setPasswordError('Пароли не совпадают');
+      return;
+    }
+    if (password.new.length < 8) {
+      setPasswordError('Пароль должен содержать минимум 8 символов');
+      return;
+    }
+    try {
+      await changeUserPassword(token, user.id, password.new);
+      setShowPasswordModal(false);
+      setPassword({ new: '', confirm: '' });
+      setPasswordError(null);
+      showNotification('Пароль изменён', 'success');
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Ошибка смены пароля');
+    }
   };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('ru-RU', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Show loading while auth is checking
+  if (authLoading) {
+    return (
+      <Page headerText="Загрузка...">
+        <LinearProgress />
+      </Page>
+    );
+  }
+
+  // Show message if not authenticated
+  if (!token) {
+    return (
+      <Page headerText="Требуется авторизация">
+        <Alert color="danger" variant="soft">
+          Требуется авторизация для доступа к этой странице
+        </Alert>
+        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
+          Назад к списку
+        </Button>
+      </Page>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Page headerText="Загрузка...">
+        <LinearProgress />
+      </Page>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Page headerText="Пользователь не найден">
+        <Alert color="danger" variant="soft">
+          {error || 'Пользователь не найден'}
+        </Alert>
+        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
+          Назад к списку
+        </Button>
+      </Page>
+    );
+  }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Page headerText={`Редактирование: ${user.login}`}>
+      {/* Notification */}
+      {notification && (
+        <Alert color={notificationType} variant="soft" sx={{ mb: 2 }}>
+          {notification}
+        </Alert>
+      )}
+
+      {/* Error */}
+      {error && (
+        <Alert color="danger" variant="soft" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      {/* Saving indicator */}
+      {saving && <LinearProgress />}
+
+      {/* Header */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 3 }}>
-        <Button
-          variant="outlined"
-          startDecorator={<BackIcon />}
-          onClick={() => window.history.back()}
-        >
+        <Button variant="outlined" startDecorator={<BackIcon />} onClick={() => navigate('/users')}>
           Назад
         </Button>
-        <Typography level="h2">Редактирование пользователя</Typography>
+        <Typography level="h3">Редактирование пользователя</Typography>
         <Chip
           variant="soft"
           color={user.isActive ? 'success' : 'danger'}
@@ -124,13 +245,8 @@ export default function UserEditPage() {
         </Chip>
       </Box>
 
-      {alert && (
-        <Alert color="success" variant="soft" sx={{ mb: 3 }}>
-          {alert}
-        </Alert>
-      )}
-
       <Stack spacing={3}>
+        {/* Main Info Card */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -140,18 +256,40 @@ export default function UserEditPage() {
 
             <Stack spacing={2}>
               <FormControl>
-                <FormLabel>Имя пользователя</FormLabel>
-                <Input value={formData.name} onChange={handleChange('name')} />
+                <FormLabel>ID пользователя</FormLabel>
+                <Input value={user.id} disabled />
               </FormControl>
 
               <FormControl>
-                <FormLabel>Email</FormLabel>
-                <Input type="email" value={formData.email} onChange={handleChange('email')} />
+                <FormLabel>Логин</FormLabel>
+                <Input value={user.login} disabled />
               </FormControl>
+
+              <FormControl>
+                <FormLabel>ФИО</FormLabel>
+                <Input
+                  value={formData.fio}
+                  onChange={handleChange('fio')}
+                  placeholder="Не указано"
+                />
+              </FormControl>
+
+              <Stack direction="row" spacing={4}>
+                <FormControl>
+                  <FormLabel>Дата регистрации</FormLabel>
+                  <Input value={formatDate(user.registrationDate)} disabled />
+                </FormControl>
+
+                <FormControl>
+                  <FormLabel>Последнее изменение</FormLabel>
+                  <Input value={formatDate(user.updatedAt)} disabled />
+                </FormControl>
+              </Stack>
             </Stack>
           </CardContent>
         </Card>
 
+        {/* Account Management Card */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -159,23 +297,23 @@ export default function UserEditPage() {
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
-            <Stack spacing={2}>
-              {/* Активация */}
+            <Stack spacing={3}>
+              {/* Status */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography>Статус аккаунта</Typography>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Switch checked={user.isActive} onChange={toggleActive} />
+                  <Switch checked={formData.isActive} onChange={toggleActive} />
                   <Button
-                    variant={user.isActive ? 'outlined' : 'solid'}
-                    color={user.isActive ? 'warning' : 'success'}
+                    variant={formData.isActive ? 'outlined' : 'solid'}
+                    color={formData.isActive ? 'warning' : 'success'}
                     onClick={toggleActive}
                   >
-                    {user.isActive ? 'Деактивировать' : 'Активировать'}
+                    {formData.isActive ? 'Деактивировать' : 'Активировать'}
                   </Button>
                 </Box>
               </Box>
 
-              {/* Пароль */}
+              {/* Password */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography>Смена пароля</Typography>
                 <Button
@@ -187,178 +325,116 @@ export default function UserEditPage() {
                 </Button>
               </Box>
 
-              {/* Роли */}
+              {/* Roles */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                   <Typography>Роли пользователя</Typography>
                   <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    {user.roles.map((role, i) => (
-                      <Chip key={i} size="sm">
-                        {role}
-                      </Chip>
-                    ))}
+                    {user.roles && user.roles.length > 0 ? (
+                      user.roles.map((ur) => (
+                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
+                          {ur.role?.name || `Role ${ur.roleId}`}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Typography level="body-sm" textColor="neutral.500">
+                        Роли не назначены
+                      </Typography>
+                    )}
                   </Stack>
                 </Box>
-                <Button variant="outlined" onClick={() => setShowRolesModal(true)}>
-                  Назначить роли
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate(`/users/${user.id}/roles`)}
+                  disabled
+                >
+                  Назначить роли (скоро)
                 </Button>
               </Box>
             </Stack>
           </CardContent>
         </Card>
+
+        {/* Action Buttons */}
+        <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
+          <Stack direction="row" spacing={2} justifyContent="flex-end">
+            <Button
+              startDecorator={<CancelIcon />}
+              onClick={cancel}
+              variant="outlined"
+              color="neutral"
+              size="lg"
+              disabled={saving}
+            >
+              Отменить
+            </Button>
+            <Button
+              startDecorator={<SaveIcon />}
+              onClick={save}
+              variant="solid"
+              color="primary"
+              size="lg"
+              loading={saving}
+            >
+              Сохранить
+            </Button>
+          </Stack>
+        </Box>
       </Stack>
 
-      <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
-        <Stack direction="row" spacing={2} justifyContent="flex-end">
-          <Button
-            startDecorator={<CancelIcon />}
-            onClick={cancel}
-            variant="outlined"
-            color="neutral"
-            size="lg"
-          >
-            Отменить
-          </Button>
-          <Button
-            startDecorator={<SaveIcon />}
-            onClick={save}
-            variant="solid"
-            color="primary"
-            size="lg"
-          >
-            Сохранить
-          </Button>
-        </Stack>
-      </Box>
-
+      {/* Password Change Modal */}
       {showPasswordModal && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            bgcolor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <Card sx={{ width: 400 }}>
-            <CardContent>
-              <Typography level="h4" sx={{ mb: 2 }}>
-                Смена пароля
-              </Typography>
+        <Modal open={showPasswordModal} onClose={() => setShowPasswordModal(false)}>
+          <ModalDialog>
+            <ModalClose />
+            <Typography level="h4" sx={{ mb: 2 }}>
+              Смена пароля
+            </Typography>
 
-              <Stack spacing={2}>
-                <FormControl>
-                  <FormLabel>Новый пароль</FormLabel>
-                  <Input
-                    type="password"
-                    value={password.new}
-                    onChange={(e) => setPassword({ ...password, new: e.target.value })}
-                  />
-                </FormControl>
+            <Stack spacing={2}>
+              <FormControl>
+                <FormLabel>Новый пароль</FormLabel>
+                <Input
+                  type="password"
+                  value={password.new}
+                  onChange={(e) => {
+                    setPassword({ ...password, new: e.target.value });
+                    setPasswordError(null);
+                  }}
+                  placeholder="Минимум 8 символов"
+                />
+              </FormControl>
 
-                <FormControl>
-                  <FormLabel>Подтверждение</FormLabel>
-                  <Input
-                    type="password"
-                    value={password.confirm}
-                    onChange={(e) => setPassword({ ...password, confirm: e.target.value })}
-                  />
-                </FormControl>
+              <FormControl>
+                <FormLabel>Подтверждение пароля</FormLabel>
+                <Input
+                  type="password"
+                  value={password.confirm}
+                  onChange={(e) => {
+                    setPassword({ ...password, confirm: e.target.value });
+                    setPasswordError(null);
+                  }}
+                />
+              </FormControl>
 
-                <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                  <Button variant="outlined" onClick={() => setShowPasswordModal(false)}>
-                    Отмена
-                  </Button>
-                  <Button variant="solid" onClick={changePassword}>
-                    Изменить
-                  </Button>
-                </Box>
-              </Stack>
-            </CardContent>
-          </Card>
-        </Box>
-      )}
+              {passwordError && (
+                <Alert color="danger" variant="soft">
+                  {passwordError}
+                </Alert>
+              )}
 
-      {showRolesModal && (
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            bgcolor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <Card sx={{ width: 400 }}>
-            <CardContent>
-              <Typography level="h4" sx={{ mb: 2 }}>
-                Назначение ролей
-              </Typography>
-
-              <Stack spacing={1} sx={{ mb: 3 }}>
-                {allRoles.map((role) => (
-                  <Box
-                    key={role}
-                    onClick={() => toggleRole(role)}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 'sm',
-                      border: '1px solid',
-                      borderColor: selectedRoles.includes(role)
-                        ? 'primary.500'
-                        : 'neutral.outlinedBorder',
-                      bgcolor: selectedRoles.includes(role) ? 'primary.softBg' : 'transparent',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 2,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 'sm',
-                        border: '2px solid',
-                        borderColor: selectedRoles.includes(role) ? 'primary.500' : 'neutral.400',
-                        bgcolor: selectedRoles.includes(role) ? 'primary.500' : 'transparent',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '12px',
-                        color: 'white',
-                      }}
-                    >
-                      {selectedRoles.includes(role) && '✓'}
-                    </Box>
-                    <Typography>{role}</Typography>
-                  </Box>
-                ))}
-              </Stack>
-
-              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                <Button variant="outlined" onClick={() => setShowRolesModal(false)}>
+              <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', mt: 2 }}>
+                <Button variant="outlined" onClick={() => setShowPasswordModal(false)}>
                   Отмена
                 </Button>
-                <Button variant="solid" onClick={saveRoles}>
-                  Сохранить
+                <Button variant="solid" onClick={changePassword}>
+                  Изменить
                 </Button>
               </Box>
-            </CardContent>
-          </Card>
-        </Box>
+            </Stack>
+          </ModalDialog>
+        </Modal>
       )}
-    </Box>
+    </Page>
   );
 }
