@@ -359,10 +359,20 @@ export default function UserEditPage() {
                 </Box>
                 <Button
                   variant="outlined"
-                  onClick={() => navigate(`/users/${user.id}/roles`)}
-                  disabled
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
+                  }}
                 >
-                  Назначить роли (скоро)
+                  Назначить роли
                 </Button>
               </Box>
             </Stack>

@@ -370,7 +370,18 @@ export default function UserViewPage() {
                 <Button
                   variant="outlined"
                   startDecorator={<RoleIcon />}
-                  onClick={() => navigate(`/users/${user.id}/roles`)}
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
+                  }}
                 >
                   Управление ролями
                 </Button>

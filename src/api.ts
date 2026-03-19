@@ -1007,6 +1007,48 @@ export const grantRole = async (
   return response.data.data.grantRole;
 };
 
+export const revokeRole = async (
+  token: string,
+  userId: number,
+  roleId: number,
+  signal?: AbortSignal
+): Promise<GrantRoleResult> => {
+  const query = `
+    mutation RevokeRole($userId: Int!, $roleId: Int!) {
+      revokeRole(userId: $userId, roleId: $roleId) {
+        success
+        message
+        user {
+          id
+          login
+          roles {
+            roleId
+            role {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponseU<{ revokeRole: GrantRoleResult }>>(
+    '/graphql',
+    { query, variables: { userId, roleId } },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      signal,
+    }
+  );
+
+  if (response.data.errors && response.data.errors.length > 0) {
+    throw new Error(response.data.errors[0].message);
+  }
+
+  return response.data.data.revokeRole;
+};
+
 // ============================================================================
 // Role API Functions
 // ============================================================================

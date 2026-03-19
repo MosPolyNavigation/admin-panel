@@ -10,6 +10,7 @@ import Users from './pages/Users.tsx';
 import UserEditPage from './pages/UserEditPage.tsx';
 import UserViewPage from './pages/UserViewPage.tsx';
 import UserCreatePage from './pages/UserCreatePage.tsx';
+import UserGrantPage from './pages/UserGrantPage.tsx';
 import Role from './pages/Role.tsx';
 import RoleCreatePage from './pages/RoleCreatePage.tsx';
 import RoleViewPage from './pages/RoleViewPage.tsx';
@@ -38,6 +39,7 @@ export default function App() {
                 <Route path="create" element={<UserCreatePage />} />
                 <Route path=":id" element={<UserViewPage />} />
                 <Route path=":id/edit" element={<UserEditPage />} />
+                <Route path=":id/grant" element={<UserGrantPage />} />
               </Route>
               <Route path="profile" element={<Profile />} />
               <Route path="roles">

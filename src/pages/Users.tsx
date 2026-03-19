@@ -436,7 +436,7 @@ function Users() {
                       size="sm"
                       color="neutral"
                       variant="outlined"
-                      onClick={() => handleNavigate(`/users/${user.id}/roles`)}
+                      onClick={() => handleNavigate(`/users/${user.id}/grant`)}
                       title="Назначить роли"
                     >
                       <RoleIcon />
