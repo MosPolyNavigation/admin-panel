@@ -25,15 +25,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import {
-  getRole,
-  updateRole,
-  getRights,
-  getGoals,
-  type Right,
-  type Goal,
-  type Role,
-} from '../api.ts';
+import { getRole, updateRole, getRights, getGoals, type Right, type Goal, type Role } from '../api';
 
 // Доступные права для каждой цели (из миграции)
 const GOAL_RIGHTS_MAP: Record<number, number[]> = {

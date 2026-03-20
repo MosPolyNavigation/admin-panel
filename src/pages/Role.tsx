@@ -38,7 +38,7 @@ import {
   type Role,
   type PaginationInput,
   type RoleFilterInput,
-} from '../api.ts';
+} from '../api';
 
 const ITEMS_PER_PAGE = 10;
 

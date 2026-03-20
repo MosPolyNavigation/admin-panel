@@ -29,7 +29,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, updateUser, changeUserPassword, type User } from '../api.ts';
+import { getUser, updateUser, changeUserPassword, type User } from '../api';
 
 export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();

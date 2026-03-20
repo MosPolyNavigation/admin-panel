@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, deleteUser, type User } from '../api.ts';
+import { getUser, deleteUser, type User } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
 
 export default function UserViewPage() {
@@ -118,7 +118,7 @@ export default function UserViewPage() {
     }
     setChangingPassword(true);
     try {
-      const { changeUserPassword } = await import('../api.ts');
+      const { changeUserPassword } = await import('../api');
       await changeUserPassword(token, user.id, password.new);
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });

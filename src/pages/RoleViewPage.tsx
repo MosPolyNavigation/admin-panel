@@ -29,7 +29,7 @@ import PaginationControls, {
   type PaginationControlsProps,
 } from '../components/PaginationControls.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getRole, getUsersByRole, type Role, type User } from '../api.ts';
+import { getRole, getUsersByRole, type Role, type User } from '../api';
 
 const ITEMS_PER_PAGE = 10;
 

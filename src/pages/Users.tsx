@@ -44,7 +44,7 @@ import {
   type User,
   type PaginationInput,
   type UserFilterInput,
-} from '../api.ts';
+} from '../api';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -354,9 +354,9 @@ function Users() {
         <Table stickyHeader>
           <thead>
             <tr>
-              <th style={{ padding: '12px', width: '10%' }}>ID</th>
-              <th style={{ padding: '12px', width: '10%' }}>Логин</th>
-              <th style={{ padding: '12px', width: '10%' }}>ФИО</th>
+              <th style={{ padding: '12px', width: '6%' }}>ID</th>
+              <th style={{ padding: '12px', width: '12%' }}>Логин</th>
+              <th style={{ padding: '12px', width: '12%' }}>ФИО</th>
               <th style={{ padding: '12px', width: '15%' }}>Дата регистрации</th>
               <th style={{ padding: '12px', width: '15%' }}>Последнее изменение</th>
               <th style={{ padding: '12px', width: '10%' }}>Роли</th>
