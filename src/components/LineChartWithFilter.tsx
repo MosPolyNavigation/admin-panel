@@ -1,7 +1,7 @@
 import { Card, Typography } from '@mui/joy';
 import { LineChart } from '@mui/x-charts';
 import { Dayjs } from 'dayjs';
-import { type EndpointStatistics } from '../api.ts';
+import { type EndpointStatistics } from '../api';
 
 interface LineChartWithFilterProps {
   headerText: string;

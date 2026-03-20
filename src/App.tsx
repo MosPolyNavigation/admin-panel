@@ -11,7 +11,7 @@ import UserEditPage from './pages/UserEditPage.tsx';
 import UserViewPage from './pages/UserViewPage.tsx';
 import UserCreatePage from './pages/UserCreatePage.tsx';
 import UserGrantPage from './pages/UserGrantPage.tsx';
-import Role from './pages/Role.tsx';
+import Role from './pages/Roles.tsx';
 import RoleCreatePage from './pages/RoleCreatePage.tsx';
 import RoleViewPage from './pages/RoleViewPage.tsx';
 import RoleEditPage from './pages/RoleEditPage.tsx';

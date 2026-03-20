@@ -22,6 +22,7 @@ import Page from '../components/Page.tsx';
 import PaginationControls, {
   type PaginationControlsProps,
 } from '../components/PaginationControls.tsx';
+import { RequirePermission } from '../components/RequirePermission.tsx';
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -38,7 +39,7 @@ import {
   type Role,
   type PaginationInput,
   type RoleFilterInput,
-} from '../api.ts';
+} from '../api';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -239,14 +240,16 @@ function Roles() {
       {/* Header with Create Button */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography level="h4">Список ролей</Typography>
-        <Button
-          variant="solid"
-          color="primary"
-          startDecorator={<AddIcon />}
-          onClick={() => handleNavigate('/roles/create')}
-        >
-          Создать роль
-        </Button>
+        <RequirePermission goal="roles" right="create">
+          <Button
+            variant="solid"
+            color="primary"
+            startDecorator={<AddIcon />}
+            onClick={() => handleNavigate('/roles/create')}
+          >
+            Создать роль
+          </Button>
+        </RequirePermission>
       </Box>
 
       {/* Search and Filters Bar */}
@@ -351,22 +354,26 @@ function Roles() {
                     >
                       <ViewIcon />
                     </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="primary"
-                      onClick={() => handleNavigate(`/roles/${role.id}/edit`)}
-                      title="Редактировать"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="danger"
-                      onClick={() => handleDelete(role)}
-                      title="Удалить"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    <RequirePermission goal="roles" right="edit">
+                      <IconButton
+                        size="sm"
+                        color="primary"
+                        onClick={() => handleNavigate(`/roles/${role.id}/edit`)}
+                        title="Редактировать"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </RequirePermission>
+                    <RequirePermission goal="roles" right="delete">
+                      <IconButton
+                        size="sm"
+                        color="danger"
+                        onClick={() => handleDelete(role)}
+                        title="Удалить"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </RequirePermission>
                   </Stack>
                 </td>
               </tr>

@@ -34,7 +34,7 @@ import {
   setReviewStatus,
   type Review,
   type ReviewStatus,
-} from '../api.ts';
+} from '../api';
 import { translateProblemId } from '../utils.ts';
 
 export default function ReviewPage() {

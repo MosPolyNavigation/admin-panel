@@ -6,12 +6,12 @@ import { useState, useEffect } from 'react';
 import dayjs from '../dayjs.ts';
 import { useDateSelectors } from '../hooks/useDateSelectors';
 import {
-  get_all_stats,
-  get_all_stats_aggregated,
+  getAllStats,
+  getAllStatsAggregated,
   type EndpointStatistics,
   type DateFilterType,
   type AggregatedEndpointStats,
-} from '../api.ts';
+} from '../api';
 import { useAuth } from '../hooks/useAuth.ts';
 import { DateIntervalType } from '../components/defs.ts';
 import AggregatedStatsCard from '../components/AggregatedStatsCard.tsx';
@@ -91,8 +91,8 @@ const Dashboard = () => {
         setAggregatedError(null);
 
         const [statsResponse, aggregatedResponse] = await Promise.all([
-          get_all_stats(filterType, requestStartDate, requestEndDate, token),
-          get_all_stats_aggregated(filterType, requestStartDate, requestEndDate, token),
+          getAllStats(filterType, requestStartDate, requestEndDate, token),
+          getAllStatsAggregated(filterType, requestStartDate, requestEndDate, token),
         ]);
 
         if (isRequestValid()) {

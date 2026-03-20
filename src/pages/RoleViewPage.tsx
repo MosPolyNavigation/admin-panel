@@ -29,7 +29,8 @@ import PaginationControls, {
   type PaginationControlsProps,
 } from '../components/PaginationControls.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getRole, getUsersByRole, type Role, type User } from '../api.ts';
+import { getRole, getUsersByRole, type Role, type User } from '../api';
+import { RequirePermission } from '../components/RequirePermission.tsx';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -44,6 +45,8 @@ const GOAL_RIGHTS_MAP: Record<number, number[]> = {
   7: [1, 3],
   8: [1, 2, 3, 4],
   9: [3],
+  10: [1, 3],
+  11: [1, 3],
 };
 
 const RIGHT_NAMES: Record<number, string> = {
@@ -204,22 +207,24 @@ export default function RoleViewPage() {
         <Chip size="sm" variant="soft" color="primary">
           ID: {role.id}
         </Chip>
-        <Button
-          variant="outlined"
-          startDecorator={<EditIcon />}
-          onClick={() => {
-            const returnParams = new URLSearchParams();
-            for (const [key, value] of searchParams.entries()) {
-              if (key !== 'from') {
-                returnParams.set(key, value);
+        <RequirePermission goal="roles" right="edit">
+          <Button
+            variant="outlined"
+            startDecorator={<EditIcon />}
+            onClick={() => {
+              const returnParams = new URLSearchParams();
+              for (const [key, value] of searchParams.entries()) {
+                if (key !== 'from') {
+                  returnParams.set(key, value);
+                }
               }
-            }
-            const query = returnParams.toString();
-            navigate(query ? `/roles/${role.id}/edit?${query}` : `/roles/${role.id}/edit`);
-          }}
-        >
-          Редактировать
-        </Button>
+              const query = returnParams.toString();
+              navigate(query ? `/roles/${role.id}/edit?${query}` : `/roles/${role.id}/edit`);
+            }}
+          >
+            Редактировать
+          </Button>
+        </RequirePermission>
       </Box>
 
       <Stack spacing={3}>
@@ -296,97 +301,99 @@ export default function RoleViewPage() {
         </Card>
 
         {/* Users Card */}
-        <Card variant="outlined">
-          <CardContent>
-            <Typography level="title-lg" sx={{ mb: 2 }}>
-              Пользователи с этой ролью
-            </Typography>
-            <Divider sx={{ mb: 3 }} />
+        <RequirePermission goal="users" right="view">
+          <Card variant="outlined">
+            <CardContent>
+              <Typography level="title-lg" sx={{ mb: 2 }}>
+                Пользователи с этой ролью
+              </Typography>
+              <Divider sx={{ mb: 3 }} />
 
-            {usersLoading ? (
-              <LinearProgress />
-            ) : users.length > 0 ? (
-              <>
-                <Sheet variant="soft" sx={{ borderRadius: 'sm', overflow: 'auto', mb: 2 }}>
-                  <Table stickyHeader size="sm">
-                    <thead>
-                      <tr>
-                        <th style={{ padding: '8px', width: '10%' }}>ID</th>
-                        <th style={{ padding: '8px', width: '25%' }}>Логин</th>
-                        <th style={{ padding: '8px', width: '25%' }}>ФИО</th>
-                        <th style={{ padding: '8px', width: '20%' }}>Дата регистрации</th>
-                        <th style={{ padding: '8px', width: '10%' }}>Статус</th>
-                        <th style={{ padding: '8px', width: '10%', textAlign: 'right' }}>
-                          Действия
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.map((user) => (
-                        <tr key={user.id}>
-                          <td style={{ padding: '8px' }}>
-                            <Typography level="body-sm">{user.id}</Typography>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <Typography level="body-sm" fontWeight="md">
-                              {user.login}
-                            </Typography>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <Typography level="body-sm">{user.fio || '—'}</Typography>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <Typography level="body-sm">
-                              {formatDate(user.registrationDate)}
-                            </Typography>
-                          </td>
-                          <td style={{ padding: '8px' }}>
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              color={user.isActive ? 'success' : 'danger'}
-                              startDecorator={user.isActive ? <ActiveIcon /> : <InactiveIcon />}
-                            >
-                              {user.isActive ? 'Активен' : 'Неактивен'}
-                            </Chip>
-                          </td>
-                          <td style={{ padding: '8px', textAlign: 'right' }}>
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              variant="outlined"
-                              onClick={() => navigate(`/users/${user.id}`)}
-                              title="Просмотр"
-                            >
-                              <ViewIcon />
-                            </IconButton>
-                          </td>
+              {usersLoading ? (
+                <LinearProgress />
+              ) : users.length > 0 ? (
+                <>
+                  <Sheet variant="soft" sx={{ borderRadius: 'sm', overflow: 'auto', mb: 2 }}>
+                    <Table stickyHeader size="sm">
+                      <thead>
+                        <tr>
+                          <th style={{ padding: '8px', width: '10%' }}>ID</th>
+                          <th style={{ padding: '8px', width: '25%' }}>Логин</th>
+                          <th style={{ padding: '8px', width: '25%' }}>ФИО</th>
+                          <th style={{ padding: '8px', width: '20%' }}>Дата регистрации</th>
+                          <th style={{ padding: '8px', width: '10%' }}>Статус</th>
+                          <th style={{ padding: '8px', width: '10%', textAlign: 'right' }}>
+                            Действия
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                </Sheet>
+                      </thead>
+                      <tbody>
+                        {users.map((user) => (
+                          <tr key={user.id}>
+                            <td style={{ padding: '8px' }}>
+                              <Typography level="body-sm">{user.id}</Typography>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <Typography level="body-sm" fontWeight="md">
+                                {user.login}
+                              </Typography>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <Typography level="body-sm">{user.fio || '—'}</Typography>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <Typography level="body-sm">
+                                {formatDate(user.registrationDate)}
+                              </Typography>
+                            </td>
+                            <td style={{ padding: '8px' }}>
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={user.isActive ? 'success' : 'danger'}
+                                startDecorator={user.isActive ? <ActiveIcon /> : <InactiveIcon />}
+                              >
+                                {user.isActive ? 'Активен' : 'Неактивен'}
+                              </Chip>
+                            </td>
+                            <td style={{ padding: '8px', textAlign: 'right' }}>
+                              <IconButton
+                                size="sm"
+                                color="primary"
+                                variant="outlined"
+                                onClick={() => navigate(`/users/${user.id}`)}
+                                title="Просмотр"
+                              >
+                                <ViewIcon />
+                              </IconButton>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </Table>
+                  </Sheet>
 
-                <PaginationControls
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={totalCount}
-                  itemsPerPage={ITEMS_PER_PAGE}
-                  onPageChange={handlePageChange}
-                  showInfo={true}
-                  compact={false}
-                />
-              </>
-            ) : (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
-                <UsersIcon sx={{ fontSize: 48, color: 'neutral.400', mb: 2 }} />
-                <Typography level="body-md" color="neutral">
-                  Нет пользователей с этой ролью
-                </Typography>
-              </Box>
-            )}
-          </CardContent>
-        </Card>
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    totalItems={totalCount}
+                    itemsPerPage={ITEMS_PER_PAGE}
+                    onPageChange={handlePageChange}
+                    showInfo={true}
+                    compact={false}
+                  />
+                </>
+              ) : (
+                <Box sx={{ p: 3, textAlign: 'center' }}>
+                  <UsersIcon sx={{ fontSize: 48, color: 'neutral.400', mb: 2 }} />
+                  <Typography level="body-md" color="neutral">
+                    Нет пользователей с этой ролью
+                  </Typography>
+                </Box>
+              )}
+            </CardContent>
+          </Card>
+        </RequirePermission>
 
         {/* Info Alert */}
         <Alert color="primary" variant="soft">
