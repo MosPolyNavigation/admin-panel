@@ -30,6 +30,7 @@ import {
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { getUser, updateUser, changeUserPassword, type User } from '../api';
+import { RequirePermission } from '../components/RequirePermission.tsx';
 
 export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();
@@ -328,53 +329,61 @@ export default function UserEditPage() {
               </Box>
 
               {/* Password */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography>Смена пароля</Typography>
-                <Button
-                  variant="outlined"
-                  startDecorator={<PasswordIcon />}
-                  onClick={() => setShowPasswordModal(true)}
+              <RequirePermission goal="user_pass" right="edit">
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
-                  Сменить пароль
-                </Button>
-              </Box>
+                  <Typography>Смена пароля</Typography>
+                  <Button
+                    variant="outlined"
+                    startDecorator={<PasswordIcon />}
+                    onClick={() => setShowPasswordModal(true)}
+                  >
+                    Сменить пароль
+                  </Button>
+                </Box>
+              </RequirePermission>
 
               {/* Roles */}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography>Роли пользователя</Typography>
-                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((ur) => (
-                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                          {ur.role?.name || `Role ${ur.roleId}`}
-                        </Chip>
-                      ))
-                    ) : (
-                      <Typography level="body-sm" textColor="neutral.500">
-                        Роли не назначены
-                      </Typography>
-                    )}
-                  </Stack>
-                </Box>
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    const returnParams = new URLSearchParams();
-                    for (const [key, value] of searchParams.entries()) {
-                      if (key !== 'from') {
-                        returnParams.set(key, value);
-                      }
-                    }
-                    const query = returnParams.toString();
-                    navigate(
-                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                    );
-                  }}
+              <RequirePermission goal="roles" right="grant">
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                 >
-                  Назначить роли
-                </Button>
-              </Box>
+                  <Box>
+                    <Typography>Роли пользователя</Typography>
+                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                      {user.roles && user.roles.length > 0 ? (
+                        user.roles.map((ur) => (
+                          <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
+                            {ur.role?.name || `Role ${ur.roleId}`}
+                          </Chip>
+                        ))
+                      ) : (
+                        <Typography level="body-sm" textColor="neutral.500">
+                          Роли не назначены
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    onClick={() => {
+                      const returnParams = new URLSearchParams();
+                      for (const [key, value] of searchParams.entries()) {
+                        if (key !== 'from') {
+                          returnParams.set(key, value);
+                        }
+                      }
+                      const query = returnParams.toString();
+                      navigate(
+                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                      );
+                    }}
+                  >
+                    Назначить роли
+                  </Button>
+                </Box>
+              </RequirePermission>
             </Stack>
           </CardContent>
         </Card>

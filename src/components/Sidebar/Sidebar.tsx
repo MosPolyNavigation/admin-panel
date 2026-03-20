@@ -27,6 +27,7 @@ import { closeSidebar } from '../../utils.ts';
 import { useAuth } from '../../hooks/useAuth.ts';
 import SidebarListItem from './SidebarListItem.tsx';
 import SidebarListItemsNested from './SidebarListItemsNested.tsx';
+import { RequirePermission } from '../RequirePermission.tsx';
 
 export default function Sidebar() {
   const location = useLocation();
@@ -35,12 +36,12 @@ export default function Sidebar() {
 
   const handleNavigate = (to: string) => {
     navigate(to);
-    closeSidebar(); // Закрываем sidebar на мобильных
+    closeSidebar();
   };
 
   const handleLogout = () => {
-    logout(); // Выходим
-    navigate('/login'); // Перенаправляем на логин
+    logout();
+    navigate('/login');
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -130,74 +131,89 @@ export default function Sidebar() {
             <Typography level="title-sm">Главная</Typography>
           </SidebarListItem>
 
-          <SidebarListItem
-            icon={<DashboardRounded />}
-            selected={isActive('/dashboards')}
-            onClick={() => handleNavigate('/dashboards')}
-          >
-            <Typography level="title-sm">Дашборды</Typography>
-          </SidebarListItem>
+          <RequirePermission goal="dashboards" right="view">
+            <SidebarListItem
+              icon={<DashboardRounded />}
+              selected={isActive('/dashboards')}
+              onClick={() => handleNavigate('/dashboards')}
+            >
+              <Typography level="title-sm">Дашборды</Typography>
+            </SidebarListItem>
+          </RequirePermission>
 
-          <SidebarListItem
-            icon={<RateReviewRounded />}
-            selected={isPartOf('/reviews')}
-            onClick={() => handleNavigate('/reviews')}
-          >
-            <Typography level="title-sm">Отзывы</Typography>
-          </SidebarListItem>
+          <RequirePermission goal="reviews" right="view">
+            <SidebarListItem
+              icon={<RateReviewRounded />}
+              selected={isPartOf('/reviews')}
+              onClick={() => handleNavigate('/reviews')}
+            >
+              <Typography level="title-sm">Отзывы</Typography>
+            </SidebarListItem>
+          </RequirePermission>
 
-          <SidebarListItemsNested
-            defaultExpanded={isPartOf('/tables')}
-            icon={<TableView />}
-            name={'Таблицы'}
-          >
-            <ListItem sx={{ mt: 0.5 }}>
-              <ListItemButton>ChangePlan</ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton>Review</ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton>SelectAuditory</ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton>SiteStat</ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton>StartWay</ListItemButton>
-            </ListItem>
-            <ListItem>
-              <ListItemButton>UserId</ListItemButton>
-            </ListItem>
-          </SidebarListItemsNested>
+          <RequirePermission goal="tables" right="view">
+            <SidebarListItemsNested
+              defaultExpanded={isPartOf('/tables')}
+              icon={<TableView />}
+              name={'Таблицы'}
+            >
+              <ListItem sx={{ mt: 0.5 }}>
+                <ListItemButton>ChangePlan</ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton>Review</ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton>SelectAuditory</ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton>SiteStat</ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton>StartWay</ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton>UserId</ListItemButton>
+              </ListItem>
+            </SidebarListItemsNested>
+          </RequirePermission>
 
-          <SidebarListItem
-            icon={<GroupRounded />}
-            selected={isActive('/users')}
-            onClick={() => handleNavigate('/users')}
-          >
-            <Typography level="title-sm">Пользователи</Typography>
-          </SidebarListItem>
+          <RequirePermission goal="users" right="view">
+            <SidebarListItem
+              icon={<GroupRounded />}
+              selected={isActive('/users')}
+              onClick={() => handleNavigate('/users')}
+            >
+              <Typography level="title-sm">Пользователи</Typography>
+            </SidebarListItem>
+          </RequirePermission>
 
-          <SidebarListItem
-            icon={<AssignmentIndRounded />}
-            selected={isActive('/roles')}
-            onClick={() => handleNavigate('/roles')}
-          >
-            <Typography level="title-sm">Роли</Typography>
-          </SidebarListItem>
+          <RequirePermission goal="roles" right="view">
+            <SidebarListItem
+              icon={<AssignmentIndRounded />}
+              selected={isActive('/roles')}
+              onClick={() => handleNavigate('/roles')}
+            >
+              <Typography level="title-sm">Роли</Typography>
+            </SidebarListItem>
+          </RequirePermission>
 
-          <SidebarListItemsNested
-            defaultExpanded={isPartOf('/admin')}
-            icon={<ShieldRounded />}
-            name={'Администрирование'}
-          >
-            <ListItem>
-              <ListItemButton selected={isActive('/bans')} onClick={() => handleNavigate('/bans')}>
-                Забаненные пользователи
-              </ListItemButton>
-            </ListItem>
-          </SidebarListItemsNested>
+          <RequirePermission goal="admin" right="view">
+            <SidebarListItemsNested
+              defaultExpanded={isPartOf('/admin')}
+              icon={<ShieldRounded />}
+              name={'Администрирование'}
+            >
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/bans')}
+                  onClick={() => handleNavigate('/bans')}
+                >
+                  Забаненные пользователи
+                </ListItemButton>
+              </ListItem>
+            </SidebarListItemsNested>
+          </RequirePermission>
         </List>
       </Box>
       <Divider />

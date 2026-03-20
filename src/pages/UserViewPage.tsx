@@ -27,6 +27,7 @@ import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { getUser, deleteUser, type User } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
+import { RequirePermission } from '../components/RequirePermission.tsx';
 
 export default function UserViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -327,65 +328,69 @@ export default function UserViewPage() {
 
             <Stack spacing={2}>
               {/* Change Password */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  p: 2,
-                  borderRadius: 'sm',
-                }}
-              >
-                <Box>
-                  <Typography level="title-md">Смена пароля</Typography>
-                  <Typography level="body-sm" textColor="neutral.500">
-                    Изменить пароль пользователя
-                  </Typography>
-                </Box>
-                <Button
-                  variant="outlined"
-                  startDecorator={<PasswordIcon />}
-                  onClick={() => setShowPasswordModal(true)}
-                >
-                  Сменить пароль
-                </Button>
-              </Box>
-
-              {/* Assign Roles */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  p: 2,
-                  borderRadius: 'sm',
-                }}
-              >
-                <Box>
-                  <Typography level="title-md">Назначение ролей</Typography>
-                  <Typography level="body-sm" textColor="neutral.500">
-                    Добавить или удалить роли
-                  </Typography>
-                </Box>
-                <Button
-                  variant="outlined"
-                  startDecorator={<RoleIcon />}
-                  onClick={() => {
-                    const returnParams = new URLSearchParams();
-                    for (const [key, value] of searchParams.entries()) {
-                      if (key !== 'from') {
-                        returnParams.set(key, value);
-                      }
-                    }
-                    const query = returnParams.toString();
-                    navigate(
-                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                    );
+              <RequirePermission goal="user_pass" right="edit">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 2,
+                    borderRadius: 'sm',
                   }}
                 >
-                  Управление ролями
-                </Button>
-              </Box>
+                  <Box>
+                    <Typography level="title-md">Смена пароля</Typography>
+                    <Typography level="body-sm" textColor="neutral.500">
+                      Изменить пароль пользователя
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    startDecorator={<PasswordIcon />}
+                    onClick={() => setShowPasswordModal(true)}
+                  >
+                    Сменить пароль
+                  </Button>
+                </Box>
+              </RequirePermission>
+
+              {/* Assign Roles */}
+              <RequirePermission goal="roles" right="grant">
+                <Box
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 2,
+                    borderRadius: 'sm',
+                  }}
+                >
+                  <Box>
+                    <Typography level="title-md">Назначение ролей</Typography>
+                    <Typography level="body-sm" textColor="neutral.500">
+                      Добавить или удалить роли
+                    </Typography>
+                  </Box>
+                  <Button
+                    variant="outlined"
+                    startDecorator={<RoleIcon />}
+                    onClick={() => {
+                      const returnParams = new URLSearchParams();
+                      for (const [key, value] of searchParams.entries()) {
+                        if (key !== 'from') {
+                          returnParams.set(key, value);
+                        }
+                      }
+                      const query = returnParams.toString();
+                      navigate(
+                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                      );
+                    }}
+                  >
+                    Управление ролями
+                  </Button>
+                </Box>
+              </RequirePermission>
             </Stack>
           </CardContent>
         </Card>
@@ -393,24 +398,28 @@ export default function UserViewPage() {
         {/* Action Buttons */}
         <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid', borderColor: 'divider' }}>
           <Stack direction="row" spacing={2} justifyContent="flex-end">
-            <Button
-              variant="outlined"
-              color="neutral"
-              size="lg"
-              onClick={() => navigate(`/users/${user.id}/edit`)}
-              startDecorator={<EditIcon />}
-            >
-              Редактировать
-            </Button>
-            <Button
-              variant="outlined"
-              color="danger"
-              size="lg"
-              onClick={() => setDeleteModalOpen(true)}
-              startDecorator={<DeleteIcon />}
-            >
-              Удалить
-            </Button>
+            <RequirePermission goal="users" right="edit">
+              <Button
+                variant="outlined"
+                color="neutral"
+                size="lg"
+                onClick={() => navigate(`/users/${user.id}/edit`)}
+                startDecorator={<EditIcon />}
+              >
+                Редактировать
+              </Button>
+            </RequirePermission>
+            <RequirePermission goal="users" right="delete">
+              <Button
+                variant="outlined"
+                color="danger"
+                size="lg"
+                onClick={() => setDeleteModalOpen(true)}
+                startDecorator={<DeleteIcon />}
+              >
+                Удалить
+              </Button>
+            </RequirePermission>
           </Stack>
         </Box>
       </Stack>
