@@ -23,7 +23,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, getRoles, grantRole, revokeRole, type User, type Role } from '../api.ts';
+import { getUser, getRoles, grantRole, revokeRole, type User, type Role } from '../api';
 
 export default function UserGrantPage() {
   const { id } = useParams<{ id: string }>();

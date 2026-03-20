@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 
 export interface User {
+  id: number;
   login: string;
   is_active: boolean;
   rights_by_goals: Record<string, string[]>;

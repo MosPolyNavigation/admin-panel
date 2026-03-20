@@ -23,7 +23,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { createUser } from '../api.ts';
+import { createUser } from '../api';
 
 export default function CreateUserPage() {
   const navigate = useNavigate();

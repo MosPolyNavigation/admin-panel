@@ -24,6 +24,7 @@ import Page from '../components/Page.tsx';
 import PaginationControls, {
   type PaginationControlsProps,
 } from '../components/PaginationControls.tsx';
+import { RequirePermission } from '../components/RequirePermission.tsx';
 import {
   Delete as DeleteIcon,
   Edit as EditIcon,
@@ -44,7 +45,7 @@ import {
   type User,
   type PaginationInput,
   type UserFilterInput,
-} from '../api.ts';
+} from '../api';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -276,14 +277,16 @@ function Users() {
       {/* Header with Create Button */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography level="h4">Список пользователей</Typography>
-        <Button
-          variant="solid"
-          color="primary"
-          startDecorator={<AddUserIcon />}
-          onClick={() => handleNavigate('/users/create')}
-        >
-          Создать пользователя
-        </Button>
+        <RequirePermission goal="users" right="create">
+          <Button
+            variant="solid"
+            color="primary"
+            startDecorator={<AddUserIcon />}
+            onClick={() => handleNavigate('/users/create')}
+          >
+            Создать пользователя
+          </Button>
+        </RequirePermission>
       </Box>
 
       {/* Search and Filters Bar */}
@@ -354,9 +357,9 @@ function Users() {
         <Table stickyHeader>
           <thead>
             <tr>
-              <th style={{ padding: '12px', width: '10%' }}>ID</th>
-              <th style={{ padding: '12px', width: '10%' }}>Логин</th>
-              <th style={{ padding: '12px', width: '10%' }}>ФИО</th>
+              <th style={{ padding: '12px', width: '6%' }}>ID</th>
+              <th style={{ padding: '12px', width: '12%' }}>Логин</th>
+              <th style={{ padding: '12px', width: '12%' }}>ФИО</th>
               <th style={{ padding: '12px', width: '15%' }}>Дата регистрации</th>
               <th style={{ padding: '12px', width: '15%' }}>Последнее изменение</th>
               <th style={{ padding: '12px', width: '10%' }}>Роли</th>
@@ -424,40 +427,48 @@ function Users() {
                     >
                       <ViewIcon />
                     </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="primary"
-                      onClick={() => handleNavigate(`/users/${user.id}/edit`)}
-                      title="Редактировать"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="neutral"
-                      variant="outlined"
-                      onClick={() => handleNavigate(`/users/${user.id}/grant`)}
-                      title="Назначить роли"
-                    >
-                      <RoleIcon />
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      color={user.isActive ? 'warning' : 'success'}
-                      variant="outlined"
-                      onClick={() => toggleActive(user)}
-                      title={user.isActive ? 'Деактивировать' : 'Активировать'}
-                    >
-                      {user.isActive ? <InactiveIcon /> : <ActiveIcon />}
-                    </IconButton>
-                    <IconButton
-                      size="sm"
-                      color="danger"
-                      onClick={() => handleDelete(user)}
-                      title="Удалить"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
+                    <RequirePermission goal="users" right="edit">
+                      <IconButton
+                        size="sm"
+                        color="primary"
+                        onClick={() => handleNavigate(`/users/${user.id}/edit`)}
+                        title="Редактировать"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </RequirePermission>
+                    <RequirePermission goal="roles" right="grant">
+                      <IconButton
+                        size="sm"
+                        color="neutral"
+                        variant="outlined"
+                        onClick={() => handleNavigate(`/users/${user.id}/grant`)}
+                        title="Назначить роли"
+                      >
+                        <RoleIcon />
+                      </IconButton>
+                    </RequirePermission>
+                    <RequirePermission goal="users" right="edit">
+                      <IconButton
+                        size="sm"
+                        color={user.isActive ? 'warning' : 'success'}
+                        variant="outlined"
+                        onClick={() => toggleActive(user)}
+                        title={user.isActive ? 'Деактивировать' : 'Активировать'}
+                      >
+                        {user.isActive ? <InactiveIcon /> : <ActiveIcon />}
+                      </IconButton>
+                    </RequirePermission>
+                    <RequirePermission goal="users" right="delete">
+                      <IconButton
+                        size="sm"
+                        color="danger"
+                        onClick={() => handleDelete(user)}
+                        title="Удалить"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </RequirePermission>
                   </Stack>
                 </td>
               </tr>
