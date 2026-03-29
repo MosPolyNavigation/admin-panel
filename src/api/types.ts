@@ -226,3 +226,51 @@ export interface UnbanRequest {
 export interface UnbanResponse {
   status: string;
 }
+
+// ============================================================================
+// НАВИГАЦИЯ (локации)
+// ============================================================================
+export interface NavLocation {
+  id: number;
+  idSys: string;
+  name: string;
+  short: string;
+  ready: boolean;
+  metro: string;
+  address: string;
+  comments: string | null;
+  crossings: string | null;
+}
+
+export interface NavAuditory {
+  id: number;
+  idSys: string;
+  name: string;
+}
+
+export interface NavType {
+  id: number;
+  name: string;
+}
+
+export interface NavLocationUpdateInput {
+  idSys?: string;
+  name?: string;
+  short?: string;
+  ready?: boolean;
+  address?: string;
+  metro?: string;
+  comments?: string | null;
+  crossings?: string | null;
+}
+
+export interface NavLocationCreateInput {
+  idSys: string;
+  name: string;
+  short: string;
+  ready: boolean;
+  address: string;
+  metro: string;
+  comments?: string | null;
+  crossings?: string | null;
+}
