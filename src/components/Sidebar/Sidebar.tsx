@@ -20,6 +20,7 @@ import {
   AssignmentIndRounded,
   RateReviewRounded,
   ShieldRounded,
+  MapRounded,
 } from '@mui/icons-material';
 import { useLocation, useNavigate } from 'react-router';
 import ColorSchemeToggle from '../ColorSchemeToggle.tsx';
@@ -196,6 +197,23 @@ export default function Sidebar() {
             >
               <Typography level="title-sm">Роли</Typography>
             </SidebarListItem>
+          </RequirePermission>
+
+          <RequirePermission goal="nav_data" right="view">
+            <SidebarListItemsNested
+              defaultExpanded={isPartOf('/navigation')}
+              icon={<MapRounded />}
+              name={'Навигация'}
+            >
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/locations')}
+                  onClick={() => handleNavigate('/navigation/locations')}
+                >
+                  Локации
+                </ListItemButton>
+              </ListItem>
+            </SidebarListItemsNested>
           </RequirePermission>
 
           <RequirePermission goal="admin" right="view">

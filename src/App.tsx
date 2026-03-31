@@ -21,6 +21,7 @@ import { AuthProvider } from './contexts/AuthProvider.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import BannedUsersPage from './pages/BannedUsersPage.tsx';
 import BannedUserDetails from './pages/BannedUserDetails.tsx';
+import NavLocationsPage from './pages/NavLocationsPage.tsx';
 import { BASE_PATH } from './config.ts';
 
 export default function App() {
@@ -56,6 +57,7 @@ export default function App() {
                 <Route index element={<BannedUsersPage />} />
                 <Route path=":user_id" element={<BannedUserDetails />} />
               </Route>
+              <Route path="navigation/locations" element={<NavLocationsPage />} />
             </Route>
           </Routes>
         </AuthProvider>

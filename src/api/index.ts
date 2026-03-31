@@ -42,6 +42,12 @@ export type {
   BanListResponse,
   UnbanRequest,
   UnbanResponse,
+  // Навигация
+  NavLocation,
+  NavAuditory,
+  NavType,
+  NavLocationUpdateInput,
+  NavLocationCreateInput,
 } from './types.ts';
 
 // Пользователи
@@ -84,3 +90,15 @@ export { getStat, getAllStats, getAllStatsAggregated } from './stats.ts';
 
 // Баны
 export { getBannedUsers, getBanInfo, unbanUser } from './bans.ts';
+
+// Навигация
+export {
+  gqlErrorMessage,
+  getNavLocations,
+  getNavAuditoriesByTypeId,
+  getNavTypes,
+  updateNavLocationsBatch,
+  createNavLocation,
+  deleteNavLocation,
+  NAV_CROSSING_TYPE_ID_FALLBACK,
+} from './navigation.ts';
