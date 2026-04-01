@@ -590,11 +590,7 @@ function NavLocationsPage() {
                         />
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          sx={{ width: 'fit-content' }}
-                        >
+                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
                           {row.comments == null || row.comments === '' ? (
                             <IconButton
                               size="sm"
@@ -622,11 +618,7 @@ function NavLocationsPage() {
                         </Stack>
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          sx={{ width: 'fit-content' }}
-                        >
+                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
                           {parseCrossingsTriples(row.crossingsJson).length === 0 ? (
                             <IconButton
                               size="sm"

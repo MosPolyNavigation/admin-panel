@@ -37,18 +37,18 @@ export const getNavLocations = async (
   if (filters?.idSys !== undefined && filters.idSys.trim() !== '') {
     parts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
   }
-  const args = parts.length ? `(${parts.join(', ')})` : '';
-  const query = `{ navLocations${args} { ${LOCATION_FIELDS} } }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ navLocations: NavLocation[] }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
-  );
+  // Исправление: используем filter Input Object и nodes
+  const args = parts.length ? `(filter: {${parts.join(', ')}})` : '';
+  const query = `{ navLocations${args} { nodes { ${LOCATION_FIELDS} } } }`;
+
+  const response = await graphqlClient.post<
+    GqlResponse<{ navLocations: { nodes: NavLocation[] } }>
+  >('/graphql', { query }, authHeaders(token, signal));
 
   const err = gqlErrorMessage(response.data);
   if (err) return { locations: [], error: err };
-  return { locations: response.data.data?.navLocations ?? [], error: null };
+  return { locations: response.data.data?.navLocations?.nodes ?? [], error: null };
 };
 
 export const NAV_CROSSING_TYPE_ID_FALLBACK = 16;
@@ -58,30 +58,28 @@ export const getNavAuditoriesByTypeId = async (
   typeId: number,
   signal?: AbortSignal
 ): Promise<{ items: NavAuditory[]; error: string | null }> => {
-  const query = `{ navAuditories(typeId: ${typeId}) { id idSys name } }`;
-  const response = await graphqlClient.post<GqlResponse<{ navAuditories: NavAuditory[] }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
-  );
+  const query = `{ navAuditories(filter: {typeId: ${typeId}}) { nodes { id idSys name typeId } } }`;
+  const response = await graphqlClient.post<
+    GqlResponse<{ navAuditories: { nodes: NavAuditory[] } }>
+  >('/graphql', { query }, authHeaders(token, signal));
   const err = gqlErrorMessage(response.data);
   if (err) return { items: [], error: err };
-  return { items: response.data.data?.navAuditories ?? [], error: null };
+  return { items: response.data.data?.navAuditories?.nodes ?? [], error: null };
 };
 
 export const getNavTypes = async (
   token: string,
   signal?: AbortSignal
 ): Promise<{ items: NavType[]; error: string | null }> => {
-  const query = `{ navTypes { id name } }`;
-  const response = await graphqlClient.post<GqlResponse<{ navTypes: NavType[] }>>(
+  const query = `{ navTypes { nodes { id name } } }`;
+  const response = await graphqlClient.post<GqlResponse<{ navTypes: { nodes: NavType[] } }>>(
     '/graphql',
     { query },
     authHeaders(token, signal)
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { items: [], error: err };
-  return { items: response.data.data?.navTypes ?? [], error: null };
+  return { items: response.data.data?.navTypes?.nodes ?? [], error: null };
 };
 
 export const updateNavLocationsBatch = async (
