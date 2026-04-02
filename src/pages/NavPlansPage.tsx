@@ -57,12 +57,6 @@ import {
   type NavPlanUpdateInput,
 } from '../api';
 
-// ID типов аудиторий из GraphQL схемы
-const WC_MAN_TYPE_ID = 12;
-const WC_WOMAN_TYPE_ID = 19;
-const WC_SHARED_TYPE_ID = 14;
-const ENTRANCE_TYPE_ID = 13;
-
 interface EditableRow {
   key: string;
   serverId: number | null;
@@ -285,10 +279,10 @@ function NavPlansPage() {
       if (tErr) return;
 
       // Находим ID типов по названиям
-      const entranceType = types.find((x) => x.id === ENTRANCE_TYPE_ID);
-      const manWcType = types.find((x) => x.id === WC_MAN_TYPE_ID);
-      const womanWcType = types.find((x) => x.id === WC_WOMAN_TYPE_ID);
-      const sharedWcType = types.find((x) => x.id === WC_SHARED_TYPE_ID);
+      const entranceType = types.find((x) => /вход.*здание/i.test(x.name));
+      const manWcType = types.find((x) => /мужской.*туалет/i.test(x.name));
+      const womanWcType = types.find((x) => /женский.*туалет/i.test(x.name));
+      const sharedWcType = types.find((x) => /общий.*туалет/i.test(x.name));
 
       const [
         { items: entranceItems, error: eErr },
