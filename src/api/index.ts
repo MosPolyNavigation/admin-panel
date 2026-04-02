@@ -48,6 +48,9 @@ export type {
   NavType,
   NavLocationUpdateInput,
   NavLocationCreateInput,
+  NavCampus,
+  NavCampusCreateInput,
+  NavCampusUpdateInput,
 } from './types.ts';
 
 // Пользователи
@@ -101,4 +104,8 @@ export {
   createNavLocation,
   deleteNavLocation,
   NAV_CROSSING_TYPE_ID_FALLBACK,
+  getNavCampuses,
+  createNavCampus,
+  updateNavCampusesBatch,
+  deleteNavCampus,
 } from './navigation.ts';

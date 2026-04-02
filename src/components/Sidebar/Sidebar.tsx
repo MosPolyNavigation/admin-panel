@@ -213,6 +213,14 @@ export default function Sidebar() {
                   Локации
                 </ListItemButton>
               </ListItem>
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/campuses')}
+                  onClick={() => handleNavigate('/navigation/campuses')}
+                >
+                  Корпуса
+                </ListItemButton>
+              </ListItem>
             </SidebarListItemsNested>
           </RequirePermission>
 

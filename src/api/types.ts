@@ -274,3 +274,38 @@ export interface NavLocationCreateInput {
   comments?: string | null;
   crossings?: string | null;
 }
+
+export interface NavCampus {
+  id: number;
+  idSys: string;
+  locId: number;
+  name: string;
+  ready: boolean;
+  stairGroups: string | null;
+  comments: string | null;
+  location?: NavLocation;
+}
+
+export interface NavCampusConnection {
+  nodes: NavCampus[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface NavCampusUpdateInput {
+  idSys?: string;
+  locId?: number;
+  name?: string;
+  ready?: boolean;
+  stairGroups?: string | null;
+  comments?: string | null;
+}
+
+export interface NavCampusCreateInput {
+  idSys: string;
+  locId: number;
+  name: string;
+  ready: boolean;
+  stairGroups?: string | null;
+  comments?: string | null;
+}
