@@ -49,8 +49,17 @@ export type {
   NavLocationUpdateInput,
   NavLocationCreateInput,
   NavCampus,
+  NavCampusConnection,
   NavCampusCreateInput,
   NavCampusUpdateInput,
+  NavPlan,
+  NavPlanConnection,
+  NavPlanCreateInput,
+  NavPlanUpdateInput,
+  NavFloor,
+  NavFloorConnection,
+  NavStatic,
+  NavStaticConnection,
 } from './types.ts';
 
 // Пользователи
@@ -108,4 +117,12 @@ export {
   createNavCampus,
   updateNavCampusesBatch,
   deleteNavCampus,
+  getNavPlans,
+  createNavPlan,
+  updateNavPlansBatch,
+  deleteNavPlan,
+  getNavFloors,
+  getNavStaticById,
+  getPlanSvg,
+  uploadPlanSvg,
 } from './navigation.ts';

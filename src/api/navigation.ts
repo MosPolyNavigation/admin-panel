@@ -1,4 +1,6 @@
-import { graphqlClient } from './client.ts';
+import { graphqlClient, restClient } from './client.ts';
+import axios from 'axios';
+import { BASE_API_URL } from '../config.ts';
 import type {
   PaginationInfo,
   GqlResponse,
@@ -11,6 +13,13 @@ import type {
   NavCampusConnection,
   NavCampusCreateInput,
   NavCampusUpdateInput,
+  NavPlan,
+  NavPlanConnection,
+  NavPlanCreateInput,
+  NavPlanUpdateInput,
+  NavFloor,
+  NavFloorConnection,
+  NavStatic,
 } from './types.ts';
 
 const LOCATION_FIELDS = 'id idSys name short ready metro address comments crossings';
@@ -324,7 +333,7 @@ function buildCampusUpdateVariablePayload(data: NavCampusUpdateInput): Record<st
   if (data.locId !== undefined) out.locId = data.locId;
   if (data.name !== undefined) out.name = data.name;
   if (data.ready !== undefined) out.ready = data.ready;
-  if (data.stairGroups !== undefined) out.stairGroups = data.stairGroups;
+  // if (data.stairGroups !== undefined) out.stairGroups = data.stairGroups;
   if (data.comments !== undefined) out.comments = data.comments;
   return out;
 }
@@ -374,4 +383,325 @@ export const deleteNavCampus = async (
   const err = gqlErrorMessage(response.data);
   if (err) return { ok: false, error: err };
   return { ok: Boolean(response.data.data?.deleteNavCampus), error: null };
+};
+
+// ============================================================================
+// НАВИГАЦИЯ: Планы
+// ============================================================================
+
+const PLAN_FIELDS =
+  'id idSys corId floorId ready entrances graph svgId nearestEntrance nearestManWc nearestWomanWc nearestSharedWc';
+
+export const getNavPlans = async (
+  token: string,
+  filters?: { id?: number; idSys?: string; corId?: number; floorId?: number; ready?: boolean },
+  pagination?: { limit?: number; offset?: number },
+  signal?: AbortSignal
+): Promise<{
+  plans: NavPlan[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}> => {
+  const filterParts: string[] = [];
+  if (filters?.id !== undefined && filters.id !== null) {
+    filterParts.push(`id: ${Number(filters.id)}`);
+  }
+  if (filters?.idSys !== undefined && filters.idSys?.trim() !== '') {
+    filterParts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
+  }
+  if (filters?.corId !== undefined && filters.corId !== null) {
+    filterParts.push(`corId: ${Number(filters.corId)}`);
+  }
+  if (filters?.floorId !== undefined && filters.floorId !== null) {
+    filterParts.push(`floorId: ${Number(filters.floorId)}`);
+  }
+  if (filters?.ready !== undefined) {
+    filterParts.push(`ready: ${filters.ready}`);
+  }
+
+  const args: string[] = [];
+  if (filterParts.length) {
+    args.push(`filter: {${filterParts.join(', ')}}`);
+  }
+  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+    const pParts: string[] = [];
+    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
+    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    args.push(`pagination: {${pParts.join(', ')}}`);
+  }
+  const argsStr = args.length ? `(${args.join(', ')})` : '';
+
+  const query = `{ navPlans${argsStr} { 
+    nodes { ${PLAN_FIELDS} } 
+    pageInfo { hasPreviousPage hasNextPage startCursor endCursor }
+    paginationInfo { totalCount currentPage totalPages }
+  } }`;
+
+  const response = await graphqlClient.post<GqlResponse<{ navPlans: NavPlanConnection }>>(
+    '/graphql',
+    { query },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { plans: [], error: err };
+
+  const data = response.data.data?.navPlans;
+  return {
+    plans: data?.nodes ?? [],
+    pagination: data?.paginationInfo,
+    error: null,
+  };
+};
+
+export const updateNavPlansBatch = async (
+  token: string,
+  updates: Array<{ id: number; data: NavPlanUpdateInput }>,
+  signal?: AbortSignal
+): Promise<{ plans: NavPlan[]; error: string | null }> => {
+  if (updates.length === 0) {
+    return { plans: [], error: null };
+  }
+
+  const variableDefinitions: string[] = [];
+  const variableValues: Record<string, unknown> = {};
+  const mutationFields: string[] = [];
+
+  updates.forEach((u, i) => {
+    const idVar = `id${i}`;
+    const dataVar = `data${i}`;
+    variableDefinitions.push(`$${idVar}: Int!`, `$${dataVar}: NavPlanUpdateInput!`);
+    variableValues[idVar] = u.id;
+    variableValues[dataVar] = u.data;
+    mutationFields.push(
+      `plan${i}: updateNavPlan(id: $${idVar}, data: $${dataVar}) { ${PLAN_FIELDS} }`
+    );
+  });
+
+  const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
+
+  const response = await graphqlClient.post<GqlResponse<Record<string, NavPlan | null>>>(
+    '/graphql',
+    { query: mutation, variables: variableValues },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { plans: [], error: err };
+
+  const data = response.data.data;
+  if (!data) return { plans: [], error: 'Пустой ответ' };
+
+  const plans: NavPlan[] = [];
+  updates.forEach((_, i) => {
+    const plan = data[`plan${i}` as keyof typeof data] as NavPlan | null | undefined;
+    if (plan) plans.push(plan);
+  });
+
+  return { plans, error: null };
+};
+
+export const createNavPlan = async (
+  token: string,
+  data: NavPlanCreateInput,
+  signal?: AbortSignal
+): Promise<{ plan: NavPlan | null; error: string | null }> => {
+  const mutation = `
+    mutation($data: NavPlanInput!) {
+      createNavPlan(data: $data) { ${PLAN_FIELDS} }
+    }
+  `;
+
+  const response = await graphqlClient.post<GqlResponse<{ createNavPlan: NavPlan }>>(
+    '/graphql',
+    { query: mutation, variables: { data } },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { plan: null, error: err };
+  return { plan: response.data.data?.createNavPlan ?? null, error: null };
+};
+
+export const deleteNavPlan = async (
+  token: string,
+  id: number,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; error: string | null }> => {
+  const mutation = `mutation { deleteNavPlan(id: ${id}) }`;
+  const response = await graphqlClient.post<GqlResponse<{ deleteNavPlan: boolean }>>(
+    '/graphql',
+    { query: mutation },
+    authHeaders(token, signal)
+  );
+  const err = gqlErrorMessage(response.data);
+  if (err) return { ok: false, error: err };
+  return { ok: Boolean(response.data.data?.deleteNavPlan), error: null };
+};
+
+// ============================================================================
+// НАВИГАЦИЯ: Этажи
+// ============================================================================
+
+export const getNavFloors = async (
+  token: string,
+  pagination?: { limit?: number; offset?: number },
+  signal?: AbortSignal
+): Promise<{
+  floors: NavFloor[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}> => {
+  const args: string[] = [];
+  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+    const pParts: string[] = [];
+    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
+    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    args.push(`pagination: {${pParts.join(', ')}}`);
+  }
+  const argsStr = args.length ? `(${args.join(', ')})` : '';
+
+  const query = `{ navFloors${argsStr} { 
+    nodes { id name } 
+    pageInfo { hasPreviousPage hasNextPage startCursor endCursor }
+    paginationInfo { totalCount currentPage totalPages }
+  } }`;
+
+  const response = await graphqlClient.post<GqlResponse<{ navFloors: NavFloorConnection }>>(
+    '/graphql',
+    { query },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { floors: [], error: err };
+
+  const data = response.data.data?.navFloors;
+  return {
+    floors: data?.nodes ?? [],
+    pagination: data?.paginationInfo,
+    error: null,
+  };
+};
+
+// ============================================================================
+// НАВИГАЦИЯ: Статические ресурсы (SVG)
+// ============================================================================
+
+export const getNavStaticById = async (
+  token: string,
+  id: number,
+  signal?: AbortSignal
+): Promise<{
+  svg: NavStatic | null;
+  error: string | null;
+}> => {
+  const query = `{ navStatic(id: ${id}) { id ext path name link } }`;
+
+  const response = await graphqlClient.post<GqlResponse<{ navStatic: NavStatic | null }>>(
+    '/graphql',
+    { query },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { svg: null, error: err };
+  return { svg: response.data.data?.navStatic ?? null, error: null };
+};
+
+// ============================================================================
+// НАВИГАЦИЯ: SVG планы (REST API)
+// ============================================================================
+
+/**
+ * Получение SVG плана по plan_id
+ * @param token - JWT токен авторизации
+ * @param planId - ID плана (строка, например "A-0-1")
+ * @param signal - AbortSignal для отмены запроса
+ * @returns Promise с объектом { svg: Blob | null, error: string | null }
+ */
+export const getPlanSvg = async (
+  token: string,
+  planId: string,
+  signal?: AbortSignal
+): Promise<{ svg: Blob | null; error: string | null }> => {
+  try {
+    const response = await restClient.get(`${BASE_API_URL}/nav/plan_svg`, {
+      params: { plan_id: planId },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: 'blob', // Важно: получаем бинарные данные
+      signal,
+    });
+    return { svg: response.data as Blob, error: null };
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      if (err.response?.status === 404) {
+        return { svg: null, error: 'План или SVG не найден' };
+      }
+      if (err.response?.status === 422) {
+        return { svg: null, error: 'Неверный формат plan_id' };
+      }
+    }
+    return { svg: null, error: err instanceof Error ? err.message : 'Ошибка загрузки SVG' };
+  }
+};
+
+/**
+ * Загрузка нового SVG плана
+ * @param token - JWT токен авторизации
+ * @param planId - ID плана (строка, например "A-0-1")
+ * @param file - Файл SVG для загрузки
+ * @param signal - AbortSignal для отмены запроса
+ * @returns Promise с объектом { ok: boolean, error: string | null }
+ */
+export const uploadPlanSvg = async (
+  token: string,
+  planId: string,
+  file: File,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; error: string | null }> => {
+  // Валидация файла на клиенте
+  if (file.type !== 'image/svg+xml' && !file.name.toLowerCase().endsWith('.svg')) {
+    return { ok: false, error: 'Требуется файл в формате SVG' };
+  }
+
+  const formData = new FormData();
+  formData.append('plan_id', planId);
+  formData.append('file', file);
+
+  try {
+    const response = await restClient.post(`${BASE_API_URL}/nav/upload_plan`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // Content-Type не указываем — браузер сам установит multipart/form-data с boundary
+      },
+      signal,
+    });
+
+    // FastAPI возвращает { status: "..." } в теле ответа
+    const data = response.data as { status?: string };
+    if (data.status?.toLowerCase().includes('error')) {
+      return { ok: false, error: data.status };
+    }
+    return { ok: true, error: null };
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const status = err.response?.status;
+      if (status === 400) {
+        return { ok: false, error: 'Неверный SVG или файл не сохранён' };
+      }
+      if (status === 404) {
+        return { ok: false, error: 'План не найден' };
+      }
+      if (status === 422) {
+        return { ok: false, error: 'Неверный формат plan_id' };
+      }
+      if (status === 413) {
+        return { ok: false, error: 'Файл слишком большой' };
+      }
+    }
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка загрузки' };
+  }
 };

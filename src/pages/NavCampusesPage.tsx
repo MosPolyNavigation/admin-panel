@@ -126,7 +126,7 @@ function diffRow(init: EditableRow, cur: EditableRow): NavCampusUpdateInput | nu
   if (init.name !== cur.name) d.name = cur.name;
   if (init.ready !== cur.ready) d.ready = cur.ready;
   if (init.comments !== cur.comments) d.comments = cur.comments;
-  if (init.stairGroupsJson !== cur.stairGroupsJson) d.stairGroups = cur.stairGroupsJson;
+  // if (init.stairGroupsJson !== cur.stairGroupsJson) d.stairGroups = cur.stairGroupsJson;
   return Object.keys(d).length > 0 ? d : null;
 }
 
