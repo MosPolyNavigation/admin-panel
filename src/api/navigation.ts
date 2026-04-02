@@ -20,6 +20,10 @@ import type {
   NavFloor,
   NavFloorConnection,
   NavStatic,
+  NavAuditory2,
+  NavAuditoryConnection,
+  NavAuditoryCreateInput,
+  NavAuditoryUpdateInput,
 } from './types.ts';
 
 const LOCATION_FIELDS = 'id idSys name short ready metro address comments crossings';
@@ -704,4 +708,182 @@ export const uploadPlanSvg = async (
     }
     return { ok: false, error: err instanceof Error ? err.message : 'Ошибка загрузки' };
   }
+};
+
+// ============================================================================
+// НАВИГАЦИЯ: Аудитории
+// ============================================================================
+
+const AUDITORY_FIELDS = `
+  id
+  idSys
+  typeId
+  ready
+  planId
+  name
+  textFromSign
+  additionalInfo
+  comments
+  link
+  type {
+    id
+    name
+  }
+  plan {
+    id
+    idSys
+  }
+  photos {
+    id
+    name
+    ext
+    link
+  }
+`;
+
+export const getNavAuditories = async (
+  token: string,
+  filters?: { id?: number; idSys?: string; planId?: number; typeId?: number; ready?: boolean },
+  pagination?: { limit?: number; offset?: number },
+  signal?: AbortSignal
+): Promise<{
+  auditories: NavAuditory2[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}> => {
+  const filterParts: string[] = [];
+  if (filters?.id !== undefined && filters.id !== null) {
+    filterParts.push(`id: ${Number(filters.id)}`);
+  }
+  if (filters?.idSys !== undefined && filters.idSys?.trim() !== '') {
+    filterParts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
+  }
+  if (filters?.planId !== undefined && filters.planId !== null) {
+    filterParts.push(`planId: ${Number(filters.planId)}`);
+  }
+  if (filters?.typeId !== undefined && filters.typeId !== null) {
+    filterParts.push(`typeId: ${Number(filters.typeId)}`);
+  }
+  if (filters?.ready !== undefined) {
+    filterParts.push(`ready: ${filters.ready}`);
+  }
+
+  const args: string[] = [];
+  if (filterParts.length) {
+    args.push(`filter: {${filterParts.join(', ')}}`);
+  }
+  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+    const pParts: string[] = [];
+    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
+    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    args.push(`pagination: {${pParts.join(', ')}}`);
+  }
+  const argsStr = args.length ? `(${args.join(', ')})` : '';
+
+  const query = `{ navAuditories${argsStr} { 
+    nodes { ${AUDITORY_FIELDS} } 
+    pageInfo { hasPreviousPage hasNextPage startCursor endCursor }
+    paginationInfo { totalCount currentPage totalPages }
+  } }`;
+
+  const response = await restClient.post<GqlResponse<{ navAuditories: NavAuditoryConnection }>>(
+    '/graphql',
+    { query },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { auditories: [], error: err };
+
+  const data = response.data.data?.navAuditories;
+  return {
+    auditories: data?.nodes ?? [],
+    pagination: data?.paginationInfo,
+    error: null,
+  };
+};
+
+export const updateNavAuditoriesBatch = async (
+  token: string,
+  updates: Array<{ id: number; data: NavAuditoryUpdateInput }>,
+  signal?: AbortSignal
+): Promise<{ auditories: NavAuditory2[]; error: string | null }> => {
+  if (updates.length === 0) {
+    return { auditories: [], error: null };
+  }
+
+  const variableDefinitions: string[] = [];
+  const variableValues: Record<string, unknown> = {};
+  const mutationFields: string[] = [];
+
+  updates.forEach((u, i) => {
+    const idVar = `id${i}`;
+    const dataVar = `data${i}`;
+    variableDefinitions.push(`$${idVar}: Int!`, `$${dataVar}: NavAuditoryUpdateInput!`);
+    variableValues[idVar] = u.id;
+    variableValues[dataVar] = u.data;
+    mutationFields.push(
+      `aud${i}: updateNavAuditory(id: $${idVar}, data: $${dataVar}) { ${AUDITORY_FIELDS} }`
+    );
+  });
+
+  const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
+
+  const response = await restClient.post<GqlResponse<Record<string, NavAuditory2 | null>>>(
+    '/graphql',
+    { query: mutation, variables: variableValues },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { auditories: [], error: err };
+
+  const data = response.data.data;
+  if (!data) return { auditories: [], error: 'Пустой ответ' };
+
+  const auditories: NavAuditory2[] = [];
+  updates.forEach((_, i) => {
+    const aud = data[`aud${i}` as keyof typeof data] as NavAuditory2 | null | undefined;
+    if (aud) auditories.push(aud);
+  });
+
+  return { auditories, error: null };
+};
+
+export const createNavAuditory = async (
+  token: string,
+  data: NavAuditoryCreateInput,
+  signal?: AbortSignal
+): Promise<{ auditory: NavAuditory2 | null; error: string | null }> => {
+  const mutation = `
+    mutation($data: NavAuditoryInput!) {
+      createNavAuditory(data: $data) { ${AUDITORY_FIELDS} }
+    }
+  `;
+
+  const response = await restClient.post<GqlResponse<{ createNavAuditory: NavAuditory2 }>>(
+    '/graphql',
+    { query: mutation, variables: { data } },
+    authHeaders(token, signal)
+  );
+
+  const err = gqlErrorMessage(response.data);
+  if (err) return { auditory: null, error: err };
+  return { auditory: response.data.data?.createNavAuditory ?? null, error: null };
+};
+
+export const deleteNavAuditory = async (
+  token: string,
+  id: number,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; error: string | null }> => {
+  const mutation = `mutation { deleteNavAuditory(id: ${id}) }`;
+  const response = await restClient.post<GqlResponse<{ deleteNavAuditory: boolean }>>(
+    '/graphql',
+    { query: mutation },
+    authHeaders(token, signal)
+  );
+  const err = gqlErrorMessage(response.data);
+  if (err) return { ok: false, error: err };
+  return { ok: Boolean(response.data.data?.deleteNavAuditory), error: null };
 };

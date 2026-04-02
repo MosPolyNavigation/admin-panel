@@ -60,6 +60,11 @@ export type {
   NavFloorConnection,
   NavStatic,
   NavStaticConnection,
+  NavAuditory2,
+  NavAuditoryConnection,
+  NavAuditoryCreateInput,
+  NavAuditoryUpdateInput,
+  NavAuditoryPhoto,
 } from './types.ts';
 
 // Пользователи
@@ -125,4 +130,8 @@ export {
   getNavStaticById,
   getPlanSvg,
   uploadPlanSvg,
+  getNavAuditories,
+  createNavAuditory,
+  updateNavAuditoriesBatch,
+  deleteNavAuditory,
 } from './navigation.ts';

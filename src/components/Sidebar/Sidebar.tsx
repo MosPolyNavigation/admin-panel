@@ -229,6 +229,14 @@ export default function Sidebar() {
                   Планы
                 </ListItemButton>
               </ListItem>
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/auditories')}
+                  onClick={() => handleNavigate('/navigation/auditories')}
+                >
+                  Аудитории
+                </ListItemButton>
+              </ListItem>
             </SidebarListItemsNested>
           </RequirePermission>
 

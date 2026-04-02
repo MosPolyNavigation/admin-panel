@@ -404,3 +404,64 @@ export interface NavStaticConnection {
   pageInfo: PageInfo;
   paginationInfo: PaginationInfo;
 }
+
+// ============================================================================
+// НАВИГАЦИЯ (аудитории)
+// ============================================================================
+
+export interface NavAuditoryPhoto {
+  id: number;
+  audId: number;
+  ext: string;
+  name: string;
+  path: string;
+  link: string;
+  creationDate: string | null;
+  updateDate: string | null;
+}
+
+export interface NavAuditory2 {
+  id: number;
+  idSys: string;
+  typeId: number;
+  ready: boolean;
+  planId: number;
+  name: string;
+  textFromSign: string | null;
+  additionalInfo: string | null;
+  comments: string | null;
+  link: string | null;
+  type?: NavType;
+  plan?: NavPlan;
+  photos?: NavAuditoryPhoto[] | null;
+}
+
+export interface NavAuditoryConnection {
+  nodes: NavAuditory2[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface NavAuditoryUpdateInput {
+  idSys?: string;
+  typeId?: number;
+  ready?: boolean;
+  planId?: number;
+  name?: string;
+  textFromSign?: string | null;
+  additionalInfo?: string | null;
+  comments?: string | null;
+  link?: string | null;
+}
+
+export interface NavAuditoryCreateInput {
+  idSys: string;
+  typeId: number;
+  ready: boolean;
+  planId: number;
+  name: string;
+  textFromSign?: string | null;
+  additionalInfo?: string | null;
+  comments?: string | null;
+  link?: string | null;
+}
