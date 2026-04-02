@@ -31,31 +31,9 @@ import PaginationControls, {
 import { useAuth } from '../hooks/useAuth.ts';
 import { getRole, getUsersByRole, type Role, type User } from '../api';
 import { RequirePermission } from '../components/RequirePermission.tsx';
+import { GOAL_RIGHTS_MAP, RIGHT_NAMES } from '../constants';
 
 const ITEMS_PER_PAGE = 10;
-
-// Доступные права для каждой цели
-const GOAL_RIGHTS_MAP: Record<number, number[]> = {
-  1: [1],
-  2: [1],
-  3: [1, 2, 3, 4],
-  4: [1, 2, 3, 4, 5],
-  5: [1, 3],
-  6: [1, 2, 3, 4],
-  7: [1, 3],
-  8: [1, 2, 3, 4],
-  9: [3],
-  10: [1, 3],
-  11: [1, 3],
-};
-
-const RIGHT_NAMES: Record<number, string> = {
-  1: 'view',
-  2: 'create',
-  3: 'edit',
-  4: 'delete',
-  5: 'grant',
-};
 
 export default function RoleViewPage() {
   const { id } = useParams<{ id: string }>();
