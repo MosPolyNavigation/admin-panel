@@ -274,3 +274,194 @@ export interface NavLocationCreateInput {
   comments?: string | null;
   crossings?: string | null;
 }
+
+// ============================================================================
+// НАВИГАЦИЯ (Корпуса)
+// ============================================================================
+
+export interface NavCampus {
+  id: number;
+  idSys: string;
+  locId: number;
+  name: string;
+  ready: boolean;
+  stairGroups: string | null;
+  comments: string | null;
+  location?: NavLocation;
+}
+
+export interface NavCampusConnection {
+  nodes: NavCampus[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface NavCampusUpdateInput {
+  idSys?: string;
+  locId?: number;
+  name?: string;
+  ready?: boolean;
+  // stairGroups?: string | null;
+  comments?: string | null;
+}
+
+export interface NavCampusCreateInput {
+  idSys: string;
+  locId: number;
+  name: string;
+  ready: boolean;
+  stairGroups?: string | null;
+  comments?: string | null;
+}
+
+// ============================================================================
+// НАВИГАЦИЯ (планы)
+// ============================================================================
+
+export interface NavPlan {
+  id: number;
+  idSys: string;
+  corId: number;
+  floorId: number;
+  ready: boolean;
+  entrances: string | null;
+  graph: string | null;
+  svgId: number | null;
+  nearestEntrance: string | null;
+  nearestManWc: string | null;
+  nearestWomanWc: string | null;
+  nearestSharedWc: string | null;
+  campus?: NavCampus;
+  floor?: NavFloor;
+  svg?: NavStatic;
+}
+
+export interface NavPlanConnection {
+  nodes: NavPlan[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface NavPlanUpdateInput {
+  idSys?: string;
+  corId?: number;
+  floorId?: number;
+  ready?: boolean;
+  entrances?: string | null;
+  graph?: string | null;
+  svgId?: number | null;
+  nearestEntrance?: string | null;
+  nearestManWc?: string | null;
+  nearestWomanWc?: string | null;
+  nearestSharedWc?: string | null;
+}
+
+export interface NavPlanCreateInput {
+  idSys: string;
+  corId: number;
+  floorId: number;
+  ready: boolean;
+  entrances?: string | null;
+  graph?: string | null;
+  // svgId?: number | null;
+  nearestEntrance?: string | null;
+  nearestManWc?: string | null;
+  nearestWomanWc?: string | null;
+  nearestSharedWc?: string | null;
+}
+
+// ============================================================================
+// НАВИГАЦИЯ (этажи)
+// ============================================================================
+
+export interface NavFloor {
+  id: number;
+  name: number;
+}
+
+export interface NavFloorConnection {
+  nodes: NavFloor[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+// ============================================================================
+// НАВИГАЦИЯ (статические ресурсы - SVG)
+// ============================================================================
+
+export interface NavStatic {
+  id: number;
+  ext: string;
+  path: string;
+  name: string;
+  link: string;
+  creationDate: string | null;
+  updateDate: string | null;
+}
+
+export interface NavStaticConnection {
+  nodes: NavStatic[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+// ============================================================================
+// НАВИГАЦИЯ (аудитории)
+// ============================================================================
+
+export interface NavAuditoryPhoto {
+  id: number;
+  audId: number;
+  ext: string;
+  name: string;
+  path: string;
+  link: string;
+  creationDate: string | null;
+  updateDate: string | null;
+}
+
+export interface NavAuditory2 {
+  id: number;
+  idSys: string;
+  typeId: number;
+  ready: boolean;
+  planId: number;
+  name: string;
+  textFromSign: string | null;
+  additionalInfo: string | null;
+  comments: string | null;
+  link: string | null;
+  type?: NavType;
+  plan?: NavPlan;
+  photos?: NavAuditoryPhoto[] | null;
+}
+
+export interface NavAuditoryConnection {
+  nodes: NavAuditory2[];
+  pageInfo: PageInfo;
+  paginationInfo: PaginationInfo;
+}
+
+export interface NavAuditoryUpdateInput {
+  idSys?: string;
+  typeId?: number;
+  ready?: boolean;
+  planId?: number;
+  name?: string;
+  textFromSign?: string | null;
+  additionalInfo?: string | null;
+  comments?: string | null;
+  link?: string | null;
+}
+
+export interface NavAuditoryCreateInput {
+  idSys: string;
+  typeId: number;
+  ready: boolean;
+  planId: number;
+  name: string;
+  textFromSign?: string | null;
+  additionalInfo?: string | null;
+  comments?: string | null;
+  link?: string | null;
+}

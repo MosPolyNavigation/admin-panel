@@ -26,83 +26,63 @@ import {
 import {
   Add,
   AddComment,
-  AltRoute,
   Comment,
   Delete as DeleteIcon,
   FilterList as FilterIcon,
-  Map as MapIcon,
   Refresh as RefreshIcon,
+  PhotoLibrary,
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { RequirePermission } from '../components/RequirePermission.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
+import PaginationControls from '../components/PaginationControls.tsx';
 import {
-  createNavLocation,
-  deleteNavLocation,
-  getNavAuditoriesByTypeId,
-  getNavLocations,
+  createNavAuditory,
+  deleteNavAuditory,
+  getNavAuditories,
+  getNavPlans,
   getNavTypes,
-  NAV_CROSSING_TYPE_ID_FALLBACK,
-  updateNavLocationsBatch,
-  type NavAuditory,
-  type NavLocation,
-  type NavLocationCreateInput,
-  type NavLocationUpdateInput,
+  updateNavAuditoriesBatch,
+  type NavAuditory2,
+  type NavAuditoryCreateInput,
+  type NavAuditoryUpdateInput,
+  type NavPlan,
+  type NavType,
 } from '../api';
-
-export type CrossingTriple = [string, string, number];
-
-function parseCrossingsTriples(raw: string | null | undefined): CrossingTriple[] {
-  if (raw == null || raw === '') return [];
-  try {
-    const v = JSON.parse(raw) as unknown;
-    if (!Array.isArray(v)) return [];
-    const out: CrossingTriple[] = [];
-    for (const item of v) {
-      if (!Array.isArray(item) || item.length < 3) continue;
-      const a = String(item[0]);
-      const b = String(item[1]);
-      const n = typeof item[2] === 'number' ? item[2] : parseFloat(String(item[2]));
-      if (!Number.isFinite(n)) continue;
-      out.push([a, b, n]);
-    }
-    return out;
-  } catch {
-    return [];
-  }
-}
-
-function triplesToJson(triples: CrossingTriple[]): string {
-  return JSON.stringify(triples);
-}
 
 interface EditableRow {
   key: string;
   serverId: number | null;
   idSys: string;
-  name: string;
-  short: string;
+  typeId: number | null;
   ready: boolean;
-  metro: string;
-  address: string;
+  planId: number | null;
+  name: string;
+  textFromSign: string | null;
+  additionalInfo: string | null;
   comments: string | null;
-  crossingsJson: string;
+  link: string | null;
+  typeName: string;
+  planName: string;
+  photosCount: number;
 }
 
-function fromApi(loc: NavLocation): EditableRow {
-  const crossings =
-    loc.crossings != null && String(loc.crossings).trim() !== '' ? String(loc.crossings) : '[]';
+function fromApi(auditory: NavAuditory2): EditableRow {
   return {
-    key: `s-${loc.id}`,
-    serverId: loc.id,
-    idSys: loc.idSys,
-    name: loc.name,
-    short: loc.short,
-    ready: loc.ready,
-    metro: loc.metro,
-    address: loc.address,
-    comments: loc.comments,
-    crossingsJson: crossings,
+    key: `s-${auditory.id}`,
+    serverId: auditory.id,
+    idSys: auditory.idSys,
+    typeId: auditory.typeId,
+    ready: auditory.ready,
+    planId: auditory.planId,
+    name: auditory.name,
+    textFromSign: auditory.textFromSign,
+    additionalInfo: auditory.additionalInfo,
+    comments: auditory.comments,
+    link: auditory.link,
+    typeName: auditory.type?.name ?? `ID: ${auditory.typeId}`,
+    planName: auditory.plan?.idSys ?? `ID: ${auditory.planId}`,
+    photosCount: auditory.photos?.length ?? 0,
   };
 }
 
@@ -111,13 +91,17 @@ function emptyNewRow(key: string): EditableRow {
     key,
     serverId: null,
     idSys: '',
-    name: '',
-    short: '',
+    typeId: null,
     ready: true,
-    metro: '',
-    address: '',
+    planId: null,
+    name: '',
+    textFromSign: null,
+    additionalInfo: null,
     comments: null,
-    crossingsJson: '[]',
+    link: null,
+    typeName: '',
+    planName: '',
+    photosCount: 0,
   };
 }
 
@@ -125,16 +109,17 @@ function cloneRow(r: EditableRow): EditableRow {
   return { ...r };
 }
 
-function diffRow(init: EditableRow, cur: EditableRow): NavLocationUpdateInput | null {
-  const d: NavLocationUpdateInput = {};
+function diffRow(init: EditableRow, cur: EditableRow): NavAuditoryUpdateInput | null {
+  const d: NavAuditoryUpdateInput = {};
   if (init.idSys !== cur.idSys) d.idSys = cur.idSys;
-  if (init.name !== cur.name) d.name = cur.name;
-  if (init.short !== cur.short) d.short = cur.short;
+  if (init.typeId !== cur.typeId) d.typeId = cur.typeId ?? undefined;
   if (init.ready !== cur.ready) d.ready = cur.ready;
-  if (init.metro !== cur.metro) d.metro = cur.metro;
-  if (init.address !== cur.address) d.address = cur.address;
+  if (init.planId !== cur.planId) d.planId = cur.planId ?? undefined;
+  if (init.name !== cur.name) d.name = cur.name;
+  if (init.textFromSign !== cur.textFromSign) d.textFromSign = cur.textFromSign;
+  if (init.additionalInfo !== cur.additionalInfo) d.additionalInfo = cur.additionalInfo;
   if (init.comments !== cur.comments) d.comments = cur.comments;
-  if (init.crossingsJson !== cur.crossingsJson) d.crossings = cur.crossingsJson;
+  if (init.link !== cur.link) d.link = cur.link;
   return Object.keys(d).length > 0 ? d : null;
 }
 
@@ -144,19 +129,22 @@ function serializeState(rows: EditableRow[], pendingDeleteIds: number[]): string
       k: r.key,
       sid: r.serverId,
       idSys: r.idSys,
-      name: r.name,
-      short: r.short,
+      typeId: r.typeId,
       ready: r.ready,
-      metro: r.metro,
-      address: r.address,
-      comments: r.comments,
-      cj: r.crossingsJson,
+      planId: r.planId,
+      name: r.name,
+      tfs: r.textFromSign,
+      ai: r.additionalInfo,
+      c: r.comments,
+      l: r.link,
     })),
     pd: [...pendingDeleteIds].sort((a, b) => a - b),
   });
 }
 
-function NavLocationsPage() {
+const DEFAULT_PAGE_SIZE = 20;
+
+function NavAuditoriesPage() {
   const { token, user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
   const canEdit = navRights.includes('edit');
@@ -170,25 +158,29 @@ function NavLocationsPage() {
 
   const [filterId, setFilterId] = useState('');
   const [filterIdSys, setFilterIdSys] = useState('');
+  const [filterName, setFilterName] = useState('');
   const [appliedId, setAppliedId] = useState('');
   const [appliedIdSys, setAppliedIdSys] = useState('');
+  const [appliedName, setAppliedName] = useState('');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ text: string; color: 'success' | 'danger' } | null>(null);
 
-  const [auditories, setAuditories] = useState<NavAuditory[]>([]);
+  const [plans, setPlans] = useState<NavPlan[]>([]);
+  const [types, setTypes] = useState<NavType[]>([]);
 
   const [commentsModal, setCommentsModal] = useState<{
     rowKey: string;
+    field: 'comments' | 'additionalInfo';
     draft: string;
   } | null>(null);
 
-  const [crossModal, setCrossModal] = useState<{
-    rowKey: string;
-    triples: CrossingTriple[];
-  } | null>(null);
+  // Пагинация
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const loadData = useCallback(async () => {
     if (!token) {
@@ -197,18 +189,28 @@ function NavLocationsPage() {
     }
     setLoading(true);
     setError(null);
-    const idNum = appliedId.trim() === '' ? undefined : parseInt(appliedId.trim(), 10);
-    const idSysVal = appliedIdSys.trim() === '' ? undefined : appliedIdSys.trim();
-    const filters =
-      idNum !== undefined && !Number.isNaN(idNum)
-        ? { id: idNum, idSys: idSysVal }
-        : idSysVal !== undefined
-          ? { idSys: idSysVal }
-          : undefined;
 
-    const { locations, error: locErr } = await getNavLocations(token, filters);
-    if (locErr) {
-      setError(locErr);
+    const filters: Record<string, unknown> = {};
+    if (appliedId.trim() !== '') {
+      const idNum = parseInt(appliedId.trim(), 10);
+      if (!Number.isNaN(idNum)) filters.id = idNum;
+    }
+    if (appliedIdSys.trim() !== '') filters.idSys = appliedIdSys.trim();
+    if (appliedName.trim() !== '') filters.name = appliedName.trim();
+
+    const offset = (currentPage - 1) * pageSize;
+
+    const {
+      auditories,
+      pagination,
+      error: audErr,
+    } = await getNavAuditories(token, Object.keys(filters).length > 0 ? filters : undefined, {
+      limit: pageSize,
+      offset,
+    });
+
+    if (audErr) {
+      setError(audErr);
       setRows([]);
       setInitialById(new Map());
       setBaseline('');
@@ -217,7 +219,9 @@ function NavLocationsPage() {
       return;
     }
 
-    const nextRows = locations.map(fromApi);
+    setTotalItems(pagination?.totalCount ?? 0);
+
+    const nextRows = auditories.map(fromApi);
     const m = new Map<number, EditableRow>();
     nextRows.forEach((r) => {
       if (r.serverId != null) m.set(r.serverId, cloneRow(r));
@@ -228,7 +232,7 @@ function NavLocationsPage() {
     const sig = serializeState(nextRows, []);
     setBaseline(sig);
     setLoading(false);
-  }, [token, appliedId, appliedIdSys]);
+  }, [token, appliedId, appliedIdSys, appliedName, pageSize, currentPage]);
 
   useEffect(() => {
     void loadData();
@@ -236,16 +240,20 @@ function NavLocationsPage() {
 
   useEffect(() => {
     if (!token) return;
+    let cancelled = false;
+
     void (async () => {
-      const { items: types, error: tErr } = await getNavTypes(token);
-      if (tErr) return;
-      const crossingType =
-        types.find((x) => /переход/i.test(x.name)) ??
-        types.find((x) => x.id === NAV_CROSSING_TYPE_ID_FALLBACK);
-      const typeId = crossingType?.id ?? NAV_CROSSING_TYPE_ID_FALLBACK;
-      const { items, error: aErr } = await getNavAuditoriesByTypeId(token, typeId);
-      if (!aErr) setAuditories(items);
+      const [{ items: typesItems, error: tErr }, { plans: plansItems, error: pErr }] =
+        await Promise.all([getNavTypes(token, 100), getNavPlans(token, undefined, { limit: 200 })]);
+
+      if (cancelled) return;
+      if (!tErr) setTypes(typesItems);
+      if (!pErr) setPlans(plansItems);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
   const dirty = useMemo(() => {
@@ -253,12 +261,27 @@ function NavLocationsPage() {
   }, [rows, pendingDeleteIds, baseline]);
 
   const handleApplyFilters = () => {
+    setCurrentPage(1);
     setAppliedId(filterId);
     setAppliedIdSys(filterIdSys);
+    setAppliedName(filterName);
   };
 
   const handleRefresh = () => {
     void loadData();
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page !== currentPage) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    if (newSize !== pageSize) {
+      setPageSize(newSize);
+      setCurrentPage(1);
+    }
   };
 
   const canSave = useMemo(() => {
@@ -279,27 +302,22 @@ function NavLocationsPage() {
     setRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
   };
 
-  const openComments = (row: EditableRow) => {
-    setCommentsModal({ rowKey: row.key, draft: row.comments ?? '' });
+  const openComments = (row: EditableRow, field: 'comments' | 'additionalInfo') => {
+    setCommentsModal({
+      rowKey: row.key,
+      field,
+      draft: field === 'comments' ? (row.comments ?? '') : (row.additionalInfo ?? ''),
+    });
   };
 
   const applyCommentsModal = () => {
     if (!commentsModal) return;
-    updateRow(commentsModal.rowKey, { comments: commentsModal.draft });
+    if (commentsModal.field === 'comments') {
+      updateRow(commentsModal.rowKey, { comments: commentsModal.draft || null });
+    } else {
+      updateRow(commentsModal.rowKey, { additionalInfo: commentsModal.draft || null });
+    }
     setCommentsModal(null);
-  };
-
-  const openCrossings = (row: EditableRow) => {
-    setCrossModal({
-      rowKey: row.key,
-      triples: parseCrossingsTriples(row.crossingsJson),
-    });
-  };
-
-  const applyCrossModal = () => {
-    if (!crossModal) return;
-    updateRow(crossModal.rowKey, { crossingsJson: triplesToJson(crossModal.triples) });
-    setCrossModal(null);
   };
 
   const addRow = () => {
@@ -326,7 +344,7 @@ function NavLocationsPage() {
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavLocation(token, id);
+        const { error: delErr } = await deleteNavAuditory(token, id);
         if (delErr) {
           setError(delErr);
           setSaving(false);
@@ -336,17 +354,23 @@ function NavLocationsPage() {
 
       const creates = rows.filter((r) => r.serverId == null);
       for (const r of creates) {
-        const data: NavLocationCreateInput = {
+        if (r.typeId == null || r.planId == null) {
+          setError('Необходимо выбрать тип и план');
+          setSaving(false);
+          return;
+        }
+        const data: NavAuditoryCreateInput = {
           idSys: r.idSys,
-          name: r.name,
-          short: r.short,
+          typeId: r.typeId,
           ready: r.ready,
-          address: r.address,
-          metro: r.metro,
+          planId: r.planId,
+          name: r.name,
+          textFromSign: r.textFromSign,
+          additionalInfo: r.additionalInfo,
           comments: r.comments,
-          crossings: r.crossingsJson,
+          link: r.link,
         };
-        const { error: cErr } = await createNavLocation(token, data);
+        const { error: cErr } = await createNavAuditory(token, data);
         if (cErr) {
           setError(cErr);
           setSaving(false);
@@ -354,7 +378,7 @@ function NavLocationsPage() {
         }
       }
 
-      const updates: Array<{ id: number; data: NavLocationUpdateInput }> = [];
+      const updates: Array<{ id: number; data: NavAuditoryUpdateInput }> = [];
       for (const r of rows) {
         if (r.serverId == null) continue;
         const init = initialById.get(r.serverId);
@@ -364,7 +388,7 @@ function NavLocationsPage() {
       }
 
       if (updates.length > 0) {
-        const { error: uErr } = await updateNavLocationsBatch(token, updates);
+        const { error: uErr } = await updateNavAuditoriesBatch(token, updates);
         if (uErr) {
           setError(uErr);
           setSaving(false);
@@ -381,18 +405,32 @@ function NavLocationsPage() {
     }
   };
 
-  const commentsActionTitle = (c: string | null) =>
-    c == null || c === '' ? 'Добавить комментарий' : 'Редактировать комментарий';
-
-  const crossingsActionTitle = (cj: string) => {
-    const t = parseCrossingsTriples(cj);
-    return t.length === 0 ? 'Добавить переходы' : 'Редактировать переходы';
+  const commentsActionTitle = (c: string | null, field: 'comments' | 'additionalInfo') => {
+    const label = field === 'comments' ? 'комментарий' : 'доп. информацию';
+    return c == null || c === '' ? `Добавить ${label}` : `Редактировать ${label}`;
   };
+
+  const getTypeName = (typeId: number | null): string => {
+    if (typeId == null) return '—';
+    const type = types.find((t) => t.id === typeId);
+    return type?.name ?? `ID: ${typeId}`;
+  };
+
+  const getPlanName = (planId: number | null): string => {
+    if (planId == null) return '—';
+    const plan = plans.find((p) => p.id === planId);
+    return plan?.idSys ?? `ID: ${planId}`;
+  };
+
+  const totalPages = useMemo(() => {
+    if (totalItems === 0) return 1;
+    return Math.ceil(totalItems / pageSize);
+  }, [totalItems, pageSize]);
 
   if (authLoading) {
     return (
       <RequirePermission goal="nav_data" right="view">
-        <Page headerText="Редактирование локаций кампуса">
+        <Page headerText="Редактирование аудиторий навигации">
           <LinearProgress />
         </Page>
       </RequirePermission>
@@ -401,7 +439,7 @@ function NavLocationsPage() {
 
   return (
     <RequirePermission goal="nav_data" right="view">
-      <Page headerText="Редактирование локаций кампуса">
+      <Page headerText="Редактирование аудиторий навигации">
         <Stack spacing={2}>
           {notice && (
             <Alert color={notice.color} variant="soft" sx={{ mb: 2 }}>
@@ -409,6 +447,7 @@ function NavLocationsPage() {
             </Alert>
           )}
 
+          {/* Заголовок и элементы управления */}
           <Box
             sx={{
               display: 'flex',
@@ -420,14 +459,29 @@ function NavLocationsPage() {
             }}
           >
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-              <Typography level="h4">Локации кампуса</Typography>
+              <Typography level="h4">Аудитории навигации</Typography>
               {!loading && rows.length > 0 && (
                 <Chip size="sm" variant="soft" color="neutral">
                   {rows.length} записей
                 </Chip>
               )}
             </Stack>
+
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography level="body-sm">На странице:</Typography>
+                <Select
+                  size="sm"
+                  value={pageSize}
+                  onChange={(_, v) => v && handlePageSizeChange(v)}
+                  sx={{ minWidth: 70 }}
+                >
+                  <Option value={10}>10</Option>
+                  <Option value={20}>20</Option>
+                  <Option value={50}>50</Option>
+                  <Option value={100}>100</Option>
+                </Select>
+              </Stack>
               <IconButton
                 variant="outlined"
                 size="sm"
@@ -451,6 +505,7 @@ function NavLocationsPage() {
             </Stack>
           </Box>
 
+          {/* Фильтры */}
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mb: 2 }}>
             <Stack spacing={2}>
               <Stack
@@ -460,7 +515,7 @@ function NavLocationsPage() {
                 flexWrap="wrap"
                 useFlexGap
               >
-                <FormControl sx={{ minWidth: 140, flex: { sm: '0 1 auto' } }}>
+                <FormControl sx={{ minWidth: 100, flex: { sm: '0 1 auto' } }}>
                   <FormLabel>Фильтр по id</FormLabel>
                   <Input
                     value={filterId}
@@ -469,7 +524,7 @@ function NavLocationsPage() {
                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                   />
                 </FormControl>
-                <FormControl sx={{ minWidth: 200, flex: { sm: '1 1 200px' } }}>
+                <FormControl sx={{ minWidth: 150, flex: { sm: '0 1 auto' } }}>
                   <FormLabel>Фильтр по idSys</FormLabel>
                   <Input
                     value={filterIdSys}
@@ -477,6 +532,15 @@ function NavLocationsPage() {
                     placeholder="все"
                     onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                     startDecorator={<FilterIcon fontSize="small" />}
+                  />
+                </FormControl>
+                <FormControl sx={{ minWidth: 200, flex: { sm: '1 1 200px' } }}>
+                  <FormLabel>Фильтр по названию</FormLabel>
+                  <Input
+                    value={filterName}
+                    onChange={(e) => setFilterName(e.target.value)}
+                    placeholder="все"
+                    onKeyDown={(e) => e.key === 'Enter' && handleApplyFilters()}
                   />
                 </FormControl>
                 <Button variant="solid" onClick={handleApplyFilters} loading={loading}>
@@ -497,17 +561,8 @@ function NavLocationsPage() {
           {rows.length === 0 && !loading && !error ? (
             <Card variant="outlined" sx={{ borderRadius: 'sm' }}>
               <Box sx={{ p: 4, textAlign: 'center' }}>
-                <MapIcon
-                  sx={{
-                    fontSize: 48,
-                    color: 'var(--joy-palette-neutral-400)',
-                    display: 'block',
-                    mx: 'auto',
-                    mb: 2,
-                  }}
-                />
                 <Typography level="title-md" color="neutral">
-                  Нет локаций по текущим фильтрам
+                  Нет аудиторий по текущим фильтрам
                 </Typography>
                 <Typography level="body-sm" sx={{ mt: 1 }}>
                   Смените фильтры или нажмите «Добавить строку»
@@ -515,19 +570,35 @@ function NavLocationsPage() {
               </Box>
             </Card>
           ) : (
-            <Sheet variant="outlined" sx={{ borderRadius: 'sm', overflow: 'auto' }}>
-              <Table stickyHeader sx={{ minWidth: 900 }}>
+            <Sheet
+              variant="outlined"
+              sx={{ borderRadius: 'sm', overflowX: 'auto', overflowY: 'hidden' }}
+            >
+              <Table
+                stickyHeader
+                sx={{
+                  minWidth: 1300,
+                  '& th, & td': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    maxWidth: 0,
+                  },
+                }}
+              >
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px', width: 72 }}>id</th>
-                    <th style={{ padding: '12px' }}>idSys</th>
-                    <th style={{ padding: '12px' }}>name</th>
-                    <th style={{ padding: '12px' }}>short</th>
-                    <th style={{ padding: '12px' }}>ready</th>
-                    <th style={{ padding: '12px' }}>metro</th>
-                    <th style={{ padding: '12px' }}>address</th>
-                    <th style={{ padding: '12px' }}>comments</th>
-                    <th style={{ padding: '12px' }}>crossings</th>
+                    <th style={{ padding: '12px', width: 60 }}>id</th>
+                    <th style={{ padding: '12px', width: 100 }}>idSys</th>
+                    <th style={{ padding: '12px', width: 150 }}>Название</th>
+                    <th style={{ padding: '12px', width: 150 }}>Тип</th>
+                    <th style={{ padding: '12px', width: 120 }}>План</th>
+                    <th style={{ padding: '12px', width: 80 }}>ready</th>
+                    <th style={{ padding: '12px', width: 120 }}>Текст с таблички</th>
+                    <th style={{ padding: '12px', width: 100 }}>Комментарий</th>
+                    <th style={{ padding: '12px', width: 100 }}>Доп. инфо</th>
+                    <th style={{ padding: '12px', width: 80 }}>Фото</th>
+                    <th style={{ padding: '12px', width: 100 }}>Ссылка</th>
                     <th style={{ padding: '12px', width: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
@@ -543,6 +614,7 @@ function NavLocationsPage() {
                           value={row.idSys}
                           onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
                           disabled={!canEdit}
+                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
                         />
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
@@ -551,15 +623,78 @@ function NavLocationsPage() {
                           value={row.name}
                           onChange={(e) => updateRow(row.key, { name: e.target.value })}
                           disabled={!canEdit}
+                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
                         />
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.short}
-                          onChange={(e) => updateRow(row.key, { short: e.target.value })}
-                          disabled={!canEdit}
-                        />
+                        {canEdit ? (
+                          <Select
+                            size="sm"
+                            value={row.typeId ?? undefined}
+                            onChange={(_, v) =>
+                              updateRow(row.key, {
+                                typeId: v ?? null,
+                                typeName: types.find((t) => t.id === v)?.name ?? '',
+                              })
+                            }
+                            placeholder="Тип"
+                            sx={{ minWidth: 150, maxWidth: 150 }}
+                          >
+                            {types.map((t) => (
+                              <Option key={t.id} value={t.id}>
+                                {t.name}
+                              </Option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '100%',
+                            }}
+                            title={getTypeName(row.typeId)}
+                          >
+                            {getTypeName(row.typeId)}
+                          </Typography>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                        {canEdit ? (
+                          <Select
+                            size="sm"
+                            value={row.planId ?? undefined}
+                            onChange={(_, v) =>
+                              updateRow(row.key, {
+                                planId: v ?? null,
+                                planName: plans.find((p) => p.id === v)?.idSys ?? '',
+                              })
+                            }
+                            placeholder="План"
+                            sx={{ minWidth: 120, maxWidth: 120 }}
+                          >
+                            {plans.map((p) => (
+                              <Option key={p.id} value={p.id}>
+                                {p.idSys}
+                              </Option>
+                            ))}
+                          </Select>
+                        ) : (
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              display: 'block',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              maxWidth: '100%',
+                            }}
+                            title={getPlanName(row.planId)}
+                          >
+                            {getPlanName(row.planId)}
+                          </Typography>
+                        )}
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
                         {canEdit ? (
@@ -576,17 +711,12 @@ function NavLocationsPage() {
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
-                          value={row.metro}
-                          onChange={(e) => updateRow(row.key, { metro: e.target.value })}
+                          value={row.textFromSign ?? ''}
+                          onChange={(e) =>
+                            updateRow(row.key, { textFromSign: e.target.value || null })
+                          }
                           disabled={!canEdit}
-                        />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.address}
-                          onChange={(e) => updateRow(row.key, { address: e.target.value })}
-                          disabled={!canEdit}
+                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
                         />
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
@@ -596,10 +726,10 @@ function NavLocationsPage() {
                               size="sm"
                               color="primary"
                               variant="outlined"
-                              onClick={() => openComments(row)}
+                              onClick={() => openComments(row, 'comments')}
                               disabled={!canEdit}
-                              title={commentsActionTitle(row.comments)}
-                              aria-label={commentsActionTitle(row.comments)}
+                              title={commentsActionTitle(row.comments, 'comments')}
+                              aria-label={commentsActionTitle(row.comments, 'comments')}
                             >
                               <AddComment fontSize="small" />
                             </IconButton>
@@ -607,10 +737,10 @@ function NavLocationsPage() {
                             <IconButton
                               size="sm"
                               color="primary"
-                              onClick={() => openComments(row)}
+                              onClick={() => openComments(row, 'comments')}
                               disabled={!canEdit}
-                              title={commentsActionTitle(row.comments)}
-                              aria-label={commentsActionTitle(row.comments)}
+                              title={commentsActionTitle(row.comments, 'comments')}
+                              aria-label={commentsActionTitle(row.comments, 'comments')}
                             >
                               <Comment fontSize="small" />
                             </IconButton>
@@ -619,31 +749,48 @@ function NavLocationsPage() {
                       </td>
                       <td style={{ padding: '12px', verticalAlign: 'middle' }}>
                         <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          {parseCrossingsTriples(row.crossingsJson).length === 0 ? (
+                          {row.additionalInfo == null || row.additionalInfo === '' ? (
                             <IconButton
                               size="sm"
                               color="primary"
                               variant="outlined"
-                              onClick={() => openCrossings(row)}
+                              onClick={() => openComments(row, 'additionalInfo')}
                               disabled={!canEdit}
-                              title={crossingsActionTitle(row.crossingsJson)}
-                              aria-label={crossingsActionTitle(row.crossingsJson)}
+                              title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
                             >
-                              <AltRoute fontSize="small" />
+                              <AddComment fontSize="small" />
                             </IconButton>
                           ) : (
                             <IconButton
                               size="sm"
                               color="primary"
-                              onClick={() => openCrossings(row)}
+                              onClick={() => openComments(row, 'additionalInfo')}
                               disabled={!canEdit}
-                              title={crossingsActionTitle(row.crossingsJson)}
-                              aria-label={crossingsActionTitle(row.crossingsJson)}
+                              title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
                             >
-                              <AltRoute fontSize="small" />
+                              <Comment fontSize="small" />
                             </IconButton>
                           )}
                         </Stack>
+                      </td>
+                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
+                          <Chip size="sm" variant="soft" color="neutral">
+                            <PhotoLibrary fontSize="small" sx={{ mr: 0.5 }} />
+                            {row.photosCount}
+                          </Chip>
+                        </Stack>
+                      </td>
+                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.link ?? ''}
+                          onChange={(e) => updateRow(row.key, { link: e.target.value || null })}
+                          disabled={!canEdit}
+                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
+                        />
                       </td>
                       <td style={{ padding: '12px', textAlign: 'right', verticalAlign: 'middle' }}>
                         <RequirePermission goal="nav_data" right="delete">
@@ -665,6 +812,7 @@ function NavLocationsPage() {
             </Sheet>
           )}
 
+          {/* Кнопки сохранения */}
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
               <Button
@@ -681,16 +829,34 @@ function NavLocationsPage() {
               </Button>
             </Stack>
           </Sheet>
+
+          {/* Пагинация */}
+          {totalItems > 0 && totalPages > 1 && !loading && (
+            <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                itemsPerPage={pageSize}
+                onPageChange={handlePageChange}
+                showInfo={true}
+                compact={false}
+              />
+            </Box>
+          )}
         </Stack>
       </Page>
 
+      {/* Модальное окно комментария/доп. информации */}
       <Modal open={!!commentsModal} onClose={() => setCommentsModal(null)}>
-        <ModalDialog sx={{ minWidth: 360 }}>
+        <ModalDialog sx={{ minWidth: 480, maxWidth: 'min(96vw, 720px)' }}>
           <ModalClose />
-          <Typography level="h4">Комментарий</Typography>
+          <Typography level="h4">
+            {commentsModal?.field === 'comments' ? 'Комментарий' : 'Дополнительная информация'}
+          </Typography>
           <Divider sx={{ my: 2 }} />
           <Textarea
-            minRows={4}
+            minRows={6}
             value={commentsModal?.draft ?? ''}
             onChange={(e) => setCommentsModal((m) => (m ? { ...m, draft: e.target.value } : m))}
           />
@@ -704,119 +870,8 @@ function NavLocationsPage() {
           </Stack>
         </ModalDialog>
       </Modal>
-
-      <Modal open={!!crossModal} onClose={() => setCrossModal(null)}>
-        <ModalDialog sx={{ minWidth: 480, maxWidth: 'min(96vw, 720px)' }}>
-          <ModalClose />
-          <Typography level="h4">Переходы</Typography>
-          <Divider sx={{ my: 2 }} />
-          <Stack spacing={2}>
-            {crossModal?.triples.map((tr, idx) => (
-              <Stack
-                key={idx}
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                alignItems={{ sm: 'center' }}
-              >
-                <Select
-                  size="sm"
-                  placeholder="От"
-                  value={tr[0]}
-                  onChange={(_, v) =>
-                    setCrossModal((m) => {
-                      if (!m) return m;
-                      const next = [...m.triples];
-                      next[idx] = [v ?? '', tr[1], tr[2]];
-                      return { ...m, triples: next };
-                    })
-                  }
-                  sx={{ minWidth: 160 }}
-                >
-                  {auditories.map((a) => (
-                    <Option key={`a-${a.id}-${idx}`} value={a.idSys}>
-                      {a.idSys}
-                    </Option>
-                  ))}
-                </Select>
-                <Select
-                  size="sm"
-                  placeholder="Куда"
-                  value={tr[1]}
-                  onChange={(_, v) =>
-                    setCrossModal((m) => {
-                      if (!m) return m;
-                      const next = [...m.triples];
-                      next[idx] = [tr[0], v ?? '', tr[2]];
-                      return { ...m, triples: next };
-                    })
-                  }
-                  sx={{ minWidth: 160 }}
-                >
-                  {auditories.map((a) => (
-                    <Option key={`b-${a.id}-${idx}`} value={a.idSys}>
-                      {a.idSys}
-                    </Option>
-                  ))}
-                </Select>
-                <Input
-                  type="number"
-                  size="sm"
-                  slotProps={{ input: { step: 0.1 } }}
-                  value={String(tr[2])}
-                  onChange={(e) => {
-                    const n = parseFloat(e.target.value);
-                    setCrossModal((m) => {
-                      if (!m) return m;
-                      const next = [...m.triples];
-                      next[idx] = [tr[0], tr[1], Number.isFinite(n) ? n : 300];
-                      return { ...m, triples: next };
-                    });
-                  }}
-                  sx={{ width: 120 }}
-                />
-                <IconButton
-                  color="danger"
-                  onClick={() =>
-                    setCrossModal((m) => {
-                      if (!m) return m;
-                      const next = m.triples.filter((_, i) => i !== idx);
-                      return { ...m, triples: next };
-                    })
-                  }
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </Stack>
-            ))}
-            <Button
-              variant="outlined"
-              color="neutral"
-              onClick={() =>
-                setCrossModal((m) =>
-                  m
-                    ? {
-                        ...m,
-                        triples: [...m.triples, ['', '', 300]],
-                      }
-                    : m
-                )
-              }
-            >
-              Добавить переход
-            </Button>
-          </Stack>
-          <Stack direction="row" spacing={1} sx={{ mt: 2, justifyContent: 'flex-end' }}>
-            <Button variant="outlined" onClick={() => setCrossModal(null)}>
-              Отмена
-            </Button>
-            <Button variant="solid" color="primary" onClick={applyCrossModal}>
-              Ок
-            </Button>
-          </Stack>
-        </ModalDialog>
-      </Modal>
     </RequirePermission>
   );
 }
 
-export default NavLocationsPage;
+export default NavAuditoriesPage;

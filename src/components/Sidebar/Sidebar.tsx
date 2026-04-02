@@ -213,6 +213,30 @@ export default function Sidebar() {
                   Локации
                 </ListItemButton>
               </ListItem>
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/campuses')}
+                  onClick={() => handleNavigate('/navigation/campuses')}
+                >
+                  Корпуса
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/plans')}
+                  onClick={() => handleNavigate('/navigation/plans')}
+                >
+                  Планы
+                </ListItemButton>
+              </ListItem>
+              <ListItem>
+                <ListItemButton
+                  selected={isActive('/navigation/auditories')}
+                  onClick={() => handleNavigate('/navigation/auditories')}
+                >
+                  Аудитории
+                </ListItemButton>
+              </ListItem>
             </SidebarListItemsNested>
           </RequirePermission>
 
