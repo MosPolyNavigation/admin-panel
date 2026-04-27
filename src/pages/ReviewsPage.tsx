@@ -1,60 +1,99 @@
 import { useState, useEffect } from 'react';
-import {
-  Typography,
-  Table,
-  Sheet,
-  IconButton,
-  Button,
-  Stack,
-  Alert,
-  CircularProgress,
-  Box,
-  Chip
-} from '@mui/joy';
-import Page from "../components/Page.tsx";
-import {
-  Visibility as ViewIcon,
-  Image as ImageIcon,
-  CalendarToday as DateIcon
-} from '@mui/icons-material';
-import { useAuth } from '../contexts/AuthContext.tsx';
-import { getReviews, type Review } from '../api.ts';
-import { useNavigate } from 'react-router';
-import { translateProblemId } from '../utils.ts';
+import { Typography, Stack, Alert, CircularProgress, Box } from '@mui/joy';
+import Page from '../components/Page';
+import { useAuth } from '../hooks/useAuth';
+import { getReviews, type Review } from '../api';
+import { useNavigate, useSearchParams } from 'react-router';
+import { translateProblemId } from '../utils';
+import { STATUS_MAP } from '../constants';
+import ReviewStatusCard from '../components/ReviewStatusCard';
+
+const ROWS_PER_PAGE = 5;
 
 function ReviewsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { token } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [page, setPage] = useState(1);
-  const rowsPerPage = 10;
+  const getPage = (statusId: number): number => {
+    const page = searchParams.get(`page_${statusId}`);
+    return page ? Number(page) : 1;
+  };
+
+  const getExpanded = (statusId: number): boolean => {
+    const val = searchParams.get(`expanded_${statusId}`);
+    if (val !== null) return val === 'true';
+    return statusId === 1;
+  };
 
   useEffect(() => {
     const fetchReviews = async () => {
       if (!token) return;
-      
       try {
         setLoading(true);
         const data = await getReviews(token);
         setReviews(data);
         setError(null);
-      } catch (err) {
+      } catch {
         setError('Ошибка загрузки отзывов');
-        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchReviews();
   }, [token]);
 
-  const totalPages = Math.ceil(reviews.length / rowsPerPage);
-  const startIndex = (page - 1) * rowsPerPage;
-  const currentReviews = reviews.slice(startIndex, startIndex + rowsPerPage);
+  useEffect(() => {
+    if (loading || reviews.length === 0) return;
+
+    const newParams = new URLSearchParams(searchParams);
+    let hasChanges = false;
+
+    const grouped = reviews.reduce(
+      (acc, review) => {
+        const statusId = review.statusId || 1;
+        (acc[statusId] ||= []).push(review);
+        return acc;
+      },
+      {} as Record<number, Review[]>
+    );
+
+    const statusIds = Object.keys(STATUS_MAP).map(Number);
+
+    statusIds.forEach((statusId) => {
+      const count = grouped[statusId]?.length || 0;
+      const totalPages = Math.ceil(count / ROWS_PER_PAGE) || 1;
+      const currentPage = Number(searchParams.get(`page_${statusId}`)) || 1;
+
+      if (currentPage > totalPages) {
+        newParams.set(`page_${statusId}`, String(totalPages));
+        hasChanges = true;
+      } else if (currentPage < 1) {
+        newParams.set(`page_${statusId}`, '1');
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [loading, reviews, setSearchParams, searchParams]);
+
+  const groupedReviews = reviews.reduce(
+    (acc, review) => {
+      const statusId = review.statusId || 1;
+      (acc[statusId] ||= []).push(review);
+      return acc;
+    },
+    {} as Record<number, Review[]>
+  );
+
+  const statusIds = Object.keys(STATUS_MAP)
+    .map(Number)
+    .sort((a, b) => a - b);
 
   const formatDate = (dateString: string) => {
     try {
@@ -63,22 +102,46 @@ function ReviewsPage() {
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
       });
     } catch {
       return dateString;
     }
   };
 
-  const truncateText = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
+  const truncateText = (text: string, maxLength = 100) =>
+    text.length <= maxLength ? text : text.slice(0, maxLength) + '...';
+
+  const handlePageChange = (statusId: number, newPage: number) => {
+    setSearchParams((prev) => {
+      prev.set(`page_${statusId}`, String(newPage));
+      return prev;
+    });
+  };
+
+  const toggleExpand = (statusId: number) => {
+    setSearchParams((params) => {
+      const current = getExpanded(statusId);
+      params.set(`expanded_${statusId}`, String(!current));
+      return params;
+    });
+  };
+
+  const handleViewReview = (reviewId: number | string) => {
+    navigate(`/reviews/${reviewId}?${searchParams.toString()}`);
   };
 
   if (loading) {
     return (
       <Page headerText="Отзывы">
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '300px' }}>
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '300px',
+          }}
+        >
           <CircularProgress />
         </Box>
       </Page>
@@ -86,129 +149,48 @@ function ReviewsPage() {
   }
 
   return (
-    <Page headerText="Просмотр отзывов">
+    <Page headerText="Отзывы">
       {error && (
         <Alert color="danger" variant="soft" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
-      <Sheet variant="outlined" sx={{ borderRadius: 'sm', overflow: 'auto' }}>
-        <Table stickyHeader>
-          <thead>
-            <tr>
-              <th style={{ padding: '12px', width: '5%' }}>ID</th>
-              <th style={{ padding: '12px', width: '20%' }}>Problem ID</th>
-              <th style={{ padding: '12px' }}>Текст отзыва</th>
-              <th style={{ padding: '12px', width: '20%' }}>Дата создания</th>
-              <th style={{ padding: '12px', width: '10%' }}>Изображение</th>
-              <th style={{ padding: '12px', width: '10%', textAlign: 'right' }}>Действия</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentReviews.map((review) => (
-              <tr key={review.id}>
-                <td style={{ padding: '12px' }}>
-                  <Typography level="body-sm" fontWeight="md">
-                    {review.id}
-                  </Typography>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <Chip size="sm" variant="soft" color="primary">
-                    {translateProblemId(review.problemId)}
-                  </Chip>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <Typography level="body-sm">
-                    {truncateText(review.text)}
-                  </Typography>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <DateIcon sx={{ fontSize: 16, color: 'neutral.500' }} />
-                    <Typography level="body-sm">
-                      {formatDate(review.creationDate)}
-                    </Typography>
-                  </Stack>
-                </td>
-                <td style={{ padding: '12px' }}>
-                  {review.imageName ? (
-                    <Chip
-                      size="sm"
-                      variant="soft"
-                      color="success"
-                      startDecorator={<ImageIcon sx={{ fontSize: 14 }} />}
-                    >
-                      Есть
-                    </Chip>
-                  ) : (
-                    <Chip size="sm" variant="soft" color="neutral">
-                      Нет
-                    </Chip>
-                  )}
-                </td>
-                <td style={{ padding: '12px', textAlign: 'right' }}>
-                  <IconButton
-                    size="sm"
-                    color="primary"
-                    onClick={() => navigate(`/reviews/${review.id}`)}
-                    title="Просмотреть"
-                  >
-                    <ViewIcon />
-                  </IconButton>
-                </td>
-              </tr>
-            ))}
-            {currentReviews.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ padding: '24px', textAlign: 'center' }}>
-                  <Typography level="body-md" color="neutral">
-                    Отзывы не найдены
-                  </Typography>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </Table>
-      </Sheet>
+      <Stack spacing={3}>
+        {statusIds.map((statusId) => {
+          const statusName = STATUS_MAP[statusId];
+          const statusReviews = groupedReviews[statusId] || [];
+          const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE) || 1;
+          const urlPage = getPage(statusId);
+          const safePage = Math.max(1, Math.min(urlPage, totalPages));
+          const isExpanded = getExpanded(statusId);
 
-      {totalPages > 1 && (
-        <Stack direction="row" spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-          <Button
-            size="sm"
-            variant="outlined"
-            disabled={page === 1}
-            onClick={() => setPage(page - 1)}
-          >
-            Назад
-          </Button>
-          {[...Array(totalPages)].map((_, i) => (
-            <Button
-              key={i}
-              size="sm"
-              variant={page === i + 1 ? "solid" : "outlined"}
-              onClick={() => setPage(i + 1)}
-            >
-              {i + 1}
-            </Button>
-          ))}
-          <Button
-            size="sm"
-            variant="outlined"
-            disabled={page === totalPages}
-            onClick={() => setPage(page + 1)}
-          >
-            Вперёд
-          </Button>
-        </Stack>
-      )}
+          return (
+            <ReviewStatusCard
+              key={statusId}
+              statusId={statusId}
+              statusName={statusName}
+              reviews={statusReviews}
+              currentPage={safePage}
+              totalPages={totalPages}
+              isExpanded={isExpanded}
+              onPageChange={handlePageChange}
+              onToggleExpand={toggleExpand}
+              onViewReview={handleViewReview}
+              formatDate={formatDate}
+              truncateText={truncateText}
+              translateProblemId={translateProblemId}
+              searchParams={searchParams}
+            />
+          );
+        })}
+      </Stack>
 
-      <Typography level="body-sm" sx={{ mt: 2, textAlign: 'center', color: 'neutral.500' }}>
-        Всего отзывов: {reviews.length}
+      <Typography level="body-sm" sx={{ mt: 3, textAlign: 'center', color: 'neutral.500' }}>
+        Всего отзывов: {reviews.length} • Статусов: {statusIds.length}
       </Typography>
     </Page>
   );
 }
 
 export default ReviewsPage;
-
