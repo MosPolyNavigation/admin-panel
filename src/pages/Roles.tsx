@@ -46,7 +46,7 @@ const ITEMS_PER_PAGE = 10;
 function Roles() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [roles, setRoles] = useState<Role[]>([]);
@@ -117,12 +117,10 @@ function Roles() {
 
   // Load roles
   const loadRoles = useCallback(async () => {
-    if (!token) return;
-
     setLoading(true);
     setError(null);
     try {
-      const result = await getRoles(token, pagination, filter);
+      const result = await getRoles(pagination, filter);
       setRoles(result.nodes);
       setTotalCount(result.paginationInfo.totalCount);
       setTotalPages(result.paginationInfo.totalPages);
@@ -132,13 +130,13 @@ function Roles() {
     } finally {
       setLoading(false);
     }
-  }, [token, pagination, filter]);
+  }, [pagination, filter]);
 
   useEffect(() => {
-    if (!authLoading && token) {
+    if (!authLoading) {
       loadRoles();
     }
-  }, [loadRoles, authLoading, token]);
+  }, [loadRoles, authLoading]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -154,9 +152,9 @@ function Roles() {
   };
 
   const confirmDelete = async () => {
-    if (!selectedRole || !token) return;
+    if (!selectedRole) return;
     try {
-      await deleteRole(token, selectedRole.id);
+      await deleteRole(selectedRole.id);
       showNotification(`Роль ${selectedRole.name} удалена`, 'success');
       loadRoles();
     } catch (err) {
@@ -213,17 +211,6 @@ function Roles() {
     return (
       <Page headerText="Управление ролями">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Управление ролями">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
       </Page>
     );
   }

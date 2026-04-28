@@ -145,7 +145,7 @@ function serializeState(rows: EditableRow[], pendingDeleteIds: number[]): string
 const DEFAULT_PAGE_SIZE = 20;
 
 function NavAuditoriesPage() {
-  const { token, user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
   const canEdit = navRights.includes('edit');
   const canCreate = navRights.includes('create');
@@ -183,10 +183,6 @@ function NavAuditoriesPage() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   const loadData = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
 
@@ -204,7 +200,7 @@ function NavAuditoriesPage() {
       auditories,
       pagination,
       error: audErr,
-    } = await getNavAuditories(token, Object.keys(filters).length > 0 ? filters : undefined, {
+    } = await getNavAuditories(Object.keys(filters).length > 0 ? filters : undefined, {
       limit: pageSize,
       offset,
     });
@@ -232,19 +228,18 @@ function NavAuditoriesPage() {
     const sig = serializeState(nextRows, []);
     setBaseline(sig);
     setLoading(false);
-  }, [token, appliedId, appliedIdSys, appliedName, pageSize, currentPage]);
+  }, [appliedId, appliedIdSys, appliedName, pageSize, currentPage]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
   useEffect(() => {
-    if (!token) return;
     let cancelled = false;
 
     void (async () => {
       const [{ items: typesItems, error: tErr }, { plans: plansItems, error: pErr }] =
-        await Promise.all([getNavTypes(token, 100), getNavPlans(token, undefined, { limit: 200 })]);
+        await Promise.all([getNavTypes(100), getNavPlans(undefined, { limit: 200 })]);
 
       if (cancelled) return;
       if (!tErr) setTypes(typesItems);
@@ -254,7 +249,7 @@ function NavAuditoriesPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, []);
 
   const dirty = useMemo(() => {
     return serializeState(rows, pendingDeleteIds) !== baseline;
@@ -337,14 +332,13 @@ function NavAuditoriesPage() {
   };
 
   const handleSave = async () => {
-    if (!token) return;
     setSaving(true);
     setNotice(null);
     setError(null);
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavAuditory(token, id);
+        const { error: delErr } = await deleteNavAuditory(id);
         if (delErr) {
           setError(delErr);
           setSaving(false);
@@ -370,7 +364,7 @@ function NavAuditoriesPage() {
           comments: r.comments,
           link: r.link,
         };
-        const { error: cErr } = await createNavAuditory(token, data);
+        const { error: cErr } = await createNavAuditory(data);
         if (cErr) {
           setError(cErr);
           setSaving(false);
@@ -388,7 +382,7 @@ function NavAuditoriesPage() {
       }
 
       if (updates.length > 0) {
-        const { error: uErr } = await updateNavAuditoriesBatch(token, updates);
+        const { error: uErr } = await updateNavAuditoriesBatch(updates);
         if (uErr) {
           setError(uErr);
           setSaving(false);

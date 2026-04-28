@@ -11,19 +11,12 @@ export const getStat = async (
   endpoint: string,
   normalizedStartDate: string,
   normalizedEndDate: string,
-  token: string,
   signal?: AbortSignal
 ) => {
   const response = await graphqlClient.post(
-    '/graphql',
+    `{ endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") { allVisits period uniqueVisitors visitorCount } }`,
+    undefined,
     {
-      query: `{ endpointStatistics(endpoint: "${endpoint}", endDate: "${normalizedEndDate}", startDate: "${normalizedStartDate}") { allVisits period uniqueVisitors visitorCount } }`,
-    },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
       signal,
     }
   );
@@ -35,7 +28,6 @@ export const getAllStats = async (
   filterType: DateFilterType,
   startDate: string,
   endDate: string,
-  token: string,
   signal?: AbortSignal
 ) => {
   try {
@@ -62,17 +54,9 @@ export const getAllStats = async (
         ways: EndpointStatistics[];
         plans: EndpointStatistics[];
       }>
-    >(
-      '/graphql',
-      { query },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        signal,
-      }
-    );
+    >(query, undefined, {
+      signal,
+    });
 
     return response;
   } catch (error) {
@@ -91,7 +75,6 @@ export const getAllStatsAggregated = async (
   filterType: DateFilterType,
   startDate: string,
   endDate: string,
-  token: string,
   signal?: AbortSignal
 ) => {
   const filterString = `${filterType}: {start: "${startDate}", end: "${endDate}"}`;
@@ -117,17 +100,7 @@ export const getAllStatsAggregated = async (
       ways: AggregatedEndpointStats;
       plans: AggregatedEndpointStats;
     }>
-  >(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    }
-  );
+  >(query, undefined, { signal });
 
   return response;
 };

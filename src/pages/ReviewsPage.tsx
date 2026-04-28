@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Typography, Stack, Alert, CircularProgress, Box } from '@mui/joy';
 import Page from '../components/Page';
-import { useAuth } from '../hooks/useAuth';
 import { getReviews, type Review } from '../api';
 import { useNavigate, useSearchParams } from 'react-router';
 import { translateProblemId } from '../utils';
@@ -12,7 +11,6 @@ const ROWS_PER_PAGE = 5;
 
 function ReviewsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,10 +29,9 @@ function ReviewsPage() {
 
   useEffect(() => {
     const fetchReviews = async () => {
-      if (!token) return;
       try {
         setLoading(true);
-        const data = await getReviews(token);
+        const data = await getReviews();
         setReviews(data);
         setError(null);
       } catch {
@@ -44,7 +41,7 @@ function ReviewsPage() {
       }
     };
     fetchReviews();
-  }, [token]);
+  }, []);
 
   useEffect(() => {
     if (loading || reviews.length === 0) return;

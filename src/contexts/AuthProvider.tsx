@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router';
 import { BASE_API_URL } from '../config.ts';
 import { AuthContext, type User } from './AuthContext.tsx';
-import { apiClient } from '../client.ts';
+import { apiClient } from '../api/client.ts';
 
 // ✅ В файле только один экспорт компонента — идеально для Fast Refresh!
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {

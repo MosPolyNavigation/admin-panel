@@ -1,6 +1,5 @@
 import { graphqlClient, restClient } from './client.ts';
 import axios from 'axios';
-import { BASE_API_URL } from '../config.ts';
 import type {
   PaginationInfo,
   GqlResponse,
@@ -28,23 +27,12 @@ import type {
 
 const LOCATION_FIELDS = 'id idSys name short ready metro address comments crossings';
 
-function authHeaders(token: string, signal?: AbortSignal) {
-  return {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    signal,
-  };
-}
-
 export function gqlErrorMessage(body: GqlResponse<unknown> | undefined): string | null {
   if (!body?.errors?.length) return null;
   return body.errors.map((e) => e.message).join('; ');
 }
 
 export const getNavLocations = async (
-  token: string,
   filters?: { id?: number; idSys?: string },
   signal?: AbortSignal
 ): Promise<{ locations: NavLocation[]; error: string | null }> => {
@@ -62,7 +50,7 @@ export const getNavLocations = async (
 
   const response = await graphqlClient.post<
     GqlResponse<{ navLocations: { nodes: NavLocation[] } }>
-  >('/graphql', { query }, authHeaders(token, signal));
+  >(query, { signal });
 
   const err = gqlErrorMessage(response.data);
   if (err) return { locations: [], error: err };
@@ -72,7 +60,6 @@ export const getNavLocations = async (
 export const NAV_CROSSING_TYPE_ID_FALLBACK = 16;
 
 export const getNavAuditoriesByTypeId = async (
-  token: string,
   typeId: number,
   limit: number = 50,
   signal?: AbortSignal
@@ -80,22 +67,21 @@ export const getNavAuditoriesByTypeId = async (
   const query = `{ navAuditories(filter: {typeId: ${typeId}}, pagination: {limit: ${limit}}) { nodes { id idSys name typeId } } }`;
   const response = await graphqlClient.post<
     GqlResponse<{ navAuditories: { nodes: NavAuditory[] } }>
-  >('/graphql', { query }, authHeaders(token, signal));
+  >(query, undefined, { signal });
   const err = gqlErrorMessage(response.data);
   if (err) return { items: [], error: err };
   return { items: response.data.data?.navAuditories?.nodes ?? [], error: null };
 };
 
 export const getNavTypes = async (
-  token: string,
   limit: number = 50,
   signal?: AbortSignal
 ): Promise<{ items: NavType[]; error: string | null }> => {
   const query = `{ navTypes(pagination: {limit: ${limit}}) { nodes { id name } } }`;
   const response = await graphqlClient.post<GqlResponse<{ navTypes: { nodes: NavType[] } }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
+    query,
+    undefined,
+    { signal }
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { items: [], error: err };
@@ -103,7 +89,6 @@ export const getNavTypes = async (
 };
 
 export const updateNavLocationsBatch = async (
-  token: string,
   updates: Array<{ id: number; data: NavLocationUpdateInput }>,
   signal?: AbortSignal
 ): Promise<{ locations: NavLocation[]; error: string | null }> => {
@@ -129,9 +114,9 @@ export const updateNavLocationsBatch = async (
   const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
 
   const response = await graphqlClient.post<GqlResponse<Record<string, NavLocation | null>>>(
-    '/graphql',
-    { query: mutation, variables: variableValues },
-    authHeaders(token, signal)
+    mutation,
+    variableValues,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -163,7 +148,6 @@ function buildUpdateVariablePayload(data: NavLocationUpdateInput): Record<string
 }
 
 export const createNavLocation = async (
-  token: string,
   data: NavLocationCreateInput,
   signal?: AbortSignal
 ): Promise<{ location: NavLocation | null; error: string | null }> => {
@@ -185,9 +169,9 @@ export const createNavLocation = async (
   `;
 
   const response = await graphqlClient.post<GqlResponse<{ createNavLocation: NavLocation }>>(
-    '/graphql',
-    { query: mutation, variables: { data: vars } },
-    authHeaders(token, signal)
+    mutation,
+    { data: vars },
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -196,15 +180,14 @@ export const createNavLocation = async (
 };
 
 export const deleteNavLocation = async (
-  token: string,
   id: number,
   signal?: AbortSignal
 ): Promise<{ ok: boolean; error: string | null }> => {
   const mutation = `mutation { deleteNavLocation(id: ${id}) }`;
   const response = await graphqlClient.post<GqlResponse<{ deleteNavLocation: boolean }>>(
-    '/graphql',
-    { query: mutation },
-    authHeaders(token, signal)
+    mutation,
+    undefined,
+    { signal }
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { ok: false, error: err };
@@ -214,7 +197,6 @@ export const deleteNavLocation = async (
 const CAMPUS_FIELDS = 'id idSys locId name ready stairGroups comments';
 
 export const getNavCampuses = async (
-  token: string,
   filters?: { id?: number; idSys?: string; locId?: number; name?: string; ready?: boolean },
   pagination?: { limit?: number; offset?: number },
   signal?: AbortSignal
@@ -259,15 +241,9 @@ export const getNavCampuses = async (
   } }`;
 
   const response = await graphqlClient.post<GqlResponse<{ navCampuses: NavCampusConnection }>>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    }
+    query,
+    undefined,
+    { signal }
   );
 
   const err = response.data?.errors?.length
@@ -285,7 +261,6 @@ export const getNavCampuses = async (
 };
 
 export const updateNavCampusesBatch = async (
-  token: string,
   updates: Array<{ id: number; data: NavCampusUpdateInput }>,
   signal?: AbortSignal
 ): Promise<{ campuses: NavCampus[]; error: string | null }> => {
@@ -311,9 +286,9 @@ export const updateNavCampusesBatch = async (
   const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
 
   const response = await graphqlClient.post<GqlResponse<Record<string, NavCampus | null>>>(
-    '/graphql',
-    { query: mutation, variables: variableValues },
-    authHeaders(token, signal)
+    mutation,
+    variableValues,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -343,7 +318,6 @@ function buildCampusUpdateVariablePayload(data: NavCampusUpdateInput): Record<st
 }
 
 export const createNavCampus = async (
-  token: string,
   data: NavCampusCreateInput,
   signal?: AbortSignal
 ): Promise<{ campus: NavCampus | null; error: string | null }> => {
@@ -363,9 +337,9 @@ export const createNavCampus = async (
   `;
 
   const response = await graphqlClient.post<GqlResponse<{ createNavCampus: NavCampus }>>(
-    '/graphql',
-    { query: mutation, variables: { data: vars } },
-    authHeaders(token, signal)
+    mutation,
+    { data: vars },
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -374,15 +348,14 @@ export const createNavCampus = async (
 };
 
 export const deleteNavCampus = async (
-  token: string,
   id: number,
   signal?: AbortSignal
 ): Promise<{ ok: boolean; error: string | null }> => {
   const mutation = `mutation { deleteNavCampus(id: ${id}) }`;
   const response = await graphqlClient.post<GqlResponse<{ deleteNavCampus: boolean }>>(
-    '/graphql',
-    { query: mutation },
-    authHeaders(token, signal)
+    mutation,
+    undefined,
+    { signal }
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { ok: false, error: err };
@@ -397,7 +370,6 @@ const PLAN_FIELDS =
   'id idSys corId floorId ready entrances graph svgId nearestEntrance nearestManWc nearestWomanWc nearestSharedWc';
 
 export const getNavPlans = async (
-  token: string,
   filters?: { id?: number; idSys?: string; corId?: number; floorId?: number; ready?: boolean },
   pagination?: { limit?: number; offset?: number },
   signal?: AbortSignal
@@ -442,9 +414,9 @@ export const getNavPlans = async (
   } }`;
 
   const response = await graphqlClient.post<GqlResponse<{ navPlans: NavPlanConnection }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
+    query,
+    undefined,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -459,7 +431,6 @@ export const getNavPlans = async (
 };
 
 export const updateNavPlansBatch = async (
-  token: string,
   updates: Array<{ id: number; data: NavPlanUpdateInput }>,
   signal?: AbortSignal
 ): Promise<{ plans: NavPlan[]; error: string | null }> => {
@@ -485,9 +456,9 @@ export const updateNavPlansBatch = async (
   const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
 
   const response = await graphqlClient.post<GqlResponse<Record<string, NavPlan | null>>>(
-    '/graphql',
-    { query: mutation, variables: variableValues },
-    authHeaders(token, signal)
+    mutation,
+    variableValues,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -506,7 +477,6 @@ export const updateNavPlansBatch = async (
 };
 
 export const createNavPlan = async (
-  token: string,
   data: NavPlanCreateInput,
   signal?: AbortSignal
 ): Promise<{ plan: NavPlan | null; error: string | null }> => {
@@ -517,9 +487,9 @@ export const createNavPlan = async (
   `;
 
   const response = await graphqlClient.post<GqlResponse<{ createNavPlan: NavPlan }>>(
-    '/graphql',
-    { query: mutation, variables: { data } },
-    authHeaders(token, signal)
+    mutation,
+    { data },
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -528,15 +498,14 @@ export const createNavPlan = async (
 };
 
 export const deleteNavPlan = async (
-  token: string,
   id: number,
   signal?: AbortSignal
 ): Promise<{ ok: boolean; error: string | null }> => {
   const mutation = `mutation { deleteNavPlan(id: ${id}) }`;
   const response = await graphqlClient.post<GqlResponse<{ deleteNavPlan: boolean }>>(
-    '/graphql',
-    { query: mutation },
-    authHeaders(token, signal)
+    mutation,
+    undefined,
+    { signal }
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { ok: false, error: err };
@@ -548,7 +517,6 @@ export const deleteNavPlan = async (
 // ============================================================================
 
 export const getNavFloors = async (
-  token: string,
   pagination?: { limit?: number; offset?: number },
   signal?: AbortSignal
 ): Promise<{
@@ -572,9 +540,9 @@ export const getNavFloors = async (
   } }`;
 
   const response = await graphqlClient.post<GqlResponse<{ navFloors: NavFloorConnection }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
+    query,
+    undefined,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -593,7 +561,6 @@ export const getNavFloors = async (
 // ============================================================================
 
 export const getNavStaticById = async (
-  token: string,
   id: number,
   signal?: AbortSignal
 ): Promise<{
@@ -603,9 +570,9 @@ export const getNavStaticById = async (
   const query = `{ navStatic(id: ${id}) { id ext path name link } }`;
 
   const response = await graphqlClient.post<GqlResponse<{ navStatic: NavStatic | null }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
+    query,
+    undefined,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -625,16 +592,12 @@ export const getNavStaticById = async (
  * @returns Promise с объектом { svg: Blob | null, error: string | null }
  */
 export const getPlanSvg = async (
-  token: string,
   planId: string,
   signal?: AbortSignal
 ): Promise<{ svg: Blob | null; error: string | null }> => {
   try {
-    const response = await restClient.get(`${BASE_API_URL}/nav/plan_svg`, {
+    const response = await restClient.get(`/nav/plan_svg`, {
       params: { plan_id: planId },
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
       responseType: 'blob', // Важно: получаем бинарные данные
       signal,
     });
@@ -661,7 +624,6 @@ export const getPlanSvg = async (
  * @returns Promise с объектом { ok: boolean, error: string | null }
  */
 export const uploadPlanSvg = async (
-  token: string,
   planId: string,
   file: File,
   signal?: AbortSignal
@@ -676,11 +638,7 @@ export const uploadPlanSvg = async (
   formData.append('file', file);
 
   try {
-    const response = await restClient.post(`${BASE_API_URL}/nav/upload_plan`, formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        // Content-Type не указываем — браузер сам установит multipart/form-data с boundary
-      },
+    const response = await restClient.post(`/nav/upload_plan`, formData, {
       signal,
     });
 
@@ -742,7 +700,6 @@ const AUDITORY_FIELDS = `
 `;
 
 export const getNavAuditories = async (
-  token: string,
   filters?: { id?: number; idSys?: string; planId?: number; typeId?: number; ready?: boolean },
   pagination?: { limit?: number; offset?: number },
   signal?: AbortSignal
@@ -786,10 +743,10 @@ export const getNavAuditories = async (
     paginationInfo { totalCount currentPage totalPages }
   } }`;
 
-  const response = await restClient.post<GqlResponse<{ navAuditories: NavAuditoryConnection }>>(
-    '/graphql',
-    { query },
-    authHeaders(token, signal)
+  const response = await graphqlClient.post<GqlResponse<{ navAuditories: NavAuditoryConnection }>>(
+    query,
+    undefined,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -804,7 +761,6 @@ export const getNavAuditories = async (
 };
 
 export const updateNavAuditoriesBatch = async (
-  token: string,
   updates: Array<{ id: number; data: NavAuditoryUpdateInput }>,
   signal?: AbortSignal
 ): Promise<{ auditories: NavAuditory2[]; error: string | null }> => {
@@ -829,10 +785,10 @@ export const updateNavAuditoriesBatch = async (
 
   const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
 
-  const response = await restClient.post<GqlResponse<Record<string, NavAuditory2 | null>>>(
-    '/graphql',
-    { query: mutation, variables: variableValues },
-    authHeaders(token, signal)
+  const response = await graphqlClient.post<GqlResponse<Record<string, NavAuditory2 | null>>>(
+    mutation,
+    variableValues,
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -851,7 +807,6 @@ export const updateNavAuditoriesBatch = async (
 };
 
 export const createNavAuditory = async (
-  token: string,
   data: NavAuditoryCreateInput,
   signal?: AbortSignal
 ): Promise<{ auditory: NavAuditory2 | null; error: string | null }> => {
@@ -861,10 +816,10 @@ export const createNavAuditory = async (
     }
   `;
 
-  const response = await restClient.post<GqlResponse<{ createNavAuditory: NavAuditory2 }>>(
-    '/graphql',
-    { query: mutation, variables: { data } },
-    authHeaders(token, signal)
+  const response = await graphqlClient.post<GqlResponse<{ createNavAuditory: NavAuditory2 }>>(
+    mutation,
+    { data },
+    { signal }
   );
 
   const err = gqlErrorMessage(response.data);
@@ -873,15 +828,14 @@ export const createNavAuditory = async (
 };
 
 export const deleteNavAuditory = async (
-  token: string,
   id: number,
   signal?: AbortSignal
 ): Promise<{ ok: boolean; error: string | null }> => {
   const mutation = `mutation { deleteNavAuditory(id: ${id}) }`;
-  const response = await restClient.post<GqlResponse<{ deleteNavAuditory: boolean }>>(
-    '/graphql',
-    { query: mutation },
-    authHeaders(token, signal)
+  const response = await graphqlClient.post<GqlResponse<{ deleteNavAuditory: boolean }>>(
+    mutation,
+    undefined,
+    { signal }
   );
   const err = gqlErrorMessage(response.data);
   if (err) return { ok: false, error: err };

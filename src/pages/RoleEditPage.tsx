@@ -32,7 +32,7 @@ export default function RoleEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [role, setRole] = useState<Role | null>(null);
@@ -53,13 +53,13 @@ export default function RoleEditPage() {
   // Load role, rights and goals
   useEffect(() => {
     const loadData = async () => {
-      if (!token || !id) return;
+      if (!id) return;
       setDataLoading(true);
       try {
         const [roleData, rightsData, goalsData] = await Promise.all([
-          getRole(token, parseInt(id)),
-          getRights(token),
-          getGoals(token),
+          getRole(parseInt(id)),
+          getRights(),
+          getGoals(),
         ]);
 
         if (!roleData) {
@@ -88,7 +88,7 @@ export default function RoleEditPage() {
       }
     };
     loadData();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -110,7 +110,7 @@ export default function RoleEditPage() {
 
   // Handle update
   const update = async () => {
-    if (!token || !id) return;
+    if (!id) return;
     if (!roleName.trim()) {
       showNotification('Название роли обязательно', 'danger');
       return;
@@ -127,7 +127,7 @@ export default function RoleEditPage() {
         });
       });
 
-      await updateRole(token, parseInt(id), {
+      await updateRole(parseInt(id), {
         name: roleName.trim(),
         roleRightGoals: roleRightGoals.length > 0 ? roleRightGoals : undefined,
       });
@@ -175,20 +175,6 @@ export default function RoleEditPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }

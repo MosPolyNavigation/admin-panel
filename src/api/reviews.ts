@@ -1,62 +1,34 @@
 import { graphqlClient, restClient } from './client.ts';
-import { BASE_API_URL } from '../config.ts';
 import type { GqlResponse, Review, ReviewStatus, SetReviewStatusResponse } from './types.ts';
 
-export const getReviews = async (token: string, signal?: AbortSignal): Promise<Review[]> => {
+export const getReviews = async (signal?: AbortSignal): Promise<Review[]> => {
   const query = `{ reviews { id, problemId, creationDate, text, imageName, statusId } }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    }
-  );
+  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(query, undefined, {
+    signal,
+  });
 
   return response.data.data.reviews;
 };
 
-export const getReview = async (
-  token: string,
-  id: string,
-  signal?: AbortSignal
-): Promise<Review[]> => {
+export const getReview = async (id: string, signal?: AbortSignal): Promise<Review[]> => {
   const query = `{ reviews (reviewId: ${id}) { id, problemId, creationDate, text, imageName, statusId } }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    }
-  );
+  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(query, undefined, {
+    signal,
+  });
 
   return response.data.data.reviews;
 };
 
-export const getReviewStatuses = async (
-  token: string,
-  signal?: AbortSignal
-): Promise<ReviewStatus[]> => {
+export const getReviewStatuses = async (signal?: AbortSignal): Promise<ReviewStatus[]> => {
   try {
     const query = `{ reviewStatuses { id, name } }`;
 
     const response = await graphqlClient.post<GqlResponse<{ reviewStatuses: ReviewStatus[] }>>(
-      '/graphql',
-      { query },
+      query,
+      undefined,
       {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
         signal,
       }
     );
@@ -69,23 +41,21 @@ export const getReviewStatuses = async (
 };
 
 export const getReviewImageUrl = (imageName: string): string => {
-  return `${BASE_API_URL}/review/image/${imageName}`;
+  return `/review/image/${imageName}`;
 };
 
 export const setReviewStatus = async (
   review_id: string,
   status_id: string,
-  token: string,
   signal?: AbortSignal
 ): Promise<SetReviewStatusResponse | null> => {
   try {
-    const response = await restClient.patch(
-      `${BASE_API_URL}/review/${review_id}/status`,
+    const response = await restClient.patch<SetReviewStatusResponse>(
+      `/review/${review_id}/status`,
       `status_id=${status_id}`,
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${token}`,
         },
         signal,
       }
@@ -97,7 +67,7 @@ export const setReviewStatus = async (
   }
 };
 
-export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
+export const getReviewsBatch = async (signal?: AbortSignal) => {
   const query = `{ 
     status1: reviews(status_id: 1) { id problemId creationDate text status_id imageName } 
     status2: reviews(status_id: 2) { id problemId creationDate text status_id imageName } 
@@ -118,17 +88,9 @@ export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
       status6: Review[];
       status7: Review[];
     };
-  }>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
-    }
-  );
+  }>(query, undefined, {
+    signal,
+  });
 
   return response.data.data;
 };

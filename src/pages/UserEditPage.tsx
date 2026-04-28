@@ -36,7 +36,7 @@ export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -73,10 +73,10 @@ export default function UserEditPage() {
   // Load user
   useEffect(() => {
     const loadUser = async () => {
-      if (!id || !token) return;
+      if (!id) return;
       setLoading(true);
       try {
-        const result = await getUser(token, parseInt(id));
+        const result = await getUser(parseInt(id));
         if (result) {
           setUser(result);
           setFormData({
@@ -93,7 +93,7 @@ export default function UserEditPage() {
       }
     };
     loadUser();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -114,14 +114,14 @@ export default function UserEditPage() {
 
   // Handle save
   const save = async () => {
-    if (!id || !user || !token) return;
+    if (!id || !user) return;
     setSaving(true);
     setError(null);
     try {
-      await updateUser(token, user.id, formData);
+      await updateUser(user.id, formData);
       showNotification('Данные сохранены', 'success');
       // Reload user data
-      const result = await getUser(token, user.id);
+      const result = await getUser(user.id);
       if (result) {
         setUser(result);
         setFormData({
@@ -151,7 +151,7 @@ export default function UserEditPage() {
 
   // Handle change password
   const changePassword = async () => {
-    if (!id || !user || !token) return;
+    if (!id || !user) return;
     if (password.new !== password.confirm) {
       setPasswordError('Пароли не совпадают');
       return;
@@ -161,7 +161,7 @@ export default function UserEditPage() {
       return;
     }
     try {
-      await changeUserPassword(token, user.id, password.new);
+      await changeUserPassword(user.id, password.new);
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -187,20 +187,6 @@ export default function UserEditPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
       </Page>
     );
   }
@@ -345,45 +331,41 @@ export default function UserEditPage() {
               </RequirePermission>
 
               {/* Roles */}
-              <RequirePermission goal="roles" right="grant">
-                <Box
-                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <Box>
-                    <Typography>Роли пользователя</Typography>
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                      {user.roles && user.roles.length > 0 ? (
-                        user.roles.map((ur) => (
-                          <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                            {ur.role?.name || `Role ${ur.roleId}`}
-                          </Chip>
-                        ))
-                      ) : (
-                        <Typography level="body-sm" textColor="neutral.500">
-                          Роли не назначены
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      const returnParams = new URLSearchParams();
-                      for (const [key, value] of searchParams.entries()) {
-                        if (key !== 'from') {
-                          returnParams.set(key, value);
-                        }
-                      }
-                      const query = returnParams.toString();
-                      navigate(
-                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                      );
-                    }}
-                  >
-                    Назначить роли
-                  </Button>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography>Роли пользователя</Typography>
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {user.roles && user.roles.length > 0 ? (
+                      user.roles.map((ur) => (
+                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
+                          {ur.role?.name || `Role ${ur.roleId}`}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Typography level="body-sm" textColor="neutral.500">
+                        Роли не назначены
+                      </Typography>
+                    )}
+                  </Stack>
                 </Box>
-              </RequirePermission>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
+                  }}
+                >
+                  Назначить роли
+                </Button>
+              </Box>
             </Stack>
           </CardContent>
         </Card>

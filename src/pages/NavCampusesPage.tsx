@@ -149,7 +149,7 @@ function serializeState(rows: EditableRow[], pendingDeleteIds: number[]): string
 const DEFAULT_PAGE_SIZE = 10;
 
 function NavCampusesPage() {
-  const { token, user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
   const canEdit = navRights.includes('edit');
   const canCreate = navRights.includes('create');
@@ -192,10 +192,6 @@ function NavCampusesPage() {
 
   // Отдельный эффект для загрузки данных при изменении пагинации/фильтров
   const loadData = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
 
@@ -213,7 +209,7 @@ function NavCampusesPage() {
       campuses,
       pagination,
       error: campErr,
-    } = await getNavCampuses(token, Object.keys(filters).length > 0 ? filters : undefined, {
+    } = await getNavCampuses(Object.keys(filters).length > 0 ? filters : undefined, {
       limit: pageSize,
       offset,
     });
@@ -241,7 +237,7 @@ function NavCampusesPage() {
     const sig = serializeState(nextRows, []);
     setBaseline(sig);
     setLoading(false);
-  }, [token, appliedId, appliedIdSys, appliedName, pageSize, currentPage]);
+  }, [appliedId, appliedIdSys, appliedName, pageSize, currentPage]);
 
   // Загрузка данных при изменении пагинации или фильтров
   useEffect(() => {
@@ -250,21 +246,17 @@ function NavCampusesPage() {
 
   // Загрузка справочников (локации, типы, лестницы) — только при авторизации
   useEffect(() => {
-    if (!token) return;
     let cancelled = false;
 
     void (async () => {
-      const { items: types, error: tErr } = await getNavTypes(token, 50);
+      const { items: types, error: tErr } = await getNavTypes(50);
       if (cancelled || tErr) return;
 
       const stairType = types.find((x) => /лестниц/i.test(x.name)) ?? types.find((x) => x.id === 3);
       const stairTypeId = stairType?.id ?? 3;
 
       const [{ items: stairsItems, error: sErr }, { locations: locs, error: lErr }] =
-        await Promise.all([
-          getNavAuditoriesByTypeId(token, stairTypeId, 200),
-          getNavLocations(token, undefined),
-        ]);
+        await Promise.all([getNavAuditoriesByTypeId(stairTypeId, 200), getNavLocations(undefined)]);
 
       if (cancelled) return;
       if (!sErr) setStairs(stairsItems);
@@ -274,7 +266,7 @@ function NavCampusesPage() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, []);
 
   const dirty = useMemo(() => {
     return serializeState(rows, pendingDeleteIds) !== baseline;
@@ -362,14 +354,13 @@ function NavCampusesPage() {
   };
 
   const handleSave = async () => {
-    if (!token) return;
     setSaving(true);
     setNotice(null);
     setError(null);
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavCampus(token, id);
+        const { error: delErr } = await deleteNavCampus(id);
         if (delErr) {
           setError(delErr);
           setSaving(false);
@@ -393,7 +384,7 @@ function NavCampusesPage() {
           comments: r.comments,
           stairGroups: r.stairGroupsJson,
         };
-        const { error: cErr } = await createNavCampus(token, data);
+        const { error: cErr } = await createNavCampus(data);
         if (cErr) {
           setError(cErr);
           setSaving(false);
@@ -415,7 +406,7 @@ function NavCampusesPage() {
       }
 
       if (updates.length > 0) {
-        const { error: uErr } = await updateNavCampusesBatch(token, updates);
+        const { error: uErr } = await updateNavCampusesBatch(updates);
         if (uErr) {
           setError(uErr);
           setSaving(false);

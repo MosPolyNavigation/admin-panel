@@ -224,7 +224,7 @@ function NavPlansPage() {
       plans,
       pagination,
       error: planErr,
-    } = await getNavPlans(token, Object.keys(filters).length > 0 ? filters : undefined, {
+    } = await getNavPlans(Object.keys(filters).length > 0 ? filters : undefined, {
       limit: pageSize,
       offset,
     });
@@ -268,9 +268,9 @@ function NavPlansPage() {
         { floors: floorsItems, error: fErr },
         { items: types, error: tErr },
       ] = await Promise.all([
-        getNavCampuses(token, undefined, { limit: 100 }),
-        getNavFloors(token, { limit: 50 }),
-        getNavTypes(token, 50), // ✅ ИСПРАВЛЕНО: 50 -> { limit: 50 }
+        getNavCampuses(undefined, { limit: 100 }),
+        getNavFloors({ limit: 50 }),
+        getNavTypes(50), // ✅ ИСПРАВЛЕНО: 50 -> { limit: 50 }
       ]);
 
       if (cancelled) return;
@@ -291,16 +291,16 @@ function NavPlansPage() {
         { items: sharedItems, error: sErr },
       ] = await Promise.all([
         entranceType
-          ? getNavAuditoriesByTypeId(token, entranceType.id, 200)
+          ? getNavAuditoriesByTypeId(entranceType.id, 200)
           : Promise.resolve({ items: [], error: null }),
         manWcType
-          ? getNavAuditoriesByTypeId(token, manWcType.id, 200)
+          ? getNavAuditoriesByTypeId(manWcType.id, 200)
           : Promise.resolve({ items: [], error: null }),
         womanWcType
-          ? getNavAuditoriesByTypeId(token, womanWcType.id, 200)
+          ? getNavAuditoriesByTypeId(womanWcType.id, 200)
           : Promise.resolve({ items: [], error: null }),
         sharedWcType
-          ? getNavAuditoriesByTypeId(token, sharedWcType.id, 200)
+          ? getNavAuditoriesByTypeId(sharedWcType.id, 200)
           : Promise.resolve({ items: [], error: null }),
       ]);
 
@@ -384,7 +384,7 @@ function NavPlansPage() {
   const openSvg = (row: EditableRow) => {
     if (row.svgId && token) {
       void (async () => {
-        const { svg, error } = await getPlanSvg(token, row.idSys);
+        const { svg, error } = await getPlanSvg(row.idSys);
         if (!error && svg) {
           const url = URL.createObjectURL(svg);
           setSvgModal({ rowKey: row.key, svgUrl: url, file: null, zoom: 1 }); // ✅ Сброс зума на 1
@@ -407,7 +407,7 @@ function NavPlansPage() {
     }
 
     if (svgModal.file) {
-      const { ok, error } = await uploadPlanSvg(token, row.idSys, svgModal.file);
+      const { ok, error } = await uploadPlanSvg(row.idSys, svgModal.file);
       if (!ok) {
         setError(error ?? 'Ошибка загрузки SVG');
         return;
@@ -454,7 +454,7 @@ function NavPlansPage() {
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavPlan(token, id);
+        const { error: delErr } = await deleteNavPlan(id);
         if (delErr) {
           setError(delErr);
           setSaving(false);
@@ -482,7 +482,7 @@ function NavPlansPage() {
           nearestWomanWc: r.nearestWomanWc,
           nearestSharedWc: r.nearestSharedWc,
         };
-        const { error: cErr } = await createNavPlan(token, data);
+        const { error: cErr } = await createNavPlan(data);
         if (cErr) {
           setError(cErr);
           setSaving(false);
@@ -500,7 +500,7 @@ function NavPlansPage() {
       }
 
       if (updates.length > 0) {
-        const { error: uErr } = await updateNavPlansBatch(token, updates);
+        const { error: uErr } = await updateNavPlansBatch(updates);
         if (uErr) {
           setError(uErr);
           setSaving(false);

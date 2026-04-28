@@ -39,7 +39,7 @@ export default function RoleViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [role, setRole] = useState<Role | null>(null);
@@ -56,10 +56,10 @@ export default function RoleViewPage() {
   // Load role
   useEffect(() => {
     const loadRole = async () => {
-      if (!token || !id) return;
+      if (!id) return;
       setLoading(true);
       try {
-        const result = await getRole(token, parseInt(id));
+        const result = await getRole(parseInt(id));
         if (result) {
           setRole(result);
         } else {
@@ -72,15 +72,15 @@ export default function RoleViewPage() {
       }
     };
     loadRole();
-  }, [id, token]);
+  }, [id]);
 
   // Load users with this role
   useEffect(() => {
     const loadUsers = async () => {
-      if (!token || !id) return;
+      if (!id) return;
       setUsersLoading(true);
       try {
-        const result = await getUsersByRole(token, parseInt(id), {
+        const result = await getUsersByRole(parseInt(id), {
           limit: ITEMS_PER_PAGE,
           offset: (currentPage - 1) * ITEMS_PER_PAGE,
         });
@@ -94,7 +94,7 @@ export default function RoleViewPage() {
       }
     };
     loadUsers();
-  }, [id, token, currentPage]);
+  }, [id, currentPage]);
 
   // Handle page change for users
   const handlePageChange: PaginationControlsProps['onPageChange'] = (page) => {
@@ -128,20 +128,6 @@ export default function RoleViewPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }
