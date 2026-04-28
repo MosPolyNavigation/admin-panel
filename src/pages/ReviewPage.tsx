@@ -26,7 +26,6 @@ import {
   ZoomIn as ZoomIcon,
 } from '@mui/icons-material';
 import { useParams, useNavigate, useLocation } from 'react-router';
-import { useAuth } from '../hooks/useAuth.ts';
 import {
   getReview,
   getReviewStatuses,
@@ -41,7 +40,6 @@ export default function ReviewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { token } = useAuth();
 
   const [review, setReview] = useState<Review | null>(null);
   const [statuses, setStatuses] = useState<ReviewStatus[]>([]);
@@ -54,12 +52,12 @@ export default function ReviewPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!token || !id) return;
+      if (!id) return;
 
       try {
         setLoading(true);
 
-        const reviews = await getReview(token, id);
+        const reviews = await getReview(id);
 
         const reviewId = Number(id);
         const foundReview = reviews.find((r) => Number(r.id) === reviewId);
@@ -72,7 +70,7 @@ export default function ReviewPage() {
         setReview(foundReview);
 
         try {
-          const statusList = await getReviewStatuses(token);
+          const statusList = await getReviewStatuses();
           setStatuses(statusList);
           if (statusList.length > 0) {
             setSelectedStatus(String(foundReview.statusId));
@@ -91,15 +89,15 @@ export default function ReviewPage() {
     };
 
     fetchData();
-  }, [token, id]);
+  }, [id]);
 
   const handleStatusChange = async () => {
-    if (!token || !id || !selectedStatus) return;
+    if (!id || !selectedStatus) return;
 
     try {
       setStatusLoading(true);
 
-      const result = await setReviewStatus(id, selectedStatus, token);
+      const result = await setReviewStatus(id, selectedStatus);
       if (result === null) {
         showAlert('Ошибка при обновлении статуса', 'danger');
       } else {

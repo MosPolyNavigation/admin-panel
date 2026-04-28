@@ -29,7 +29,6 @@ import {
   FilterList as FilterIcon,
 } from '@mui/icons-material';
 import Page from '../components/Page';
-import { useAuth } from '../hooks/useAuth';
 import { getBannedUsers, type BanInfo } from '../api';
 import { useNavigate } from 'react-router';
 
@@ -37,7 +36,6 @@ const ROWS_PER_PAGE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_ROWS_PER_PAGE = 25;
 
 function BannedUsersPage() {
-  const { token } = useAuth();
   const navigate = useNavigate();
 
   const [bans, setBans] = useState<BanInfo[]>([]);
@@ -53,10 +51,9 @@ function BannedUsersPage() {
 
   const fetchBans = useCallback(
     async (page: number = currentPage, size: number = rowsPerPage) => {
-      if (!token) return;
       try {
         setLoading(true);
-        const data = await getBannedUsers(token, page, size);
+        const data = await getBannedUsers(page, size);
         setBans(data.items);
         setTotal(data.total);
         setCurrentPage(data.page);
@@ -69,7 +66,7 @@ function BannedUsersPage() {
         setRefreshing(false);
       }
     },
-    [token, currentPage, rowsPerPage]
+    [currentPage, rowsPerPage]
   );
 
   useEffect(() => {

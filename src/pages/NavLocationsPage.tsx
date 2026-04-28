@@ -157,7 +157,7 @@ function serializeState(rows: EditableRow[], pendingDeleteIds: number[]): string
 }
 
 function NavLocationsPage() {
-  const { token, user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
   const canEdit = navRights.includes('edit');
   const canCreate = navRights.includes('create');
@@ -191,10 +191,6 @@ function NavLocationsPage() {
   } | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     setLoading(true);
     setError(null);
     const idNum = appliedId.trim() === '' ? undefined : parseInt(appliedId.trim(), 10);
@@ -206,7 +202,7 @@ function NavLocationsPage() {
           ? { idSys: idSysVal }
           : undefined;
 
-    const { locations, error: locErr } = await getNavLocations(token, filters);
+    const { locations, error: locErr } = await getNavLocations(filters);
     if (locErr) {
       setError(locErr);
       setRows([]);
@@ -228,25 +224,24 @@ function NavLocationsPage() {
     const sig = serializeState(nextRows, []);
     setBaseline(sig);
     setLoading(false);
-  }, [token, appliedId, appliedIdSys]);
+  }, [appliedId, appliedIdSys]);
 
   useEffect(() => {
     void loadData();
   }, [loadData]);
 
   useEffect(() => {
-    if (!token) return;
     void (async () => {
-      const { items: types, error: tErr } = await getNavTypes(token);
+      const { items: types, error: tErr } = await getNavTypes();
       if (tErr) return;
       const crossingType =
         types.find((x) => /переход/i.test(x.name)) ??
         types.find((x) => x.id === NAV_CROSSING_TYPE_ID_FALLBACK);
       const typeId = crossingType?.id ?? NAV_CROSSING_TYPE_ID_FALLBACK;
-      const { items, error: aErr } = await getNavAuditoriesByTypeId(token, typeId);
+      const { items, error: aErr } = await getNavAuditoriesByTypeId(typeId);
       if (!aErr) setAuditories(items);
     })();
-  }, [token]);
+  }, []);
 
   const dirty = useMemo(() => {
     return serializeState(rows, pendingDeleteIds) !== baseline;
@@ -319,14 +314,13 @@ function NavLocationsPage() {
   };
 
   const handleSave = async () => {
-    if (!token) return;
     setSaving(true);
     setNotice(null);
     setError(null);
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavLocation(token, id);
+        const { error: delErr } = await deleteNavLocation(id);
         if (delErr) {
           setError(delErr);
           setSaving(false);
@@ -346,7 +340,7 @@ function NavLocationsPage() {
           comments: r.comments,
           crossings: r.crossingsJson,
         };
-        const { error: cErr } = await createNavLocation(token, data);
+        const { error: cErr } = await createNavLocation(data);
         if (cErr) {
           setError(cErr);
           setSaving(false);
@@ -364,7 +358,7 @@ function NavLocationsPage() {
       }
 
       if (updates.length > 0) {
-        const { error: uErr } = await updateNavLocationsBatch(token, updates);
+        const { error: uErr } = await updateNavLocationsBatch(updates);
         if (uErr) {
           setError(uErr);
           setSaving(false);

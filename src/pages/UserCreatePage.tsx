@@ -28,7 +28,7 @@ import { createUser } from '../api';
 export default function CreateUserPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [loading, setLoading] = useState(false);
@@ -99,13 +99,12 @@ export default function CreateUserPage() {
 
   // Handle create
   const create = async () => {
-    if (!token) return;
     if (!validateForm()) return;
 
     setLoading(true);
     setError(null);
     try {
-      await createUser(token, {
+      await createUser({
         login: formData.login.trim(),
         password: formData.password,
         fio: formData.fio.trim() || undefined,
@@ -145,20 +144,6 @@ export default function CreateUserPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
       </Page>
     );
   }

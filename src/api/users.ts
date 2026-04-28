@@ -1,5 +1,4 @@
 import { graphqlClient, restClient } from './client.ts';
-import { BASE_API_URL } from '../config.ts';
 import type {
   GqlResponse,
   User,
@@ -13,7 +12,6 @@ import type {
 } from './types.ts';
 
 export const getUsers = async (
-  token: string,
   pagination: PaginationInput,
   filter?: UserFilterInput,
   signal?: AbortSignal
@@ -27,12 +25,9 @@ export const getUsers = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ users: UserConnection }>>(
-    '/graphql',
-    { query, variables: { pagination, filter } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { pagination, filter },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -42,11 +37,7 @@ export const getUsers = async (
   return response.data.data.users;
 };
 
-export const getUser = async (
-  token: string,
-  userId: number,
-  signal?: AbortSignal
-): Promise<User | null> => {
+export const getUser = async (userId: number, signal?: AbortSignal): Promise<User | null> => {
   const query = `query GetUser($userId: Int!) { 
     user(userId: $userId) { 
       id login fio isActive registrationDate updatedAt 
@@ -55,12 +46,9 @@ export const getUser = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ user: User | null }>>(
-    '/graphql',
-    { query, variables: { userId } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { userId },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -70,11 +58,7 @@ export const getUser = async (
   return response.data.data.user;
 };
 
-export const createUser = async (
-  token: string,
-  data: CreateUserInput,
-  signal?: AbortSignal
-): Promise<User> => {
+export const createUser = async (data: CreateUserInput, signal?: AbortSignal): Promise<User> => {
   const query = `mutation CreateUser($data: CreateUserInput!) { 
     createUser(data: $data) { 
       id login fio isActive registrationDate updatedAt 
@@ -82,12 +66,9 @@ export const createUser = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ createUser: User }>>(
-    '/graphql',
-    { query, variables: { data } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { data },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -98,7 +79,6 @@ export const createUser = async (
 };
 
 export const updateUser = async (
-  token: string,
   userId: number,
   data: UpdateUserInput,
   signal?: AbortSignal
@@ -111,12 +91,9 @@ export const updateUser = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ updateUser: User }>>(
-    '/graphql',
-    { query, variables: { userId, data } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { userId, data },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -126,11 +103,7 @@ export const updateUser = async (
   return response.data.data.updateUser;
 };
 
-export const deleteUser = async (
-  token: string,
-  userId: number,
-  signal?: AbortSignal
-): Promise<DeleteResult> => {
+export const deleteUser = async (userId: number, signal?: AbortSignal): Promise<DeleteResult> => {
   const query = `mutation DeleteUser($userId: Int!) { 
     deleteUser(userId: $userId) { 
       success message deletedId 
@@ -138,12 +111,9 @@ export const deleteUser = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ deleteUser: DeleteResult }>>(
-    '/graphql',
-    { query, variables: { userId } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { userId },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -154,7 +124,6 @@ export const deleteUser = async (
 };
 
 export const changeUserPassword = async (
-  token: string,
   userId: number,
   newPassword: string,
   signal?: AbortSignal
@@ -167,14 +136,7 @@ export const changeUserPassword = async (
 
   const response = await graphqlClient.post<
     GqlResponse<{ changeUserPassword: { success: boolean; message: string } }>
-  >(
-    '/graphql',
-    { query, variables: { data: { userId, newPassword } } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
-  );
+  >(query, { data: { userId, newPassword } }, { signal });
 
   if (response.data.errors?.length) {
     throw new Error(response.data.errors[0].message);
@@ -184,7 +146,6 @@ export const changeUserPassword = async (
 };
 
 export const changeUserPasswordRest = async (
-  token: string,
   oldPassword: string,
   newPassword: string,
   signal?: AbortSignal
@@ -193,19 +154,21 @@ export const changeUserPasswordRest = async (
   params.append('old_password', oldPassword);
   params.append('new_password', newPassword);
 
-  const response = await restClient.post(`${BASE_API_URL}/auth/change-pass`, params, {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Bearer ${token}`,
-    },
-    signal,
-  });
+  const response = await restClient.post<{ success: boolean; message: string }>(
+    `/auth/change-pass`,
+    params,
+    {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      signal,
+    }
+  );
 
   return response.data;
 };
 
 export const grantRole = async (
-  token: string,
   userId: number,
   roleIds: number[],
   signal?: AbortSignal
@@ -217,12 +180,9 @@ export const grantRole = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ grantRole: GrantRoleResult }>>(
-    '/graphql',
-    { query, variables: { data: { userId, roleIds } } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { data: { userId, roleIds } },
+    { signal }
   );
 
   if (response.data.errors?.length) {
@@ -233,7 +193,6 @@ export const grantRole = async (
 };
 
 export const revokeRole = async (
-  token: string,
   userId: number,
   roleId: number,
   signal?: AbortSignal
@@ -245,12 +204,9 @@ export const revokeRole = async (
   }`;
 
   const response = await graphqlClient.post<GqlResponse<{ revokeRole: GrantRoleResult }>>(
-    '/graphql',
-    { query, variables: { userId, roleId } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
-    }
+    query,
+    { userId, roleId },
+    { signal }
   );
 
   if (response.data.errors?.length) {

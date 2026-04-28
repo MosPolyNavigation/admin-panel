@@ -52,7 +52,7 @@ const ITEMS_PER_PAGE = 10;
 function Users() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [users, setUsers] = useState<User[]>([]);
@@ -135,12 +135,10 @@ function Users() {
 
   // Load users
   const loadUsers = useCallback(async () => {
-    if (!token) return;
-
     setLoading(true);
     setError(null);
     try {
-      const result = await getUsers(token, pagination, filter);
+      const result = await getUsers(pagination, filter);
       setUsers(result.nodes);
       setTotalCount(result.paginationInfo.totalCount);
       setTotalPages(result.paginationInfo.totalPages);
@@ -150,13 +148,13 @@ function Users() {
     } finally {
       setLoading(false);
     }
-  }, [token, pagination, filter]);
+  }, [pagination, filter]);
 
   useEffect(() => {
-    if (!authLoading && token) {
+    if (!authLoading) {
       loadUsers();
     }
-  }, [loadUsers, authLoading, token]);
+  }, [loadUsers, authLoading]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -172,9 +170,9 @@ function Users() {
   };
 
   const confirmDelete = async () => {
-    if (!selectedUser || !token) return;
+    if (!selectedUser) return;
     try {
-      await deleteUser(token, selectedUser.id);
+      await deleteUser(selectedUser.id);
       showNotification(`Пользователь ${selectedUser.login} удалён`, 'success');
       loadUsers();
     } catch (err) {
@@ -187,9 +185,8 @@ function Users() {
 
   // Handle toggle active
   const toggleActive = async (user: User) => {
-    if (!token) return;
     try {
-      await updateUser(token, user.id, { isActive: !user.isActive });
+      await updateUser(user.id, { isActive: !user.isActive });
       showNotification(
         `Пользователь ${user.login} ${user.isActive ? 'деактивирован' : 'активирован'}`,
         'success'
@@ -250,17 +247,6 @@ function Users() {
     return (
       <Page headerText="Управление пользователями">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Управление пользователями">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
       </Page>
     );
   }
@@ -437,17 +423,15 @@ function Users() {
                         <EditIcon />
                       </IconButton>
                     </RequirePermission>
-                    <RequirePermission goal="roles" right="grant">
-                      <IconButton
-                        size="sm"
-                        color="neutral"
-                        variant="outlined"
-                        onClick={() => handleNavigate(`/users/${user.id}/grant`)}
-                        title="Назначить роли"
-                      >
-                        <RoleIcon />
-                      </IconButton>
-                    </RequirePermission>
+                    <IconButton
+                      size="sm"
+                      color="neutral"
+                      variant="outlined"
+                      onClick={() => handleNavigate(`/users/${user.id}/grant`)}
+                      title="Назначить роли"
+                    >
+                      <RoleIcon />
+                    </IconButton>
                     <RequirePermission goal="users" right="edit">
                       <IconButton
                         size="sm"

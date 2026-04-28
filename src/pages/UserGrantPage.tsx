@@ -29,7 +29,7 @@ export default function UserGrantPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -47,12 +47,12 @@ export default function UserGrantPage() {
   // Load user and roles
   useEffect(() => {
     const loadData = async () => {
-      if (!token || !id) return;
+      if (!id) return;
       setLoading(true);
       try {
         const [userData, rolesData] = await Promise.all([
-          getUser(token, parseInt(id)),
-          getRoles(token, { limit: 100, offset: 0 }),
+          getUser(parseInt(id)),
+          getRoles({ limit: 100, offset: 0 }),
         ]);
 
         if (!userData) {
@@ -74,7 +74,7 @@ export default function UserGrantPage() {
       }
     };
     loadData();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -92,7 +92,7 @@ export default function UserGrantPage() {
 
   // Handle save
   const save = async () => {
-    if (!token || !id || !user) return;
+    if (!id || !user) return;
     setSaving(true);
     setError(null);
 
@@ -103,12 +103,12 @@ export default function UserGrantPage() {
 
       // Сначала удаляем роли
       for (const roleId of rolesToRemove) {
-        await revokeRole(token, user.id, roleId);
+        await revokeRole(user.id, roleId);
       }
 
       // Затем добавляем новые роли (если есть)
       if (rolesToAdd.length > 0) {
-        await grantRole(token, user.id, rolesToAdd);
+        await grantRole(user.id, rolesToAdd);
       }
 
       showNotification(`Роли пользователя ${user.login} обновлены`, 'success');
@@ -154,20 +154,6 @@ export default function UserGrantPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }

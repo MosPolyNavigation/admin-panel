@@ -31,7 +31,7 @@ import { GOAL_RIGHTS_MAP, RIGHT_NAMES } from '../constants';
 export default function RoleCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [loading, setLoading] = useState(false);
@@ -51,10 +51,9 @@ export default function RoleCreatePage() {
   // Load rights and goals
   useEffect(() => {
     const loadData = async () => {
-      if (!token) return;
       setDataLoading(true);
       try {
-        const [rightsData, goalsData] = await Promise.all([getRights(token), getGoals(token)]);
+        const [rightsData, goalsData] = await Promise.all([getRights(), getGoals()]);
         setRights(rightsData);
         setGoals(goalsData);
       } catch (err) {
@@ -64,7 +63,7 @@ export default function RoleCreatePage() {
       }
     };
     loadData();
-  }, [token]);
+  }, []);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -86,7 +85,6 @@ export default function RoleCreatePage() {
 
   // Handle create
   const create = async () => {
-    if (!token) return;
     if (!roleName.trim()) {
       showNotification('Название роли обязательно', 'danger');
       return;
@@ -103,7 +101,7 @@ export default function RoleCreatePage() {
         });
       });
 
-      await createRole(token, {
+      await createRole({
         name: roleName.trim(),
         roleRightGoals: roleRightGoals.length > 0 ? roleRightGoals : undefined,
       });
@@ -151,20 +149,6 @@ export default function RoleCreatePage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }

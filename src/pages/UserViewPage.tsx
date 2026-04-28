@@ -33,7 +33,7 @@ export default function UserViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -67,10 +67,10 @@ export default function UserViewPage() {
   // Load user
   useEffect(() => {
     const loadUser = async () => {
-      if (!id || !token) return;
+      if (!id) return;
       setLoading(true);
       try {
-        const result = await getUser(token, parseInt(id));
+        const result = await getUser(parseInt(id));
         if (result) {
           setUser(result);
         } else {
@@ -83,7 +83,7 @@ export default function UserViewPage() {
       }
     };
     loadUser();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -94,9 +94,9 @@ export default function UserViewPage() {
 
   // Handle delete
   const handleDelete = async () => {
-    if (!user || !token) return;
+    if (!user) return;
     try {
-      await deleteUser(token, user.id);
+      await deleteUser(user.id);
       showNotification(`Пользователь ${user.login} удалён`, 'success');
       navigate('/users');
     } catch (err) {
@@ -108,7 +108,7 @@ export default function UserViewPage() {
 
   // Handle change password
   const changePassword = async () => {
-    if (!user || !token) return;
+    if (!user) return;
     if (password.new !== password.confirm) {
       setPasswordError('Пароли не совпадают');
       return;
@@ -120,7 +120,7 @@ export default function UserViewPage() {
     setChangingPassword(true);
     try {
       const { changeUserPassword } = await import('../api');
-      await changeUserPassword(token, user.id, password.new);
+      await changeUserPassword(user.id, password.new);
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -148,20 +148,6 @@ export default function UserViewPage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
       </Page>
     );
   }
@@ -355,42 +341,40 @@ export default function UserViewPage() {
               </RequirePermission>
 
               {/* Assign Roles */}
-              <RequirePermission goal="roles" right="grant">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 2,
-                    borderRadius: 'sm',
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 2,
+                  borderRadius: 'sm',
+                }}
+              >
+                <Box>
+                  <Typography level="title-md">Назначение ролей</Typography>
+                  <Typography level="body-sm" textColor="neutral.500">
+                    Добавить или удалить роли
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  startDecorator={<RoleIcon />}
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
                   }}
                 >
-                  <Box>
-                    <Typography level="title-md">Назначение ролей</Typography>
-                    <Typography level="body-sm" textColor="neutral.500">
-                      Добавить или удалить роли
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    startDecorator={<RoleIcon />}
-                    onClick={() => {
-                      const returnParams = new URLSearchParams();
-                      for (const [key, value] of searchParams.entries()) {
-                        if (key !== 'from') {
-                          returnParams.set(key, value);
-                        }
-                      }
-                      const query = returnParams.toString();
-                      navigate(
-                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                      );
-                    }}
-                  >
-                    Управление ролями
-                  </Button>
-                </Box>
-              </RequirePermission>
+                  Управление ролями
+                </Button>
+              </Box>
             </Stack>
           </CardContent>
         </Card>

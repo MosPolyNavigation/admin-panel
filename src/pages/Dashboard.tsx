@@ -18,7 +18,7 @@ import AggregatedStatsCard from '../components/AggregatedStatsCard.tsx';
 
 const Dashboard = () => {
   const { dateInterval, setDateInterval } = useDateSelectors();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   const startDate = dateInterval.startDate ? dayjs(dateInterval.startDate) : null;
   const endDate = dateInterval.endDate ? dayjs(dateInterval.endDate) : null;
@@ -64,13 +64,7 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (
-      !dateInterval.isSetted ||
-      authLoading ||
-      !token ||
-      !dateInterval.startDate ||
-      !dateInterval.endDate
-    ) {
+    if (!dateInterval.isSetted || authLoading || !dateInterval.startDate || !dateInterval.endDate) {
       setLoading(false);
       setAggregatedLoading(false);
       return;
@@ -91,8 +85,8 @@ const Dashboard = () => {
         setAggregatedError(null);
 
         const [statsResponse, aggregatedResponse] = await Promise.all([
-          getAllStats(filterType, requestStartDate, requestEndDate, token),
-          getAllStatsAggregated(filterType, requestStartDate, requestEndDate, token),
+          getAllStats(filterType, requestStartDate, requestEndDate),
+          getAllStatsAggregated(filterType, requestStartDate, requestEndDate),
         ]);
 
         if (isRequestValid()) {
@@ -130,7 +124,6 @@ const Dashboard = () => {
     dateInterval.endDate,
     dateInterval.type,
     dateInterval.isSetted,
-    token,
     authLoading,
   ]);
 
