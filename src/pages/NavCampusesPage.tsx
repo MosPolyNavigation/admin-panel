@@ -83,6 +83,7 @@ interface EditableRow {
   ready: boolean;
   stairGroupsJson: string;
   comments: string | null;
+  isNew?: boolean;
 }
 
 function fromApi(campus: NavCampus): EditableRow {
@@ -99,6 +100,7 @@ function fromApi(campus: NavCampus): EditableRow {
     ready: campus.ready,
     stairGroupsJson: stairGroups,
     comments: campus.comments,
+    isNew: false,
   };
 }
 
@@ -109,14 +111,15 @@ function emptyNewRow(key: string): EditableRow {
     idSys: '',
     locId: null,
     name: '',
-    ready: true,
+    ready: false,
     stairGroupsJson: '[]',
     comments: null,
+    isNew: true,
   };
 }
 
 function cloneRow(r: EditableRow): EditableRow {
-  return { ...r };
+  return { ...r, isNew: false };
 }
 
 function diffRow(init: EditableRow, cur: EditableRow): NavCampusUpdateInput | null {
@@ -507,21 +510,9 @@ function NavCampusesPage() {
               >
                 <RefreshIcon fontSize="small" />
               </IconButton>
-              <RequirePermission goal="nav_data" right="create">
-                <Button
-                  variant="solid"
-                  color="primary"
-                  startDecorator={<Add />}
-                  onClick={addRow}
-                  disabled={!canCreate}
-                >
-                  Добавить строку
-                </Button>
-              </RequirePermission>
             </Stack>
           </Box>
 
-          {/* Фильтры */}
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mb: 2 }}>
             <Stack spacing={2}>
               <Stack
@@ -581,7 +572,7 @@ function NavCampusesPage() {
                   Нет корпусов по текущим фильтрам
                 </Typography>
                 <Typography level="body-sm" sx={{ mt: 1 }}>
-                  Смените фильтры или нажмите «Добавить строку»
+                  Смените фильтры или нажмите «Добавить корпус»
                 </Typography>
               </Box>
             </Card>
@@ -593,8 +584,14 @@ function NavCampusesPage() {
                 borderRadius: 'sm',
                 overflowX: 'auto',
                 overflowY: 'hidden',
-                '& table': {
-                  tableLayout: 'fixed', // Фиксированная ширина колонок
+                '& tbody tr:nth-child(odd)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+                '& tbody tr:nth-child(even)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                },
+                '& tbody tr:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)',
                 },
               }}
             >
@@ -606,57 +603,60 @@ function NavCampusesPage() {
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    maxWidth: 0, // Позволяет наследовать ширину от table-layout: fixed
+                  },
+                  '& th': {
+                    backgroundColor: 'var(--joy-palette-background-level1)',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
                   },
                 }}
               >
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px', width: 60, minWidth: 60 }}>id</th>
-                    <th style={{ padding: '12px', width: 120, minWidth: 120 }}>idSys</th>
-                    <th style={{ padding: '12px', width: 200, minWidth: 200 }}>Локация</th>
-                    <th style={{ padding: '12px', width: 180, minWidth: 180 }}>Название</th>
-                    <th style={{ padding: '12px', width: 80, minWidth: 80 }}>ready</th>
-                    <th style={{ padding: '12px', width: 150, minWidth: 150 }}>Группы лестниц</th>
-                    <th style={{ padding: '12px', width: 120, minWidth: 120 }}>Комментарий</th>
-                    <th style={{ padding: '12px', width: 56, minWidth: 56, textAlign: 'right' }} />
+                    <th style={{ padding: '8px', width: 60 }}>id</th>
+                    <th style={{ padding: '8px', width: 120 }}>idSys</th>
+                    <th style={{ padding: '8px', width: 200 }}>Локация</th>
+                    <th style={{ padding: '8px', width: 180 }}>Название</th>
+                    <th style={{ padding: '8px', width: 80 }}>ready</th>
+                    <th style={{ padding: '8px', width: 150 }}>Группы лестниц</th>
+                    <th style={{ padding: '8px', width: 200 }}>Комментарий</th>
+                    <th style={{ padding: '8px', width: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.key}>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Typography level="body-sm">{row.serverId ?? '—'}</Typography>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                    <tr
+                      key={row.key}
+                      style={{
+                        backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.idSys}
                           onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
                           disabled={!canEdit}
                           sx={{
-                            maxWidth: '100%',
                             '& input': {
-                              textOverflow: 'ellipsis',
-                            },
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
                           }}
                         />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Select
                             size="sm"
                             value={row.locId ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { locId: v ?? null })}
                             placeholder="Выберите локацию"
-                            sx={{
-                              minWidth: 200,
-                              maxWidth: 200,
-                              '& .JoySelect-value': {
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                              },
-                            }}
+                            sx={{ '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {locations.map((loc) => (
                               <Option key={loc.id} value={loc.id}>
@@ -665,85 +665,72 @@ function NavCampusesPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography
-                            level="body-sm"
-                            sx={{
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '100%',
-                            }}
-                            title={getLocationName(row.locId)} // Tooltip с полным текстом
-                          >
+                          <Typography level="body-sm" fontSize="0.75rem" title={getLocationName(row.locId)}>
                             {getLocationName(row.locId)}
                           </Typography>
                         )}
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.name}
                           onChange={(e) => updateRow(row.key, { name: e.target.value })}
                           disabled={!canEdit}
                           sx={{
-                            maxWidth: '100%',
                             '& input': {
-                              textOverflow: 'ellipsis',
-                            },
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
                           }}
                         />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Switch
                             checked={row.ready}
                             onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
+                            size="sm"
                           />
                         ) : (
-                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'}>
+                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
                             {row.ready ? 'Да' : 'Нет'}
                           </Chip>
                         )}
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          {parseStairGroups(row.stairGroupsJson).length === 0 ? (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              variant="outlined"
-                              onClick={() => openStairs(row)}
-                              disabled={!canEdit}
-                              title={stairsActionTitle(row.stairGroupsJson)}
-                              aria-label={stairsActionTitle(row.stairGroupsJson)}
-                            >
-                              <Stairs fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              onClick={() => openStairs(row)}
-                              disabled={!canEdit}
-                              title={stairsActionTitle(row.stairGroupsJson)}
-                              aria-label={stairsActionTitle(row.stairGroupsJson)}
-                            >
-                              <Stairs fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <IconButton
+                          size="sm"
+                          color="primary"
+                          onClick={() => openStairs(row)}
+                          disabled={!canEdit}
+                          title={stairsActionTitle(row.stairGroupsJson)}
+                          sx={{ p: 0.5 }}
+                        >
+                          <Stairs fontSize="small" />
+                        </IconButton>
+                       </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {row.comments || ''}
+                          </Typography>
                           {row.comments == null || row.comments === '' ? (
                             <IconButton
                               size="sm"
-                              color="primary"
-                              variant="outlined"
+                              color="neutral"
+                              variant="plain"
                               onClick={() => openComments(row)}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.comments)}
-                              aria-label={commentsActionTitle(row.comments)}
+                              sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
                             >
                               <AddComment fontSize="small" />
                             </IconButton>
@@ -751,17 +738,18 @@ function NavCampusesPage() {
                             <IconButton
                               size="sm"
                               color="primary"
+                              variant="plain"
                               onClick={() => openComments(row)}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.comments)}
-                              aria-label={commentsActionTitle(row.comments)}
+                              sx={{ p: 0.5 }}
                             >
                               <Comment fontSize="small" />
                             </IconButton>
                           )}
                         </Stack>
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', verticalAlign: 'middle' }}>
+                       </td>
+                      <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
                         <RequirePermission goal="nav_data" right="delete">
                           <IconButton
                             size="sm"
@@ -769,19 +757,34 @@ function NavCampusesPage() {
                             onClick={() => removeRow(row)}
                             disabled={!canDelete}
                             title="Удалить строку"
+                            sx={{ p: 0.5 }}
                           >
-                            <DeleteIcon />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </RequirePermission>
-                      </td>
-                    </tr>
+                       </td>
+                     </tr>
                   ))}
                 </tbody>
               </Table>
             </Sheet>
           )}
 
-          {/* Кнопки сохранения */}
+          {/* Кнопка добавления внизу */}
+          <Stack direction="row" justifyContent="flex-end">
+            <RequirePermission goal="nav_data" right="create">
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<Add />}
+                onClick={addRow}
+                disabled={!canCreate}
+              >
+                Добавить корпус
+              </Button>
+            </RequirePermission>
+          </Stack>
+
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
               <Button
@@ -944,8 +947,9 @@ function NavCampusesPage() {
                               return { ...m, groups: next.filter((g) => g.length > 0) };
                             })
                           }
+                          sx={{ p: 0.5 }}
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Stack>
                     ))}
