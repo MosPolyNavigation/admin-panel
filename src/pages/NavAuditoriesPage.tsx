@@ -65,6 +65,7 @@ interface EditableRow {
   typeName: string;
   planName: string;
   photosCount: number;
+  isNew?: boolean;
 }
 
 function fromApi(auditory: NavAuditory2): EditableRow {
@@ -83,6 +84,7 @@ function fromApi(auditory: NavAuditory2): EditableRow {
     typeName: auditory.type?.name ?? `ID: ${auditory.typeId}`,
     planName: auditory.plan?.idSys ?? `ID: ${auditory.planId}`,
     photosCount: auditory.photos?.length ?? 0,
+    isNew: false,
   };
 }
 
@@ -92,7 +94,7 @@ function emptyNewRow(key: string): EditableRow {
     serverId: null,
     idSys: '',
     typeId: null,
-    ready: true,
+    ready: false,
     planId: null,
     name: '',
     textFromSign: null,
@@ -102,11 +104,12 @@ function emptyNewRow(key: string): EditableRow {
     typeName: '',
     planName: '',
     photosCount: 0,
+    isNew: true,
   };
 }
 
 function cloneRow(r: EditableRow): EditableRow {
-  return { ...r };
+  return { ...r, isNew: false };
 }
 
 function diffRow(init: EditableRow, cur: EditableRow): NavAuditoryUpdateInput | null {
@@ -485,21 +488,9 @@ function NavAuditoriesPage() {
               >
                 <RefreshIcon fontSize="small" />
               </IconButton>
-              <RequirePermission goal="nav_data" right="create">
-                <Button
-                  variant="solid"
-                  color="primary"
-                  startDecorator={<Add />}
-                  onClick={addRow}
-                  disabled={!canCreate}
-                >
-                  Добавить строку
-                </Button>
-              </RequirePermission>
             </Stack>
           </Box>
 
-          {/* Фильтры */}
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mb: 2 }}>
             <Stack spacing={2}>
               <Stack
@@ -559,14 +550,27 @@ function NavAuditoriesPage() {
                   Нет аудиторий по текущим фильтрам
                 </Typography>
                 <Typography level="body-sm" sx={{ mt: 1 }}>
-                  Смените фильтры или нажмите «Добавить строку»
+                  Смените фильтры или нажмите «Добавить аудиторию»
                 </Typography>
               </Box>
             </Card>
           ) : (
             <Sheet
               variant="outlined"
-              sx={{ borderRadius: 'sm', overflowX: 'auto', overflowY: 'hidden' }}
+              sx={{
+                borderRadius: 'sm',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                '& tbody tr:nth-child(odd)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+                '& tbody tr:nth-child(even)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                },
+                '& tbody tr:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                },
+              }}
             >
               <Table
                 stickyHeader
@@ -578,49 +582,70 @@ function NavAuditoriesPage() {
                     textOverflow: 'ellipsis',
                     maxWidth: 0,
                   },
+                  '& th': {
+                    backgroundColor: 'var(--joy-palette-background-level1)',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
+                  },
                 }}
               >
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px', width: 60 }}>id</th>
-                    <th style={{ padding: '12px', width: 100 }}>idSys</th>
-                    <th style={{ padding: '12px', width: 150 }}>Название</th>
-                    <th style={{ padding: '12px', width: 150 }}>Тип</th>
-                    <th style={{ padding: '12px', width: 120 }}>План</th>
-                    <th style={{ padding: '12px', width: 80 }}>ready</th>
-                    <th style={{ padding: '12px', width: 120 }}>Текст с таблички</th>
-                    <th style={{ padding: '12px', width: 100 }}>Комментарий</th>
-                    <th style={{ padding: '12px', width: 100 }}>Доп. инфо</th>
-                    <th style={{ padding: '12px', width: 80 }}>Фото</th>
-                    <th style={{ padding: '12px', width: 100 }}>Ссылка</th>
-                    <th style={{ padding: '12px', width: 56, textAlign: 'right' }} />
+                    <th style={{ padding: '8px', width: 60 }}>id</th>
+                    <th style={{ padding: '8px', width: 100 }}>idSys</th>
+                    <th style={{ padding: '8px', width: 150 }}>Название</th>
+                    <th style={{ padding: '8px', width: 150 }}>Тип</th>
+                    <th style={{ padding: '8px', width: 120 }}>План</th>
+                    <th style={{ padding: '8px', width: 80 }}>ready</th>
+                    <th style={{ padding: '8px', width: 120 }}>Текст с таблички</th>
+                    <th style={{ padding: '8px', width: 200 }}>Комментарий</th>
+                    <th style={{ padding: '8px', width: 200 }}>Доп. инфо</th>
+                    <th style={{ padding: '8px', width: 80 }}>Фото</th>
+                    <th style={{ padding: '8px', width: 100 }}>Ссылка</th>
+                    <th style={{ padding: '8px', width: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr key={row.key}>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Typography level="body-sm">{row.serverId ?? '—'}</Typography>
+                    <tr
+                      key={row.key}
+                      style={{
+                        backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.idSys}
                           onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
                           disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
+                          sx={{
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
                         />
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.name}
                           onChange={(e) => updateRow(row.key, { name: e.target.value })}
                           disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
+                          sx={{
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
                         />
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Select
                             size="sm"
@@ -632,7 +657,7 @@ function NavAuditoriesPage() {
                               })
                             }
                             placeholder="Тип"
-                            sx={{ minWidth: 150, maxWidth: 150 }}
+                            sx={{ minWidth: 150, maxWidth: 150, '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {types.map((t) => (
                               <Option key={t.id} value={t.id}>
@@ -643,6 +668,7 @@ function NavAuditoriesPage() {
                         ) : (
                           <Typography
                             level="body-sm"
+                            fontSize="0.75rem"
                             sx={{
                               display: 'block',
                               overflow: 'hidden',
@@ -655,7 +681,7 @@ function NavAuditoriesPage() {
                           </Typography>
                         )}
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Select
                             size="sm"
@@ -667,7 +693,7 @@ function NavAuditoriesPage() {
                               })
                             }
                             placeholder="План"
-                            sx={{ minWidth: 120, maxWidth: 120 }}
+                            sx={{ minWidth: 120, maxWidth: 120, '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {plans.map((p) => (
                               <Option key={p.id} value={p.id}>
@@ -678,6 +704,7 @@ function NavAuditoriesPage() {
                         ) : (
                           <Typography
                             level="body-sm"
+                            fontSize="0.75rem"
                             sx={{
                               display: 'block',
                               overflow: 'hidden',
@@ -690,19 +717,20 @@ function NavAuditoriesPage() {
                           </Typography>
                         )}
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Switch
+                            size="sm"
                             checked={row.ready}
                             onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
                           />
                         ) : (
-                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'}>
+                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
                             {row.ready ? 'Да' : 'Нет'}
                           </Chip>
                         )}
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.textFromSign ?? ''}
@@ -710,20 +738,36 @@ function NavAuditoriesPage() {
                             updateRow(row.key, { textFromSign: e.target.value || null })
                           }
                           disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
+                          sx={{
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
                         />
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {row.comments || ''}
+                          </Typography>
                           {row.comments == null || row.comments === '' ? (
                             <IconButton
                               size="sm"
-                              color="primary"
-                              variant="outlined"
+                              color="neutral"
+                              variant="plain"
                               onClick={() => openComments(row, 'comments')}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.comments, 'comments')}
-                              aria-label={commentsActionTitle(row.comments, 'comments')}
+                              sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
                             >
                               <AddComment fontSize="small" />
                             </IconButton>
@@ -731,27 +775,39 @@ function NavAuditoriesPage() {
                             <IconButton
                               size="sm"
                               color="primary"
+                              variant="plain"
                               onClick={() => openComments(row, 'comments')}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.comments, 'comments')}
-                              aria-label={commentsActionTitle(row.comments, 'comments')}
+                              sx={{ p: 0.5 }}
                             >
                               <Comment fontSize="small" />
                             </IconButton>
                           )}
                         </Stack>
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Typography
+                            level="body-sm"
+                            sx={{
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              fontSize: '0.75rem',
+                            }}
+                          >
+                            {row.additionalInfo || ''}
+                          </Typography>
                           {row.additionalInfo == null || row.additionalInfo === '' ? (
                             <IconButton
                               size="sm"
-                              color="primary"
-                              variant="outlined"
+                              color="neutral"
+                              variant="plain"
                               onClick={() => openComments(row, 'additionalInfo')}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                              sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
                             >
                               <AddComment fontSize="small" />
                             </IconButton>
@@ -759,34 +815,40 @@ function NavAuditoriesPage() {
                             <IconButton
                               size="sm"
                               color="primary"
+                              variant="plain"
                               onClick={() => openComments(row, 'additionalInfo')}
                               disabled={!canEdit}
                               title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                              sx={{ p: 0.5 }}
                             >
                               <Comment fontSize="small" />
                             </IconButton>
                           )}
                         </Stack>
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          <Chip size="sm" variant="soft" color="neutral">
-                            <PhotoLibrary fontSize="small" sx={{ mr: 0.5 }} />
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} sx={{ width: 'fit-content' }}>
+                          <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: '0.7rem' }}>
+                            <PhotoLibrary fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem' }} />
                             {row.photosCount}
                           </Chip>
                         </Stack>
                       </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
                           value={row.link ?? ''}
                           onChange={(e) => updateRow(row.key, { link: e.target.value || null })}
                           disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
+                          sx={{
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
                         />
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
                         <RequirePermission goal="nav_data" right="delete">
                           <IconButton
                             size="sm"
@@ -794,8 +856,9 @@ function NavAuditoriesPage() {
                             onClick={() => removeRow(row)}
                             disabled={!canDelete}
                             title="Удалить строку"
+                            sx={{ p: 0.5 }}
                           >
-                            <DeleteIcon />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </RequirePermission>
                       </td>
@@ -806,7 +869,21 @@ function NavAuditoriesPage() {
             </Sheet>
           )}
 
-          {/* Кнопки сохранения */}
+          {/* Кнопка добавления внизу */}
+          <Stack direction="row" justifyContent="flex-end">
+            <RequirePermission goal="nav_data" right="create">
+              <Button
+                variant="solid"
+                color="primary"
+                startDecorator={<Add />}
+                onClick={addRow}
+                disabled={!canCreate}
+              >
+                Добавить аудиторию
+              </Button>
+            </RequirePermission>
+          </Stack>
+
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
             <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
               <Button
