@@ -634,7 +634,7 @@ function NavCampusesPage() {
                     >
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
@@ -648,7 +648,7 @@ function NavCampusesPage() {
                             }
                           }}
                         />
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Select
@@ -669,7 +669,7 @@ function NavCampusesPage() {
                             {getLocationName(row.locId)}
                           </Typography>
                         )}
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
                           size="sm"
@@ -683,7 +683,7 @@ function NavCampusesPage() {
                             }
                           }}
                         />
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         {canEdit ? (
                           <Switch
@@ -696,7 +696,7 @@ function NavCampusesPage() {
                             {row.ready ? 'Да' : 'Нет'}
                           </Chip>
                         )}
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <IconButton
                           size="sm"
@@ -708,7 +708,7 @@ function NavCampusesPage() {
                         >
                           <Stairs fontSize="small" />
                         </IconButton>
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
                           <Typography
@@ -748,7 +748,7 @@ function NavCampusesPage() {
                             </IconButton>
                           )}
                         </Stack>
-                       </td>
+                      </td>
                       <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
                         <RequirePermission goal="nav_data" right="delete">
                           <IconButton
@@ -762,43 +762,41 @@ function NavCampusesPage() {
                             <DeleteIcon fontSize="small" />
                           </IconButton>
                         </RequirePermission>
-                       </td>
-                     </tr>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </Table>
             </Sheet>
           )}
 
-          {/* Кнопка добавления внизу */}
-          <Stack direction="row" justifyContent="flex-end">
-            <RequirePermission goal="nav_data" right="create">
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<Add />}
-                onClick={addRow}
-                disabled={!canCreate}
-              >
-                Добавить корпус
-              </Button>
-            </RequirePermission>
-          </Stack>
-
-          <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={handleSave}
-                disabled={!canSave}
-                loading={saving}
-              >
-                Сохранить
-              </Button>
-              <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
-                Отменить
-              </Button>
+                    <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  onClick={handleSave}
+                  disabled={!canSave}
+                  loading={saving}
+                >
+                  Сохранить
+                </Button>
+                <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
+                  Отменить
+                </Button>
+              </Stack>
+              <RequirePermission goal="nav_data" right="create">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<Add />}
+                  onClick={addRow}
+                  disabled={!canCreate}
+                >
+                  Добавить корпус
+                </Button>
+              </RequirePermission>
             </Stack>
           </Sheet>
 
@@ -841,7 +839,6 @@ function NavCampusesPage() {
         </ModalDialog>
       </Modal>
 
-      {/* Модальное окно групп лестниц */}
       {/* Модальное окно групп лестниц */}
       <Modal open={!!stairsModal} onClose={() => setStairsModal(null)}>
         <ModalDialog

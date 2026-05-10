@@ -501,268 +501,269 @@ function NavLocationsPage() {
               </Box>
             </Card>
           ) : (
-            <>
-              <Sheet
-                variant="outlined"
+            <Sheet
+              variant="outlined"
+              sx={{
+                borderRadius: 'sm',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                '& tbody tr:nth-child(odd)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+                '& tbody tr:nth-child(even)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                },
+                '& tbody tr:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                },
+              }}
+            >
+              <Table
+                stickyHeader
                 sx={{
-                  borderRadius: 'sm',
-                  overflowX: 'auto',
-                  overflowY: 'hidden',
-                  '& tbody tr:nth-child(odd)': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                  minWidth: 1200,
+                  '& th, & td': {
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   },
-                  '& tbody tr:nth-child(even)': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.08)',
-                  },
-                  '& tbody tr:hover': {
-                    backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                  '& th': {
+                    backgroundColor: 'var(--joy-palette-background-level1)',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
                   },
                 }}
               >
-                <Table
-                  stickyHeader
-                  sx={{
-                    minWidth: 1200,
-                    '& th, & td': {
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                    },
-                    '& th': {
-                      backgroundColor: 'var(--joy-palette-background-level1)',
-                      fontWeight: 'bold',
-                      fontSize: '0.75rem',
-                    },
-                  }}
-                >
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '8px', width: 60 }}>id</th>
-                      <th style={{ padding: '8px', width: 120 }}>idSys</th>
-                      <th style={{ padding: '8px', width: 180 }}>название</th>
-                      <th style={{ padding: '8px', width: 150 }}>краткое название</th>
-                      <th style={{ padding: '8px', width: 80 }}>готовность</th>
-                      <th style={{ padding: '8px', width: 120 }}>метро</th>
-                      <th style={{ padding: '8px', width: 200 }}>адрес</th>
-                      <th style={{ padding: '8px', width: 150 }}>комментарии</th>
-                      <th style={{ padding: '8px', width: 100 }}>переходы</th>
-                      <th style={{ padding: '8px', width: 56, textAlign: 'right' }} />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => (
-                      <tr
-                        key={row.key}
-                        style={{
-                          backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
-                          transition: 'background-color 0.2s ease',
-                        }}
-                      >
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Input
+                <thead>
+                  <tr>
+                    <th style={{ padding: '8px', width: 60, minWidth: 60 }}>id</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>idSys</th>
+                    <th style={{ padding: '8px', width: 180, minWidth: 180 }}>название</th>
+                    <th style={{ padding: '8px', width: 150, minWidth: 150 }}>краткое название</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>готовность</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>метро</th>
+                    <th style={{ padding: '8px', width: 200, minWidth: 200 }}>адрес</th>
+                    <th style={{ padding: '8px', width: 150, minWidth: 150 }}>комментарии</th>
+                    <th style={{ padding: '8px', width: 100, minWidth: 100 }}>переходы</th>
+                    <th style={{ padding: '8px', width: 56, minWidth: 56, textAlign: 'right' }} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr
+                      key={row.key}
+                      style={{
+                        backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
+                        transition: 'background-color 0.2s ease',
+                      }}
+                    >
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.idSys}
+                          onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
+                          disabled={!canEdit}
+                          sx={{
+                            width: '100%',
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.name}
+                          onChange={(e) => updateRow(row.key, { name: e.target.value })}
+                          disabled={!canEdit}
+                          sx={{
+                            width: '100%',
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.short}
+                          onChange={(e) => updateRow(row.key, { short: e.target.value })}
+                          disabled={!canEdit}
+                          sx={{
+                            width: '100%',
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        {canEdit ? (
+                          <Switch
+                            checked={row.ready}
+                            onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
                             size="sm"
-                            value={row.idSys}
-                            onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
-                            disabled={!canEdit}
-                            sx={{
-                              '& input': {
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                              }
-                            }}
                           />
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Input
-                            size="sm"
-                            value={row.name}
-                            onChange={(e) => updateRow(row.key, { name: e.target.value })}
-                            disabled={!canEdit}
+                        ) : (
+                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
+                            {row.ready ? 'Да' : 'Нет'}
+                          </Chip>
+                        )}
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.metro}
+                          onChange={(e) => updateRow(row.key, { metro: e.target.value })}
+                          disabled={!canEdit}
+                          sx={{
+                            width: '100%',
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Input
+                          size="sm"
+                          value={row.address}
+                          onChange={(e) => updateRow(row.key, { address: e.target.value })}
+                          disabled={!canEdit}
+                          sx={{
+                            width: '100%',
+                            '& input': {
+                              fontSize: '0.75rem',
+                              py: 0.5,
+                            }
+                          }}
+                        />
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Typography
+                            level="body-sm"
                             sx={{
-                              '& input': {
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                              }
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              fontSize: '0.75rem',
                             }}
-                          />
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Input
-                            size="sm"
-                            value={row.short}
-                            onChange={(e) => updateRow(row.key, { short: e.target.value })}
-                            disabled={!canEdit}
-                            sx={{
-                              '& input': {
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                              }
-                            }}
-                          />
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          {canEdit ? (
-                            <Switch
-                              checked={row.ready}
-                              onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
-                              size="sm"
-                            />
-                          ) : (
-                            <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
-                              {row.ready ? 'Да' : 'Нет'}
-                            </Chip>
-                          )}
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Input
-                            size="sm"
-                            value={row.metro}
-                            onChange={(e) => updateRow(row.key, { metro: e.target.value })}
-                            disabled={!canEdit}
-                            sx={{
-                              '& input': {
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                              }
-                            }}
-                          />
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Input
-                            size="sm"
-                            value={row.address}
-                            onChange={(e) => updateRow(row.key, { address: e.target.value })}
-                            disabled={!canEdit}
-                            sx={{
-                              '& input': {
-                                fontSize: '0.75rem',
-                                py: 0.5,
-                              }
-                            }}
-                          />
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
-                            <Typography
-                              level="body-sm"
-                              sx={{
-                                flex: 1,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                fontSize: '0.75rem',
-                              }}
-                            >
-                              {row.comments || ''}
-                            </Typography>
-                            {row.comments == null || row.comments === '' ? (
-                              <IconButton
-                                size="sm"
-                                color="neutral"
-                                variant="plain"
-                                onClick={() => openComments(row)}
-                                disabled={!canEdit}
-                                title={commentsActionTitle(row.comments)}
-                                sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
-                              >
-                                <AddComment fontSize="small" />
-                              </IconButton>
-                            ) : (
-                              <IconButton
-                                size="sm"
-                                color="primary"
-                                variant="plain"
-                                onClick={() => openComments(row)}
-                                disabled={!canEdit}
-                                title={commentsActionTitle(row.comments)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <Comment fontSize="small" />
-                              </IconButton>
-                            )}
-                          </Stack>
-                        </td>
-                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Stack direction="row" spacing={0.5} sx={{ width: 'fit-content' }}>
-                            {parseCrossingsTriples(row.crossingsJson).length === 0 ? (
-                              <IconButton
-                                size="sm"
-                                color="primary"
-                                variant="outlined"
-                                onClick={() => openCrossings(row)}
-                                disabled={!canEdit}
-                                title={crossingsActionTitle(row.crossingsJson)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <AltRoute fontSize="small" />
-                              </IconButton>
-                            ) : (
-                              <IconButton
-                                size="sm"
-                                color="primary"
-                                onClick={() => openCrossings(row)}
-                                disabled={!canEdit}
-                                title={crossingsActionTitle(row.crossingsJson)}
-                                sx={{ p: 0.5 }}
-                              >
-                                <AltRoute fontSize="small" />
-                              </IconButton>
-                            )}
-                          </Stack>
-                        </td>
-                        <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
-                          <RequirePermission goal="nav_data" right="delete">
+                          >
+                            {row.comments || ''}
+                          </Typography>
+                          {row.comments == null || row.comments === '' ? (
                             <IconButton
                               size="sm"
-                              color="danger"
-                              onClick={() => removeRow(row)}
-                              disabled={!canDelete}
-                              title="Удалить строку"
+                              color="neutral"
+                              variant="plain"
+                              onClick={() => openComments(row)}
+                              disabled={!canEdit}
+                              title={commentsActionTitle(row.comments)}
+                              sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                            >
+                              <AddComment fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="sm"
+                              color="primary"
+                              variant="plain"
+                              onClick={() => openComments(row)}
+                              disabled={!canEdit}
+                              title={commentsActionTitle(row.comments)}
                               sx={{ p: 0.5 }}
                             >
-                              <DeleteIcon fontSize="small" />
+                              <Comment fontSize="small" />
                             </IconButton>
-                          </RequirePermission>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </Sheet>
-
-              {/* Кнопка добавления внизу */}
-              <Stack direction="row" justifyContent="flex-end">
-                <RequirePermission goal="nav_data" right="create">
-                  <Button
-                    variant="solid"
-                    color="primary"
-                    startDecorator={<Add />}
-                    onClick={addRow}
-                    disabled={!canCreate}
-                  >
-                    Добавить помещение
-                  </Button>
-                </RequirePermission>
-              </Stack>
-            </>
+                          )}
+                        </Stack>
+                      </td>
+                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                        <Stack direction="row" spacing={0.5} sx={{ width: 'fit-content' }}>
+                          {parseCrossingsTriples(row.crossingsJson).length === 0 ? (
+                            <IconButton
+                              size="sm"
+                              color="primary"
+                              variant="outlined"
+                              onClick={() => openCrossings(row)}
+                              disabled={!canEdit}
+                              title={crossingsActionTitle(row.crossingsJson)}
+                              sx={{ p: 0.5 }}
+                            >
+                              <AltRoute fontSize="small" />
+                            </IconButton>
+                          ) : (
+                            <IconButton
+                              size="sm"
+                              color="primary"
+                              onClick={() => openCrossings(row)}
+                              disabled={!canEdit}
+                              title={crossingsActionTitle(row.crossingsJson)}
+                              sx={{ p: 0.5 }}
+                            >
+                              <AltRoute fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Stack>
+                      </td>
+                      <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
+                        <RequirePermission goal="nav_data" right="delete">
+                          <IconButton
+                            size="sm"
+                            color="danger"
+                            onClick={() => removeRow(row)}
+                            disabled={!canDelete}
+                            title="Удалить строку"
+                            sx={{ p: 0.5 }}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </RequirePermission>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Sheet>
           )}
 
-          <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={handleSave}
-                disabled={!canSave}
-                loading={saving}
-              >
-                Сохранить
-              </Button>
-              <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
-                Отменить
-              </Button>
+                    <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mt: 2 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  onClick={handleSave}
+                  disabled={!canSave}
+                  loading={saving}
+                >
+                  Сохранить
+                </Button>
+                <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
+                  Отменить
+                </Button>
+              </Stack>
+              <RequirePermission goal="nav_data" right="create">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<Add />}
+                  onClick={addRow}
+                  disabled={!canCreate}
+                >
+                  Добавить помещение
+                </Button>
+              </RequirePermission>
             </Stack>
           </Sheet>
         </Stack>

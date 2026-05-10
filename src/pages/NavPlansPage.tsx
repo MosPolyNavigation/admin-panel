@@ -685,7 +685,6 @@ function NavPlansPage() {
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    maxWidth: 0,
                   },
                   '& th': {
                     backgroundColor: 'var(--joy-palette-background-level1)',
@@ -696,19 +695,19 @@ function NavPlansPage() {
               >
                 <thead>
                   <tr>
-                    <th style={{ padding: '8px', width: 60 }}>id</th>
-                    <th style={{ padding: '8px', width: 100 }}>idSys</th>
-                    <th style={{ padding: '8px', width: 150 }}>Кампус</th>
-                    <th style={{ padding: '8px', width: 100 }}>Этаж</th>
-                    <th style={{ padding: '8px', width: 80 }}>ready</th>
-                    <th style={{ padding: '8px', width: 100 }}>Входы</th>
-                    <th style={{ padding: '8px', width: 100 }}>Граф</th>
-                    <th style={{ padding: '8px', width: 100 }}>SVG</th>
-                    <th style={{ padding: '8px', width: 120 }}>Вход (ближ.)</th>
-                    <th style={{ padding: '8px', width: 120 }}>Туалет М (ближ.)</th>
-                    <th style={{ padding: '8px', width: 120 }}>Туалет Ж (ближ.)</th>
-                    <th style={{ padding: '8px', width: 120 }}>Туалет Общий (ближ.)</th>
-                    <th style={{ padding: '8px', width: 56, textAlign: 'right' }} />
+                    <th style={{ padding: '8px', width: 60, minWidth: 60 }}>id</th>
+                    <th style={{ padding: '8px', width: 100, minWidth: 100 }}>idSys</th>
+                    <th style={{ padding: '8px', width: 150, minWidth: 150 }}>Кампус</th>
+                    <th style={{ padding: '8px', width: 100, minWidth: 100 }}>Этаж</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>ready</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>Входы</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>Граф</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>SVG</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Вход (ближ.)</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Туалет М (ближ.)</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Туалет Ж (ближ.)</th>
+                    <th style={{ padding: '8px', width: 130, minWidth: 130 }}>Туалет Общий (ближ.)</th>
+                    <th style={{ padding: '8px', width: 56, minWidth: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
                 <tbody>
@@ -730,7 +729,7 @@ function NavPlansPage() {
                           onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
                           disabled={!canEdit}
                           sx={{ 
-                            maxWidth: '100%', 
+                            width: '100%',
                             '& input': { 
                               textOverflow: 'ellipsis', 
                               fontSize: '0.75rem',
@@ -746,7 +745,7 @@ function NavPlansPage() {
                             value={row.corId ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { corId: v ?? null })}
                             placeholder="Кампус"
-                            sx={{ minWidth: 130, maxWidth: 130, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {campuses.map((c) => (
                               <Option key={c.id} value={c.id}>
@@ -762,7 +761,6 @@ function NavPlansPage() {
                               display: 'block',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              maxWidth: '100%',
                             }}
                             title={getCampusName(row.corId)}
                           >
@@ -777,7 +775,7 @@ function NavPlansPage() {
                             value={row.floorId ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { floorId: v ?? null })}
                             placeholder="Этаж"
-                            sx={{ minWidth: 80, maxWidth: 80, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {floors.map((f) => (
                               <Option key={f.id} value={f.id}>
@@ -793,7 +791,6 @@ function NavPlansPage() {
                               display: 'block',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              maxWidth: '100%',
                             }}
                             title={getFloorName(row.floorId)}
                           >
@@ -814,7 +811,7 @@ function NavPlansPage() {
                           </Chip>
                         )}
                       </td>
-                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
                         <IconButton
                           size="sm"
                           color="primary"
@@ -827,7 +824,7 @@ function NavPlansPage() {
                           <DoorFront fontSize="small" />
                         </IconButton>
                       </td>
-                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
                         <IconButton
                           size="sm"
                           color="primary"
@@ -840,7 +837,7 @@ function NavPlansPage() {
                           <Edit fontSize="small" />
                         </IconButton>
                       </td>
-                      <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                      <td style={{ padding: '8px', verticalAlign: 'middle', textAlign: 'center' }}>
                         <IconButton
                           size="sm"
                           color={row.svgId ? 'success' : 'primary'}
@@ -863,7 +860,7 @@ function NavPlansPage() {
                             value={row.nearestEntrance ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { nearestEntrance: v ?? null })}
                             placeholder="Вход"
-                            sx={{ minWidth: 110, maxWidth: 110, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                           >
                             {entrances.map((e) => (
                               <Option key={e.id} value={e.idSys}>
@@ -882,7 +879,7 @@ function NavPlansPage() {
                             value={row.nearestManWc ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { nearestManWc: v ?? null })}
                             placeholder="Туалет М"
-                            sx={{ minWidth: 110, maxWidth: 110, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                             startDecorator={<Wc fontSize="small" />}
                           >
                             {wcMan.map((w) => (
@@ -902,7 +899,7 @@ function NavPlansPage() {
                             value={row.nearestWomanWc ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { nearestWomanWc: v ?? null })}
                             placeholder="Туалет Ж"
-                            sx={{ minWidth: 110, maxWidth: 110, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                             startDecorator={<Wc fontSize="small" />}
                           >
                             {wcWoman.map((w) => (
@@ -922,7 +919,7 @@ function NavPlansPage() {
                             value={row.nearestSharedWc ?? undefined}
                             onChange={(_, v) => updateRow(row.key, { nearestSharedWc: v ?? null })}
                             placeholder="Туалет Общий"
-                            sx={{ minWidth: 110, maxWidth: 110, '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
                             startDecorator={<Wc fontSize="small" />}
                           >
                             {wcShared.map((w) => (
@@ -956,35 +953,33 @@ function NavPlansPage() {
             </Sheet>
           )}
 
-          {/* Кнопка добавления внизу */}
-          <Stack direction="row" justifyContent="flex-end">
-            <RequirePermission goal="nav_data" right="create">
-              <Button
-                variant="solid"
-                color="primary"
-                startDecorator={<Add />}
-                onClick={addRow}
-                disabled={!canCreate}
-              >
-                Добавить план
-              </Button>
-            </RequirePermission>
-          </Stack>
-
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={handleSave}
-                disabled={!canSave}
-                loading={saving}
-              >
-                Сохранить
-              </Button>
-              <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
-                Отменить
-              </Button>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  onClick={handleSave}
+                  disabled={!canSave}
+                  loading={saving}
+                >
+                  Сохранить
+                </Button>
+                <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
+                  Отменить
+                </Button>
+              </Stack>
+              <RequirePermission goal="nav_data" right="create">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<Add />}
+                  onClick={addRow}
+                  disabled={!canCreate}
+                >
+                  Добавить план
+                </Button>
+              </RequirePermission>
             </Stack>
           </Sheet>
 
