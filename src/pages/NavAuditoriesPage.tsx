@@ -21,6 +21,7 @@ import {
   Switch,
   Table,
   Textarea,
+  Tooltip,
   Typography,
 } from '@mui/joy';
 import {
@@ -31,6 +32,9 @@ import {
   FilterList as FilterIcon,
   Refresh as RefreshIcon,
   PhotoLibrary,
+  ContentCopy,
+  Login,
+  Logout,
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { RequirePermission } from '../components/RequirePermission.tsx';
@@ -65,6 +69,7 @@ interface EditableRow {
   typeName: string;
   planName: string;
   photosCount: number;
+  isNew?: boolean;
 }
 
 function fromApi(auditory: NavAuditory2): EditableRow {
@@ -83,6 +88,7 @@ function fromApi(auditory: NavAuditory2): EditableRow {
     typeName: auditory.type?.name ?? `ID: ${auditory.typeId}`,
     planName: auditory.plan?.idSys ?? `ID: ${auditory.planId}`,
     photosCount: auditory.photos?.length ?? 0,
+    isNew: false,
   };
 }
 
@@ -92,7 +98,7 @@ function emptyNewRow(key: string): EditableRow {
     serverId: null,
     idSys: '',
     typeId: null,
-    ready: true,
+    ready: false,
     planId: null,
     name: '',
     textFromSign: null,
@@ -102,11 +108,12 @@ function emptyNewRow(key: string): EditableRow {
     typeName: '',
     planName: '',
     photosCount: 0,
+    isNew: true,
   };
 }
 
 function cloneRow(r: EditableRow): EditableRow {
-  return { ...r };
+  return { ...r, isNew: false };
 }
 
 function diffRow(init: EditableRow, cur: EditableRow): NavAuditoryUpdateInput | null {
@@ -421,6 +428,29 @@ function NavAuditoriesPage() {
     return Math.ceil(totalItems / pageSize);
   }, [totalItems, pageSize]);
 
+  const getRoomUrl = (idSys: string): string => {
+    return `https://mpunav.ru/?room=${idSys}`;
+  };
+
+  const getFromUrl = (idSys: string): string => {
+    return `https://mpunav.ru/?from=${idSys}`;
+  };
+
+  const getToUrl = (idSys: string): string => {
+    return `https://mpunav.ru/?to=${idSys}`;
+  };
+
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setNotice({ text: `Ссылка ${type} скопирована`, color: 'success' });
+      setTimeout(() => setNotice(null), 2000);
+    } catch {
+      setNotice({ text: 'Ошибка копирования', color: 'danger' });
+      setTimeout(() => setNotice(null), 2000);
+    }
+  };
+
   if (authLoading) {
     return (
       <RequirePermission goal="nav_data" right="view">
@@ -485,21 +515,9 @@ function NavAuditoriesPage() {
               >
                 <RefreshIcon fontSize="small" />
               </IconButton>
-              <RequirePermission goal="nav_data" right="create">
-                <Button
-                  variant="solid"
-                  color="primary"
-                  startDecorator={<Add />}
-                  onClick={addRow}
-                  disabled={!canCreate}
-                >
-                  Добавить строку
-                </Button>
-              </RequirePermission>
             </Stack>
           </Box>
 
-          {/* Фильтры */}
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2, mb: 2 }}>
             <Stack spacing={2}>
               <Stack
@@ -559,268 +577,381 @@ function NavAuditoriesPage() {
                   Нет аудиторий по текущим фильтрам
                 </Typography>
                 <Typography level="body-sm" sx={{ mt: 1 }}>
-                  Смените фильтры или нажмите «Добавить строку»
+                  Смените фильтры или нажмите «Добавить аудиторию»
                 </Typography>
               </Box>
             </Card>
           ) : (
             <Sheet
               variant="outlined"
-              sx={{ borderRadius: 'sm', overflowX: 'auto', overflowY: 'hidden' }}
+              sx={{
+                borderRadius: 'sm',
+                overflowX: 'auto',
+                overflowY: 'hidden',
+                '& tbody tr:nth-child(odd)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                },
+                '& tbody tr:nth-child(even)': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.08)',
+                },
+                '& tbody tr:hover': {
+                  backgroundColor: 'rgba(0, 0, 0, 0.12)',
+                },
+              }}
             >
               <Table
                 stickyHeader
                 sx={{
-                  minWidth: 1300,
+                  minWidth: 1400,
                   '& th, & td': {
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
-                    maxWidth: 0,
+                  },
+                  '& th': {
+                    backgroundColor: 'var(--joy-palette-background-level1)',
+                    fontWeight: 'bold',
+                    fontSize: '0.75rem',
                   },
                 }}
               >
                 <thead>
                   <tr>
-                    <th style={{ padding: '12px', width: 60 }}>id</th>
-                    <th style={{ padding: '12px', width: 100 }}>idSys</th>
-                    <th style={{ padding: '12px', width: 150 }}>Название</th>
-                    <th style={{ padding: '12px', width: 150 }}>Тип</th>
-                    <th style={{ padding: '12px', width: 120 }}>План</th>
-                    <th style={{ padding: '12px', width: 80 }}>ready</th>
-                    <th style={{ padding: '12px', width: 120 }}>Текст с таблички</th>
-                    <th style={{ padding: '12px', width: 100 }}>Комментарий</th>
-                    <th style={{ padding: '12px', width: 100 }}>Доп. инфо</th>
-                    <th style={{ padding: '12px', width: 80 }}>Фото</th>
-                    <th style={{ padding: '12px', width: 100 }}>Ссылка</th>
-                    <th style={{ padding: '12px', width: 56, textAlign: 'right' }} />
+                    <th style={{ padding: '8px', width: 60, minWidth: 60 }}>id</th>
+                    <th style={{ padding: '8px', width: 100, minWidth: 100 }}>idSys</th>
+                    <th style={{ padding: '8px', width: 150, minWidth: 150 }}>Название</th>
+                    <th style={{ padding: '8px', width: 150, minWidth: 150 }}>Тип</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>План</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>ready</th>
+                    <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Текст с таблички</th>
+                    <th style={{ padding: '8px', width: 200, minWidth: 200 }}>Комментарий</th>
+                    <th style={{ padding: '8px', width: 200, minWidth: 200 }}>Доп. инфо</th>
+                    <th style={{ padding: '8px', width: 80, minWidth: 80 }}>Фото</th>
+                    <th style={{ padding: '8px', width: 140, minWidth: 140 }}>Ссылки</th>
+                    <th style={{ padding: '8px', width: 56, minWidth: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.key}>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Typography level="body-sm">{row.serverId ?? '—'}</Typography>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.idSys}
-                          onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
-                          disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
-                        />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.name}
-                          onChange={(e) => updateRow(row.key, { name: e.target.value })}
-                          disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
-                        />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        {canEdit ? (
-                          <Select
+                  {rows.map((row) => {
+                    const roomUrl = getRoomUrl(row.idSys);
+                    const fromUrl = getFromUrl(row.idSys);
+                    const toUrl = getToUrl(row.idSys);
+                    
+                    return (
+                      <tr
+                        key={row.key}
+                        style={{
+                          backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
+                          transition: 'background-color 0.2s ease',
+                        }}
+                      >
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Input
                             size="sm"
-                            value={row.typeId ?? undefined}
-                            onChange={(_, v) =>
-                              updateRow(row.key, {
-                                typeId: v ?? null,
-                                typeName: types.find((t) => t.id === v)?.name ?? '',
-                              })
-                            }
-                            placeholder="Тип"
-                            sx={{ minWidth: 150, maxWidth: 150 }}
-                          >
-                            {types.map((t) => (
-                              <Option key={t.id} value={t.id}>
-                                {t.name}
-                              </Option>
-                            ))}
-                          </Select>
-                        ) : (
-                          <Typography
-                            level="body-sm"
+                            value={row.idSys}
+                            onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
+                            disabled={!canEdit}
                             sx={{
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '100%',
+                              width: '100%',
+                              '& input': {
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                              }
                             }}
-                            title={getTypeName(row.typeId)}
-                          >
-                            {getTypeName(row.typeId)}
-                          </Typography>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        {canEdit ? (
-                          <Select
-                            size="sm"
-                            value={row.planId ?? undefined}
-                            onChange={(_, v) =>
-                              updateRow(row.key, {
-                                planId: v ?? null,
-                                planName: plans.find((p) => p.id === v)?.idSys ?? '',
-                              })
-                            }
-                            placeholder="План"
-                            sx={{ minWidth: 120, maxWidth: 120 }}
-                          >
-                            {plans.map((p) => (
-                              <Option key={p.id} value={p.id}>
-                                {p.idSys}
-                              </Option>
-                            ))}
-                          </Select>
-                        ) : (
-                          <Typography
-                            level="body-sm"
-                            sx={{
-                              display: 'block',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '100%',
-                            }}
-                            title={getPlanName(row.planId)}
-                          >
-                            {getPlanName(row.planId)}
-                          </Typography>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        {canEdit ? (
-                          <Switch
-                            checked={row.ready}
-                            onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
                           />
-                        ) : (
-                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'}>
-                            {row.ready ? 'Да' : 'Нет'}
-                          </Chip>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.textFromSign ?? ''}
-                          onChange={(e) =>
-                            updateRow(row.key, { textFromSign: e.target.value || null })
-                          }
-                          disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
-                        />
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          {row.comments == null || row.comments === '' ? (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              variant="outlined"
-                              onClick={() => openComments(row, 'comments')}
-                              disabled={!canEdit}
-                              title={commentsActionTitle(row.comments, 'comments')}
-                              aria-label={commentsActionTitle(row.comments, 'comments')}
-                            >
-                              <AddComment fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              onClick={() => openComments(row, 'comments')}
-                              disabled={!canEdit}
-                              title={commentsActionTitle(row.comments, 'comments')}
-                              aria-label={commentsActionTitle(row.comments, 'comments')}
-                            >
-                              <Comment fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          {row.additionalInfo == null || row.additionalInfo === '' ? (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              variant="outlined"
-                              onClick={() => openComments(row, 'additionalInfo')}
-                              disabled={!canEdit}
-                              title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                            >
-                              <AddComment fontSize="small" />
-                            </IconButton>
-                          ) : (
-                            <IconButton
-                              size="sm"
-                              color="primary"
-                              onClick={() => openComments(row, 'additionalInfo')}
-                              disabled={!canEdit}
-                              title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                              aria-label={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
-                            >
-                              <Comment fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Stack>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={1} sx={{ width: 'fit-content' }}>
-                          <Chip size="sm" variant="soft" color="neutral">
-                            <PhotoLibrary fontSize="small" sx={{ mr: 0.5 }} />
-                            {row.photosCount}
-                          </Chip>
-                        </Stack>
-                      </td>
-                      <td style={{ padding: '12px', verticalAlign: 'middle' }}>
-                        <Input
-                          size="sm"
-                          value={row.link ?? ''}
-                          onChange={(e) => updateRow(row.key, { link: e.target.value || null })}
-                          disabled={!canEdit}
-                          sx={{ maxWidth: '100%', '& input': { textOverflow: 'ellipsis' } }}
-                        />
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', verticalAlign: 'middle' }}>
-                        <RequirePermission goal="nav_data" right="delete">
-                          <IconButton
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Input
                             size="sm"
-                            color="danger"
-                            onClick={() => removeRow(row)}
-                            disabled={!canDelete}
-                            title="Удалить строку"
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </RequirePermission>
-                      </td>
-                    </tr>
-                  ))}
+                            value={row.name}
+                            onChange={(e) => updateRow(row.key, { name: e.target.value })}
+                            disabled={!canEdit}
+                            sx={{
+                              width: '100%',
+                              '& input': {
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                              }
+                            }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          {canEdit ? (
+                            <Select
+                              size="sm"
+                              value={row.typeId ?? undefined}
+                              onChange={(_, v) =>
+                                updateRow(row.key, {
+                                  typeId: v ?? null,
+                                  typeName: types.find((t) => t.id === v)?.name ?? '',
+                                })
+                              }
+                              placeholder="Тип"
+                              sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            >
+                              {types.map((t) => (
+                                <Option key={t.id} value={t.id}>
+                                  {t.name}
+                                </Option>
+                              ))}
+                            </Select>
+                          ) : (
+                            <Typography
+                              level="body-sm"
+                              fontSize="0.75rem"
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                              title={getTypeName(row.typeId)}
+                            >
+                              {getTypeName(row.typeId)}
+                            </Typography>
+                          )}
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          {canEdit ? (
+                            <Select
+                              size="sm"
+                              value={row.planId ?? undefined}
+                              onChange={(_, v) =>
+                                updateRow(row.key, {
+                                  planId: v ?? null,
+                                  planName: plans.find((p) => p.id === v)?.idSys ?? '',
+                                })
+                              }
+                              placeholder="План"
+                              sx={{ width: '100%', '& button': { fontSize: '0.75rem', py: 0.5 } }}
+                            >
+                              {plans.map((p) => (
+                                <Option key={p.id} value={p.id}>
+                                  {p.idSys}
+                                </Option>
+                              ))}
+                            </Select>
+                          ) : (
+                            <Typography
+                              level="body-sm"
+                              fontSize="0.75rem"
+                              sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                              }}
+                              title={getPlanName(row.planId)}
+                            >
+                              {getPlanName(row.planId)}
+                            </Typography>
+                          )}
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          {canEdit ? (
+                            <Switch
+                              size="sm"
+                              checked={row.ready}
+                              onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
+                            />
+                          ) : (
+                            <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
+                              {row.ready ? 'Да' : 'Нет'}
+                            </Chip>
+                          )}
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Input
+                            size="sm"
+                            value={row.textFromSign ?? ''}
+                            onChange={(e) =>
+                              updateRow(row.key, { textFromSign: e.target.value || null })
+                            }
+                            disabled={!canEdit}
+                            sx={{
+                              width: '100%',
+                              '& input': {
+                                fontSize: '0.75rem',
+                                py: 0.5,
+                              }
+                            }}
+                          />
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                            <Typography
+                              level="body-sm"
+                              sx={{
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                fontSize: '0.75rem',
+                              }}
+                            >
+                              {row.comments || ''}
+                            </Typography>
+                            {row.comments == null || row.comments === '' ? (
+                              <IconButton
+                                size="sm"
+                                color="neutral"
+                                variant="plain"
+                                onClick={() => openComments(row, 'comments')}
+                                disabled={!canEdit}
+                                title={commentsActionTitle(row.comments, 'comments')}
+                                sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                              >
+                                <AddComment fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                size="sm"
+                                color="primary"
+                                variant="plain"
+                                onClick={() => openComments(row, 'comments')}
+                                disabled={!canEdit}
+                                title={commentsActionTitle(row.comments, 'comments')}
+                                sx={{ p: 0.5 }}
+                              >
+                                <Comment fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Stack>
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                            <Typography
+                              level="body-sm"
+                              sx={{
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                fontSize: '0.75rem',
+                              }}
+                            >
+                              {row.additionalInfo || ''}
+                            </Typography>
+                            {row.additionalInfo == null || row.additionalInfo === '' ? (
+                              <IconButton
+                                size="sm"
+                                color="neutral"
+                                variant="plain"
+                                onClick={() => openComments(row, 'additionalInfo')}
+                                disabled={!canEdit}
+                                title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                                sx={{ p: 0.5, opacity: 0.4, '&:hover': { opacity: 1 } }}
+                              >
+                                <AddComment fontSize="small" />
+                              </IconButton>
+                            ) : (
+                              <IconButton
+                                size="sm"
+                                color="primary"
+                                variant="plain"
+                                onClick={() => openComments(row, 'additionalInfo')}
+                                disabled={!canEdit}
+                                title={commentsActionTitle(row.additionalInfo, 'additionalInfo')}
+                                sx={{ p: 0.5 }}
+                              >
+                                <Comment fontSize="small" />
+                              </IconButton>
+                            )}
+                          </Stack>
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Stack direction="row" spacing={0.5} sx={{ width: 'fit-content' }}>
+                            <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: '0.7rem' }}>
+                              <PhotoLibrary fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem' }} />
+                              {row.photosCount}
+                            </Chip>
+                          </Stack>
+                        </td>
+                        <td style={{ padding: '8px', verticalAlign: 'middle' }}>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <Tooltip title={`Копировать ссылку на помещение: ${roomUrl}`}>
+                              <IconButton
+                                size="sm"
+                                color="primary"
+                                variant="outlined"
+                                onClick={() => copyToClipboard(roomUrl, 'на помещение')}
+                                sx={{ p: 0.5 }}
+                              >
+                                <ContentCopy fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={`Переход в помещение: ${fromUrl}`}>
+                              <IconButton
+                                size="sm"
+                                color="success"
+                                variant="outlined"
+                                onClick={() => copyToClipboard(fromUrl, 'перехода в помещение')}
+                                sx={{ p: 0.5 }}
+                              >
+                                <Login fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title={`Переход из помещения: ${toUrl}`}>
+                              <IconButton
+                                size="sm"
+                                color="warning"
+                                variant="outlined"
+                                onClick={() => copyToClipboard(toUrl, 'перехода из помещения')}
+                                sx={{ p: 0.5 }}
+                              >
+                                <Logout fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Stack>
+                        </td>
+                        <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
+                          <RequirePermission goal="nav_data" right="delete">
+                            <IconButton
+                              size="sm"
+                              color="danger"
+                              onClick={() => removeRow(row)}
+                              disabled={!canDelete}
+                              title="Удалить строку"
+                              sx={{ p: 0.5 }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </RequirePermission>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </Sheet>
           )}
 
-          {/* Кнопки сохранения */}
-          <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
-              <Button
-                variant="solid"
-                color="primary"
-                onClick={handleSave}
-                disabled={!canSave}
-                loading={saving}
-              >
-                Сохранить
-              </Button>
-              <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
-                Отменить
-              </Button>
+                    <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
+            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  onClick={handleSave}
+                  disabled={!canSave}
+                  loading={saving}
+                >
+                  Сохранить
+                </Button>
+                <Button variant="outlined" onClick={handleCancel} disabled={!dirty || saving}>
+                  Отменить
+                </Button>
+              </Stack>
+              <RequirePermission goal="nav_data" right="create">
+                <Button
+                  variant="solid"
+                  color="primary"
+                  startDecorator={<Add />}
+                  onClick={addRow}
+                  disabled={!canCreate}
+                >
+                  Добавить аудиторию
+                </Button>
+              </RequirePermission>
             </Stack>
           </Sheet>
 
