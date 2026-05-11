@@ -90,23 +90,27 @@ const Dashboard = () => {
         ]);
 
         if (isRequestValid()) {
-          if (statsResponse.data?.data) {
-            setChartData(statsResponse.data.data);
+          if (statsResponse.error) {
+            setError(statsResponse.error);
+          } else if (statsResponse.data) {
+            setChartData(statsResponse.data);
           } else {
             setError('Данные в ответе отсутствуют или имеют неверный формат.');
           }
-          if (aggregatedResponse.data?.data) {
-            setAggregatedData(aggregatedResponse.data.data);
+
+          if (aggregatedResponse.error) {
+            setAggregatedError(aggregatedResponse.error);
+          } else if (aggregatedResponse.data) {
+            setAggregatedData(aggregatedResponse.data);
           } else {
             setAggregatedError(
               'Агрегированные данные в ответе отсутствуют или имеют неверный формат.'
             );
           }
         }
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
+      } catch (err) {
         if (isRequestValid()) {
-          console.error('Ошибка при запросе GraphQL:', err);
+          console.error('Непредвиденная ошибка:', err);
           setError('Не удалось загрузить данные для графиков.');
           setAggregatedError('Не удалось загрузить агрегированные данные.');
         }
