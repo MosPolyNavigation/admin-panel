@@ -633,7 +633,9 @@ function NavCampusesPage() {
                       }}
                     >
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                        <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                        <Typography level="body-sm" fontSize="0.75rem">
+                          {row.serverId ?? '—'}
+                        </Typography>
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
@@ -645,7 +647,7 @@ function NavCampusesPage() {
                             '& input': {
                               fontSize: '0.75rem',
                               py: 0.5,
-                            }
+                            },
                           }}
                         />
                       </td>
@@ -665,7 +667,11 @@ function NavCampusesPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography level="body-sm" fontSize="0.75rem" title={getLocationName(row.locId)}>
+                          <Typography
+                            level="body-sm"
+                            fontSize="0.75rem"
+                            title={getLocationName(row.locId)}
+                          >
                             {getLocationName(row.locId)}
                           </Typography>
                         )}
@@ -680,7 +686,7 @@ function NavCampusesPage() {
                             '& input': {
                               fontSize: '0.75rem',
                               py: 0.5,
-                            }
+                            },
                           }}
                         />
                       </td>
@@ -692,7 +698,12 @@ function NavCampusesPage() {
                             size="sm"
                           />
                         ) : (
-                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={row.ready ? 'success' : 'neutral'}
+                            sx={{ fontSize: '0.7rem' }}
+                          >
                             {row.ready ? 'Да' : 'Нет'}
                           </Chip>
                         )}
@@ -710,7 +721,12 @@ function NavCampusesPage() {
                         </IconButton>
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                        <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                          sx={{ width: '100%' }}
+                        >
                           <Typography
                             level="body-sm"
                             sx={{
@@ -770,8 +786,15 @@ function NavCampusesPage() {
             </Sheet>
           )}
 
-                    <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+          <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              flexWrap="wrap"
+              useFlexGap
+              alignItems="center"
+              justifyContent="space-between"
+            >
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
                 <Button
                   variant="solid"

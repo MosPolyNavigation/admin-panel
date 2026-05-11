@@ -636,7 +636,7 @@ function NavAuditoriesPage() {
                     const roomUrl = getRoomUrl(row.idSys);
                     const fromUrl = getFromUrl(row.idSys);
                     const toUrl = getToUrl(row.idSys);
-                    
+
                     return (
                       <tr
                         key={row.key}
@@ -646,7 +646,9 @@ function NavAuditoriesPage() {
                         }}
                       >
                         <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                          <Typography level="body-sm" fontSize="0.75rem">
+                            {row.serverId ?? '—'}
+                          </Typography>
                         </td>
                         <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                           <Input
@@ -659,7 +661,7 @@ function NavAuditoriesPage() {
                               '& input': {
                                 fontSize: '0.75rem',
                                 py: 0.5,
-                              }
+                              },
                             }}
                           />
                         </td>
@@ -674,7 +676,7 @@ function NavAuditoriesPage() {
                               '& input': {
                                 fontSize: '0.75rem',
                                 py: 0.5,
-                              }
+                              },
                             }}
                           />
                         </td>
@@ -756,7 +758,12 @@ function NavAuditoriesPage() {
                               onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
                             />
                           ) : (
-                            <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
+                            <Chip
+                              size="sm"
+                              variant="soft"
+                              color={row.ready ? 'success' : 'neutral'}
+                              sx={{ fontSize: '0.7rem' }}
+                            >
                               {row.ready ? 'Да' : 'Нет'}
                             </Chip>
                           )}
@@ -774,12 +781,17 @@ function NavAuditoriesPage() {
                               '& input': {
                                 fontSize: '0.75rem',
                                 py: 0.5,
-                              }
+                              },
                             }}
                           />
                         </td>
                         <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            alignItems="center"
+                            sx={{ width: '100%' }}
+                          >
                             <Typography
                               level="body-sm"
                               sx={{
@@ -819,7 +831,12 @@ function NavAuditoriesPage() {
                           </Stack>
                         </td>
                         <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ width: '100%' }}>
+                          <Stack
+                            direction="row"
+                            spacing={0.5}
+                            alignItems="center"
+                            sx={{ width: '100%' }}
+                          >
                             <Typography
                               level="body-sm"
                               sx={{
@@ -860,8 +877,16 @@ function NavAuditoriesPage() {
                         </td>
                         <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                           <Stack direction="row" spacing={0.5} sx={{ width: 'fit-content' }}>
-                            <Chip size="sm" variant="soft" color="neutral" sx={{ fontSize: '0.7rem' }}>
-                              <PhotoLibrary fontSize="small" sx={{ mr: 0.5, fontSize: '0.875rem' }} />
+                            <Chip
+                              size="sm"
+                              variant="soft"
+                              color="neutral"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              <PhotoLibrary
+                                fontSize="small"
+                                sx={{ mr: 0.5, fontSize: '0.875rem' }}
+                              />
                               {row.photosCount}
                             </Chip>
                           </Stack>
@@ -925,8 +950,15 @@ function NavAuditoriesPage() {
             </Sheet>
           )}
 
-                    <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+          <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
+            <Stack
+              direction="row"
+              spacing={2}
+              flexWrap="wrap"
+              useFlexGap
+              alignItems="center"
+              justifyContent="space-between"
+            >
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
                 <Button
                   variant="solid"

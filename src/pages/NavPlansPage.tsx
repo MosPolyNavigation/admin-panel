@@ -661,9 +661,9 @@ function NavPlansPage() {
           ) : (
             <Sheet
               variant="outlined"
-              sx={{ 
-                borderRadius: 'sm', 
-                overflowX: 'auto', 
+              sx={{
+                borderRadius: 'sm',
+                overflowX: 'auto',
                 overflowY: 'hidden',
                 '& tbody tr:nth-child(odd)': {
                   backgroundColor: 'rgba(0, 0, 0, 0.04)',
@@ -706,13 +706,15 @@ function NavPlansPage() {
                     <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Вход (ближ.)</th>
                     <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Туалет М (ближ.)</th>
                     <th style={{ padding: '8px', width: 120, minWidth: 120 }}>Туалет Ж (ближ.)</th>
-                    <th style={{ padding: '8px', width: 130, minWidth: 130 }}>Туалет Общий (ближ.)</th>
+                    <th style={{ padding: '8px', width: 130, minWidth: 130 }}>
+                      Туалет Общий (ближ.)
+                    </th>
                     <th style={{ padding: '8px', width: 56, minWidth: 56, textAlign: 'right' }} />
                   </tr>
                 </thead>
                 <tbody>
                   {rows.map((row) => (
-                    <tr 
+                    <tr
                       key={row.key}
                       style={{
                         backgroundColor: row.isNew ? 'rgba(25, 118, 210, 0.12)' : undefined,
@@ -720,7 +722,9 @@ function NavPlansPage() {
                       }}
                     >
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
-                        <Typography level="body-sm" fontSize="0.75rem">{row.serverId ?? '—'}</Typography>
+                        <Typography level="body-sm" fontSize="0.75rem">
+                          {row.serverId ?? '—'}
+                        </Typography>
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
                         <Input
@@ -728,13 +732,13 @@ function NavPlansPage() {
                           value={row.idSys}
                           onChange={(e) => updateRow(row.key, { idSys: e.target.value })}
                           disabled={!canEdit}
-                          sx={{ 
+                          sx={{
                             width: '100%',
-                            '& input': { 
-                              textOverflow: 'ellipsis', 
+                            '& input': {
+                              textOverflow: 'ellipsis',
                               fontSize: '0.75rem',
                               py: 0.5,
-                            } 
+                            },
                           }}
                         />
                       </td>
@@ -806,7 +810,12 @@ function NavPlansPage() {
                             onChange={(e) => updateRow(row.key, { ready: e.target.checked })}
                           />
                         ) : (
-                          <Chip size="sm" variant="soft" color={row.ready ? 'success' : 'neutral'} sx={{ fontSize: '0.7rem' }}>
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={row.ready ? 'success' : 'neutral'}
+                            sx={{ fontSize: '0.7rem' }}
+                          >
                             {row.ready ? 'Да' : 'Нет'}
                           </Chip>
                         )}
@@ -869,7 +878,9 @@ function NavPlansPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography level="body-sm" fontSize="0.75rem">{row.nearestEntrance ?? '—'}</Typography>
+                          <Typography level="body-sm" fontSize="0.75rem">
+                            {row.nearestEntrance ?? '—'}
+                          </Typography>
                         )}
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
@@ -889,7 +900,9 @@ function NavPlansPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography level="body-sm" fontSize="0.75rem">{row.nearestManWc ?? '—'}</Typography>
+                          <Typography level="body-sm" fontSize="0.75rem">
+                            {row.nearestManWc ?? '—'}
+                          </Typography>
                         )}
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
@@ -909,7 +922,9 @@ function NavPlansPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography level="body-sm" fontSize="0.75rem">{row.nearestWomanWc ?? '—'}</Typography>
+                          <Typography level="body-sm" fontSize="0.75rem">
+                            {row.nearestWomanWc ?? '—'}
+                          </Typography>
                         )}
                       </td>
                       <td style={{ padding: '8px', verticalAlign: 'middle' }}>
@@ -929,7 +944,9 @@ function NavPlansPage() {
                             ))}
                           </Select>
                         ) : (
-                          <Typography level="body-sm" fontSize="0.75rem">{row.nearestSharedWc ?? '—'}</Typography>
+                          <Typography level="body-sm" fontSize="0.75rem">
+                            {row.nearestSharedWc ?? '—'}
+                          </Typography>
                         )}
                       </td>
                       <td style={{ padding: '8px', textAlign: 'right', verticalAlign: 'middle' }}>
@@ -954,7 +971,14 @@ function NavPlansPage() {
           )}
 
           <Sheet variant="outlined" sx={{ borderRadius: 'sm', p: 2 }}>
-            <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center" justifyContent="space-between">
+            <Stack
+              direction="row"
+              spacing={2}
+              flexWrap="wrap"
+              useFlexGap
+              alignItems="center"
+              justifyContent="space-between"
+            >
               <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap alignItems="center">
                 <Button
                   variant="solid"
