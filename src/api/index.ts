@@ -7,7 +7,6 @@ export type {
   PageInfo,
   PaginationInfo,
   PaginationInput,
-  DeleteResult,
   GqlResponse,
   // Пользователи и роли
   Role,
@@ -28,7 +27,6 @@ export type {
   UserConnection,
   UserRoleConnection,
   RoleConnection,
-  GrantRoleResult,
   // Отзывы
   Review,
   ReviewStatus,
@@ -60,7 +58,6 @@ export type {
   NavFloorConnection,
   NavStatic,
   NavStaticConnection,
-  NavAuditory2,
   NavAuditoryConnection,
   NavAuditoryCreateInput,
   NavAuditoryUpdateInput,

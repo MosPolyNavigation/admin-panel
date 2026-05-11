@@ -1,42 +1,121 @@
+import { buildFilterParts } from '../utils.ts';
 import { graphqlClient, restClient } from './client.ts';
 import type { GqlResponse, Review, ReviewStatus, SetReviewStatusResponse } from './types.ts';
 
-export const getReviews = async (signal?: AbortSignal): Promise<Review[]> => {
-  const query = `{ reviews { id, problemId, creationDate, text, imageName, statusId } }`;
+const REVIEW_FIELDS = 'id clientId problemId statusId text imageName creationDate';
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(query, undefined, {
-    signal,
-  });
+export const getReviews = async (
+  filters?: { reviewStatusId?: number; clientId?: number; problemId?: string },
+  pagination?: { page?: number; pageSize?: number },
+  signal?: AbortSignal
+): Promise<{ reviews: Review[]; error: string | null }> => {
+  const filterParts = buildFilterParts(filters ?? {});
 
-  return response.data.data.reviews;
-};
+  const args: string[] = [];
+  if (filterParts.length) {
+    args.push(`filter: {${filterParts.join(', ')}}`);
+  }
 
-export const getReview = async (id: string, signal?: AbortSignal): Promise<Review[]> => {
-  const query = `{ reviews (reviewId: ${id}) { id, problemId, creationDate, text, imageName, statusId } }`;
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
+    const pParts: string[] = [];
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
+    args.push(`pagination: {${pParts.join(', ')}}`);
+  }
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(query, undefined, {
-    signal,
-  });
+  const argsStr = args.length ? `(${args.join(', ')})` : '';
+  const query = `{ reviews${argsStr} { nodes { ${REVIEW_FIELDS} } } }`;
 
-  return response.data.data.reviews;
-};
-
-export const getReviewStatuses = async (signal?: AbortSignal): Promise<ReviewStatus[]> => {
   try {
-    const query = `{ reviewStatuses { id, name } }`;
-
-    const response = await graphqlClient.post<GqlResponse<{ reviewStatuses: ReviewStatus[] }>>(
+    const response = await graphqlClient.post<GqlResponse<{ reviews: { nodes: Review[] } }>>(
       query,
       undefined,
-      {
-        signal,
-      }
+      { signal }
     );
 
-    return response.data.data.reviewStatuses;
-  } catch (error) {
-    console.error('Ошибка загрузки статусов:', error);
-    return [];
+    if (response.data?.errors?.length) {
+      return { reviews: [], error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { reviews: response.data.data?.reviews?.nodes ?? [], error: null };
+  } catch (err) {
+    return { reviews: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
+
+export const getReview = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ review: Review | null; error: string | null }> => {
+  const query = `{ review(id: ${id}) { ${REVIEW_FIELDS} } }`;
+
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ review: Review | null }>>(
+      query,
+      undefined,
+      { signal }
+    );
+
+    if (response.data?.errors?.length) {
+      return { review: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { review: response.data.data?.review ?? null, error: null };
+  } catch (err) {
+    return { review: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
+
+export const getReviewStatuses = async (
+  signal?: AbortSignal
+): Promise<{ statuses: ReviewStatus[]; error: string | null }> => {
+  const query = `{ reviewStatuses { nodes { id name } } }`;
+
+  try {
+    const response = await graphqlClient.post<
+      GqlResponse<{ reviewStatuses: { nodes: ReviewStatus[] } }>
+    >(query, undefined, { signal });
+
+    if (response.data?.errors?.length) {
+      return { statuses: [], error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { statuses: response.data.data?.reviewStatuses?.nodes ?? [], error: null };
+  } catch (err) {
+    return { statuses: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
+
+export const getReviewsBatch = async (
+  statusIds: number[] = [1, 2, 3, 4, 5, 6, 7],
+  signal?: AbortSignal
+) => {
+  const queryParts = statusIds.map((statusId) => {
+    return `status${statusId}: reviews(filter: {reviewStatusId: {eq: ${statusId}}}) { 
+      nodes { ${REVIEW_FIELDS} } 
+    }`;
+  });
+
+  const query = `{ ${queryParts.join('\n')} }`;
+
+  try {
+    const response = await graphqlClient.post<{
+      data: Record<string, { nodes: Review[] }>;
+      errors?: Array<{ message: string }>;
+    }>(query, undefined, { signal });
+
+    if (response.data?.errors?.length) {
+      console.error('GraphQL errors:', response.data.errors);
+      return null;
+    }
+
+    const result: Record<string, Review[]> = {};
+    statusIds.forEach((statusId) => {
+      const key = `status${statusId}`;
+      result[key] = response.data.data?.[key]?.nodes ?? [];
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Ошибка batch-запроса:', err);
+    return null;
   }
 };
 
@@ -54,9 +133,7 @@ export const setReviewStatus = async (
       `/review/${review_id}/status`,
       `status_id=${status_id}`,
       {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         signal,
       }
     );
@@ -67,30 +144,29 @@ export const setReviewStatus = async (
   }
 };
 
-export const getReviewsBatch = async (signal?: AbortSignal) => {
-  const query = `{ 
-    status1: reviews(status_id: 1) { id problemId creationDate text status_id imageName } 
-    status2: reviews(status_id: 2) { id problemId creationDate text status_id imageName } 
-    status3: reviews(status_id: 3) { id problemId creationDate text status_id imageName } 
-    status4: reviews(status_id: 4) { id problemId creationDate text status_id imageName } 
-    status5: reviews(status_id: 5) { id problemId creationDate text status_id imageName } 
-    status6: reviews(status_id: 6) { id problemId creationDate text status_id imageName } 
-    status7: reviews(status_id: 7) { id problemId creationDate text status_id imageName } 
-  }`;
+export const updateReview = async (
+  id: number,
+  data: { problemId?: string; statusId?: number; text?: string; imageName?: string },
+  signal?: AbortSignal
+): Promise<{ review: Review | null; error: string | null }> => {
+  const mutation = `
+    mutation($id: Int!, $data: UpdateReviewInput!) {
+      updateReview(id: $id, data: $data) { ${REVIEW_FIELDS} }
+    }
+  `;
 
-  const response = await graphqlClient.post<{
-    data: {
-      status1: Review[];
-      status2: Review[];
-      status3: Review[];
-      status4: Review[];
-      status5: Review[];
-      status6: Review[];
-      status7: Review[];
-    };
-  }>(query, undefined, {
-    signal,
-  });
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateReview: Review }>>(
+      mutation,
+      { id, data },
+      { signal }
+    );
 
-  return response.data.data;
+    if (response.data?.errors?.length) {
+      return { review: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { review: response.data.data?.updateReview ?? null, error: null };
+  } catch (err) {
+    return { review: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
+  }
 };

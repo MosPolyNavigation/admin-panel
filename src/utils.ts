@@ -35,3 +35,22 @@ export function translateProblemId(problemId: string): string {
 
   return translations[problemId] || problemId;
 }
+
+export function buildFilterParts(filters: Record<string, unknown>): string[] {
+  const parts: string[] = [];
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null) continue;
+
+    if (typeof value === 'number' && !Number.isNaN(value)) {
+      parts.push(`${key}: {eq: ${value}}`);
+    } else if (typeof value === 'string' && value.trim() !== '') {
+      // Экранируем строку для GraphQL
+      parts.push(`${key}: {startsWith: ${JSON.stringify(value.trim())}}`);
+    } else if (typeof value === 'boolean') {
+      parts.push(`${key}: {eq: ${value}}`);
+    }
+  }
+
+  return parts;
+}
