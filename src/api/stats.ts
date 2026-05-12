@@ -22,9 +22,44 @@ function resolveFilterArg(type: string): 'byDate' | 'byMonth' | 'byYear' {
   return type as 'byDate' | 'byMonth' | 'byYear';
 }
 
-function validateDate(date: string, paramName: string): void {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    throw new Error(`Неверный формат ${paramName}: "${date}". Ожидается ISO-формат YYYY-MM-DD`);
+interface DateFormatRule {
+  regex: RegExp;
+  example: string;
+}
+
+const DATE_FORMAT_RULES: Record<DateFilterType, DateFormatRule> = {
+  byDate: {
+    regex: /^\d{4}-\d{2}-\d{2}$/,
+    example: 'YYYY-MM-DD',
+  },
+  byMonth: {
+    regex: /^\d{4}-\d{2}$/,
+    example: 'YYYY-MM',
+  },
+  byYear: {
+    regex: /^\d{4}$/,
+    example: 'YYYY',
+  },
+};
+
+/**
+ * Проверяет, соответствует ли строка даты заданному ISO-формату.
+ * @param date - проверяемая строка даты
+ * @param paramName - имя параметра для сообщения об ошибке
+ * @param filterType - тип формата даты (по умолчанию 'byDate')
+ * @throws {Error} если формат строки не соответствует ожидаемому
+ */
+function validateDate(
+  date: string,
+  paramName: string,
+  filterType: DateFilterType = 'byDate'
+): asserts date is string {
+  const rule = DATE_FORMAT_RULES[filterType];
+
+  if (!rule.regex.test(date)) {
+    throw new Error(
+      `Неверный формат ${paramName}: "${date}". Ожидается ISO-формат ${rule.example}`
+    );
   }
 }
 
@@ -35,8 +70,8 @@ export const getStat = async (
   endDate: string,
   signal?: AbortSignal
 ): Promise<{ data: EndpointStatistics[] | null; error: string | null }> => {
-  validateDate(startDate, 'startDate');
-  validateDate(endDate, 'endDate');
+  validateDate(startDate, 'startDate', filterType);
+  validateDate(endDate, 'endDate', filterType);
 
   const fType = resolveFilterArg(filterType);
   const query = `{ 
@@ -74,8 +109,8 @@ export const getAllStats = async (
   } | null;
   error: string | null;
 }> => {
-  validateDate(startDate, 'startDate');
-  validateDate(endDate, 'endDate');
+  validateDate(startDate, 'startDate', filterType);
+  validateDate(endDate, 'endDate', filterType);
 
   const fType = resolveFilterArg(filterType);
   const dateArg = `${fType}: {start: ${JSON.stringify(startDate)}, end: ${JSON.stringify(endDate)}}`;
@@ -120,8 +155,8 @@ export const getAllStatsAggregated = async (
   } | null;
   error: string | null;
 }> => {
-  validateDate(startDate, 'startDate');
-  validateDate(endDate, 'endDate');
+  validateDate(startDate, 'startDate', filterType);
+  validateDate(endDate, 'endDate', filterType);
 
   const fType = resolveFilterArg(filterType);
   const dateArg = `${fType}: {start: ${JSON.stringify(startDate)}, end: ${JSON.stringify(endDate)}}`;
