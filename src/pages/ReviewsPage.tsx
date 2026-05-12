@@ -1,27 +1,42 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Typography, Stack, Alert, CircularProgress, Box } from '@mui/joy';
 import Page from '../components/Page';
-import { useAuth } from '../hooks/useAuth';
-import { getReviews, type Review } from '../api';
+import { getReviews, getReviewsBatch, type Review } from '../api';
 import { useNavigate, useSearchParams } from 'react-router';
 import { translateProblemId } from '../utils';
 import { STATUS_MAP } from '../constants';
 import ReviewStatusCard from '../components/ReviewStatusCard';
 
 const ROWS_PER_PAGE = 5;
+const STATUS_IDS = Object.keys(STATUS_MAP)
+  .map(Number)
+  .sort((a, b) => a - b);
 
 function ReviewsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token } = useAuth();
   const navigate = useNavigate();
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const getPage = (statusId: number): number => {
-    const page = searchParams.get(`page_${statusId}`);
-    return page ? Number(page) : 1;
-  };
+  const [reviewsByStatus, setReviewsByStatus] = useState<Record<number, Review[]>>({});
+  const [paginationByStatus, setPaginationByStatus] = useState<
+    Record<number, { total: number; pages: number }>
+  >({});
+
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingByStatus, setLoadingByStatus] = useState<Record<number, boolean>>({});
+  const [error, setError] = useState<string | null>(null);
+  const [loadedPageByStatus, setLoadedPageByStatus] = useState<Record<number, number>>({});
+  const prevSearchParamsRef = useRef<URLSearchParams | null>(null);
+  const fetchingPagesRef = useRef<Set<string>>(new Set());
+  const loadedPagesRef = useRef<Record<number, number>>({});
+  const loadingByStatusRef = useRef<Record<number, boolean>>({});
+
+  const getPage = useCallback(
+    (statusId: number): number => {
+      const page = searchParams.get(`page_${statusId}`);
+      return page ? Number(page) : 1;
+    },
+    [searchParams]
+  );
 
   const getExpanded = (statusId: number): boolean => {
     const val = searchParams.get(`expanded_${statusId}`);
@@ -30,70 +45,126 @@ function ReviewsPage() {
   };
 
   useEffect(() => {
-    const fetchReviews = async () => {
-      if (!token) return;
-      try {
-        setLoading(true);
-        const data = await getReviews(token);
-        setReviews(data);
-        setError(null);
-      } catch {
-        setError('Ошибка загрузки отзывов');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReviews();
-  }, [token]);
+    loadingByStatusRef.current = loadingByStatus;
+  }, [loadingByStatus]);
 
   useEffect(() => {
-    if (loading || reviews.length === 0) return;
+    loadedPagesRef.current = loadedPageByStatus;
+  }, [loadedPageByStatus]);
 
-    const newParams = new URLSearchParams(searchParams);
-    let hasChanges = false;
+  const loadReviewsForStatus = useCallback(async (statusId: number, page: number) => {
+    setLoadingByStatus((prev) => ({ ...prev, [statusId]: true }));
 
-    const grouped = reviews.reduce(
-      (acc, review) => {
-        const statusId = review.statusId || 1;
-        (acc[statusId] ||= []).push(review);
-        return acc;
-      },
-      {} as Record<number, Review[]>
-    );
+    try {
+      const {
+        reviews: newReviews,
+        pagination,
+        error: fetchError,
+      } = await getReviews({ reviewStatusId: statusId }, { page, pageSize: ROWS_PER_PAGE });
 
-    const statusIds = Object.keys(STATUS_MAP).map(Number);
+      if (fetchError) {
+        setError(fetchError);
+        return;
+      }
 
-    statusIds.forEach((statusId) => {
-      const count = grouped[statusId]?.length || 0;
-      const totalPages = Math.ceil(count / ROWS_PER_PAGE) || 1;
+      setReviewsByStatus((prev) => ({ ...prev, [statusId]: newReviews }));
+
+      if (pagination) {
+        setPaginationByStatus((prev) => ({
+          ...prev,
+          [statusId]: { total: pagination.totalCount, pages: pagination.totalPages },
+        }));
+      }
+
+      setLoadedPageByStatus((prev) => ({
+        ...prev,
+        [statusId]: page,
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка загрузки отзывов');
+    } finally {
+      setLoadingByStatus((prev) => ({ ...prev, [statusId]: false }));
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchInitialReviews = async () => {
+      try {
+        setInitialLoading(true);
+        setError(null);
+
+        const batchResult = await getReviewsBatch(STATUS_IDS, 1, ROWS_PER_PAGE);
+
+        if (!batchResult) {
+          setError('Не удалось загрузить отзывы');
+          return;
+        }
+
+        const newReviewsByStatus: Record<number, Review[]> = {};
+        const newPaginationByStatus: Record<number, { total: number; pages: number }> = {};
+
+        STATUS_IDS.forEach((statusId) => {
+          const key = `status${statusId}`;
+          const data = batchResult[key];
+          if (data) {
+            newReviewsByStatus[statusId] = data.reviews;
+            if (data.total !== undefined && data.pages !== undefined) {
+              newPaginationByStatus[statusId] = { total: data.total, pages: data.pages };
+            }
+          }
+        });
+
+        setReviewsByStatus(newReviewsByStatus);
+        setPaginationByStatus(newPaginationByStatus);
+        setLoadedPageByStatus((prev) => {
+          const updated = { ...prev };
+          STATUS_IDS.forEach((statusId) => {
+            updated[statusId] = 1;
+          });
+          return updated;
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки отзывов');
+      } finally {
+        setInitialLoading(false);
+      }
+    };
+
+    fetchInitialReviews();
+  }, []);
+
+  useEffect(() => {
+    if (initialLoading) return;
+
+    const statusesToLoad: number[] = [];
+    const prevParams = prevSearchParamsRef.current;
+
+    STATUS_IDS.forEach((statusId) => {
       const currentPage = Number(searchParams.get(`page_${statusId}`)) || 1;
+      const prevPage = prevParams ? Number(prevParams.get(`page_${statusId}`)) || 1 : 0;
 
-      if (currentPage > totalPages) {
-        newParams.set(`page_${statusId}`, String(totalPages));
-        hasChanges = true;
-      } else if (currentPage < 1) {
-        newParams.set(`page_${statusId}`, '1');
-        hasChanges = true;
+      if (prevPage === 0 || currentPage !== prevPage) {
+        statusesToLoad.push(statusId);
       }
     });
 
-    if (hasChanges) {
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [loading, reviews, setSearchParams, searchParams]);
+    prevSearchParamsRef.current = searchParams;
 
-  const groupedReviews = reviews.reduce(
-    (acc, review) => {
-      const statusId = review.statusId || 1;
-      (acc[statusId] ||= []).push(review);
-      return acc;
-    },
-    {} as Record<number, Review[]>
-  );
+    statusesToLoad.forEach((statusId) => {
+      const page = Number(searchParams.get(`page_${statusId}`)) || 1;
+      const cacheKey = `${statusId}_${page}`;
 
-  const statusIds = Object.keys(STATUS_MAP)
-    .map(Number)
-    .sort((a, b) => a - b);
+      if (fetchingPagesRef.current.has(cacheKey) || loadedPagesRef.current[statusId] === page) {
+        return;
+      }
+
+      fetchingPagesRef.current.add(cacheKey);
+
+      loadReviewsForStatus(statusId, page).finally(() => {
+        fetchingPagesRef.current.delete(cacheKey);
+      });
+    });
+  }, [searchParams, initialLoading, loadReviewsForStatus]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -131,7 +202,7 @@ function ReviewsPage() {
     navigate(`/reviews/${reviewId}?${searchParams.toString()}`);
   };
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <Page headerText="Отзывы">
         <Box
@@ -157,12 +228,17 @@ function ReviewsPage() {
       )}
 
       <Stack spacing={3}>
-        {statusIds.map((statusId) => {
+        {STATUS_IDS.map((statusId) => {
           const statusName = STATUS_MAP[statusId];
-          const statusReviews = groupedReviews[statusId] || [];
-          const totalPages = Math.ceil(statusReviews.length / ROWS_PER_PAGE) || 1;
-          const urlPage = getPage(statusId);
-          const safePage = Math.max(1, Math.min(urlPage, totalPages));
+          const statusReviews = reviewsByStatus[statusId] || [];
+          const pagination = paginationByStatus[statusId];
+
+          const currentPage = getPage(statusId);
+          const totalPages = pagination?.pages || 1;
+          const totalReviewsCount = pagination?.total || 0;
+
+          const paginatedReviews = statusReviews;
+
           const isExpanded = getExpanded(statusId);
 
           return (
@@ -170,8 +246,9 @@ function ReviewsPage() {
               key={statusId}
               statusId={statusId}
               statusName={statusName}
-              reviews={statusReviews}
-              currentPage={safePage}
+              reviews={paginatedReviews}
+              totalReviewsCount={totalReviewsCount}
+              currentPage={currentPage}
               totalPages={totalPages}
               isExpanded={isExpanded}
               onPageChange={handlePageChange}
@@ -187,7 +264,8 @@ function ReviewsPage() {
       </Stack>
 
       <Typography level="body-sm" sx={{ mt: 3, textAlign: 'center', color: 'neutral.500' }}>
-        Всего отзывов: {reviews.length} • Статусов: {statusIds.length}
+        Всего отзывов: {Object.values(reviewsByStatus).flat().length} • Статусов:{' '}
+        {STATUS_IDS.length}
       </Typography>
     </Page>
   );

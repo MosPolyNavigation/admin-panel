@@ -24,12 +24,10 @@ import {
   Insights as ActivityIcon,
 } from '@mui/icons-material';
 import Page from '../components/Page';
-import { useAuth } from '../hooks/useAuth';
 import { getBanInfo, unbanUser, type BanInfo } from '../api';
 import { useNavigate, useParams } from 'react-router';
 
 function BannedUserDetails() {
-  const { token } = useAuth();
   const navigate = useNavigate();
   const { user_id } = useParams<{ user_id: string }>();
 
@@ -42,10 +40,10 @@ function BannedUserDetails() {
 
   useEffect(() => {
     const fetchBanInfo = async () => {
-      if (!token || !user_id) return;
+      if (!user_id) return;
       try {
         setLoading(true);
-        const data = await getBanInfo(token, user_id);
+        const data = await getBanInfo(user_id);
         if (data) {
           setBanInfo(data);
         } else {
@@ -59,13 +57,13 @@ function BannedUserDetails() {
       }
     };
     fetchBanInfo();
-  }, [token, user_id]);
+  }, [user_id]);
 
   const handleUnban = async () => {
-    if (!token || !user_id) return;
+    if (!user_id) return;
     try {
       setUnbanning(true);
-      await unbanUser(token, user_id, unbanReason || undefined);
+      await unbanUser(user_id, unbanReason || undefined);
       setUnbanModalOpen(false);
       setUnbanReason('');
       navigate('/bans', { state: { success: 'Пользователь разбанен' } });

@@ -22,6 +22,11 @@ const PATH_LABELS: Record<string, string> = {
   '/roles/:id': 'Редактирование роли',
   '/bans': 'Забаненные пользователи',
   '/bans/:id': 'Информация о бане',
+  '/navigation': 'Навигация',
+  '/navigation/locations': 'Локации',
+  '/navigation/campuses': 'Корпуса',
+  '/navigation/plans': 'Планы',
+  '/navigation/auditories': 'Аудитории',
 };
 
 function matchRoute(path: string, pattern: string): boolean {

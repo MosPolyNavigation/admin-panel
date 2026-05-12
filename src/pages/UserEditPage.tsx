@@ -36,7 +36,7 @@ export default function UserEditPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -73,15 +73,29 @@ export default function UserEditPage() {
   // Load user
   useEffect(() => {
     const loadUser = async () => {
-      if (!id || !token) return;
+      if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const result = await getUser(token, parseInt(id));
-        if (result) {
-          setUser(result);
+        // 🔧 Исправлено: деструктурируем ответ { user, error }
+        const { user: fetchedUser, error: fetchError } = await getUser(userId);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedUser) {
+          setUser(fetchedUser);
           setFormData({
-            fio: result.fio || '',
-            isActive: result.isActive,
+            fio: fetchedUser.fio || '',
+            isActive: fetchedUser.isActive,
           });
         } else {
           setError('Пользователь не найден');
@@ -93,7 +107,7 @@ export default function UserEditPage() {
       }
     };
     loadUser();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -114,19 +128,25 @@ export default function UserEditPage() {
 
   // Handle save
   const save = async () => {
-    if (!id || !user || !token) return;
+    if (!id || !user) return;
     setSaving(true);
     setError(null);
     try {
-      await updateUser(token, user.id, formData);
+      // 🔧 Исправлено: деструктурируем ответ { user, error }
+      const { user: updatedUser, error: updateError } = await updateUser(user.id, formData);
+
+      if (updateError || !updatedUser) {
+        throw new Error(updateError || 'Ошибка сохранения');
+      }
+
       showNotification('Данные сохранены', 'success');
       // Reload user data
-      const result = await getUser(token, user.id);
-      if (result) {
-        setUser(result);
+      const { user: reloaded, error: reloadError } = await getUser(user.id);
+      if (!reloadError && reloaded) {
+        setUser(reloaded);
         setFormData({
-          fio: result.fio || '',
-          isActive: result.isActive,
+          fio: reloaded.fio || '',
+          isActive: reloaded.isActive,
         });
       }
     } catch (err) {
@@ -151,7 +171,7 @@ export default function UserEditPage() {
 
   // Handle change password
   const changePassword = async () => {
-    if (!id || !user || !token) return;
+    if (!id || !user) return;
     if (password.new !== password.confirm) {
       setPasswordError('Пароли не совпадают');
       return;
@@ -161,7 +181,13 @@ export default function UserEditPage() {
       return;
     }
     try {
-      await changeUserPassword(token, user.id, password.new);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await changeUserPassword(user.id, password.new);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка смены пароля');
+      }
+
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -182,25 +208,16 @@ export default function UserEditPage() {
     });
   };
 
+  // 🔧 Хелпер для получения имён ролей из userRoles
+  const getUserRoleNames = (user: User): string[] => {
+    return (user.userRoles?.map((ur) => ur.role?.name).filter(Boolean) as string[]) || [];
+  };
+
   // Show loading while auth is checking
   if (authLoading) {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
       </Page>
     );
   }
@@ -344,46 +361,47 @@ export default function UserEditPage() {
                 </Box>
               </RequirePermission>
 
-              {/* Roles */}
-              <RequirePermission goal="roles" right="grant">
-                <Box
-                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <Box>
-                    <Typography>Роли пользователя</Typography>
-                    <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                      {user.roles && user.roles.length > 0 ? (
-                        user.roles.map((ur) => (
-                          <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                            {ur.role?.name || `Role ${ur.roleId}`}
-                          </Chip>
-                        ))
-                      ) : (
-                        <Typography level="body-sm" textColor="neutral.500">
-                          Роли не назначены
-                        </Typography>
-                      )}
-                    </Stack>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    onClick={() => {
-                      const returnParams = new URLSearchParams();
-                      for (const [key, value] of searchParams.entries()) {
-                        if (key !== 'from') {
-                          returnParams.set(key, value);
-                        }
-                      }
-                      const query = returnParams.toString();
-                      navigate(
-                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                      );
-                    }}
-                  >
-                    Назначить роли
-                  </Button>
+              {/* Roles - 🔧 Исправлено: userRoles вместо roles */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Box>
+                  <Typography>Роли пользователя</Typography>
+                  <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                    {user.userRoles && user.userRoles.length > 0 ? (
+                      getUserRoleNames(user).map((roleName, idx) => (
+                        <Chip
+                          key={`${user.id}_role_${idx}`}
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                        >
+                          {roleName}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Typography level="body-sm" textColor="neutral.500">
+                        Роли не назначены
+                      </Typography>
+                    )}
+                  </Stack>
                 </Box>
-              </RequirePermission>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
+                  }}
+                >
+                  Назначить роли
+                </Button>
+              </Box>
             </Stack>
           </CardContent>
         </Card>

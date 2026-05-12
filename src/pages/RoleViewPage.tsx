@@ -29,39 +29,17 @@ import PaginationControls, {
   type PaginationControlsProps,
 } from '../components/PaginationControls.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getRole, getUsersByRole, type Role, type User } from '../api';
+import { getRole, getUsersByRole, getAllowedPermissions, type Role, type User } from '../api';
 import { RequirePermission } from '../components/RequirePermission.tsx';
+import { RIGHT_NAMES } from '../constants';
 
 const ITEMS_PER_PAGE = 10;
-
-// Доступные права для каждой цели
-const GOAL_RIGHTS_MAP: Record<number, number[]> = {
-  1: [1],
-  2: [1],
-  3: [1, 2, 3, 4],
-  4: [1, 2, 3, 4, 5],
-  5: [1, 3],
-  6: [1, 2, 3, 4],
-  7: [1, 3],
-  8: [1, 2, 3, 4],
-  9: [3],
-  10: [1, 3],
-  11: [1, 3],
-};
-
-const RIGHT_NAMES: Record<number, string> = {
-  1: 'view',
-  2: 'create',
-  3: 'edit',
-  4: 'delete',
-  5: 'grant',
-};
 
 export default function RoleViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [role, setRole] = useState<Role | null>(null);
@@ -75,15 +53,31 @@ export default function RoleViewPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  const [allowedPermissions, setAllowedPermissions] = useState<Record<string, number[]>>({});
+  const [permissionsLoading, setPermissionsLoading] = useState(true);
+
   // Load role
   useEffect(() => {
     const loadRole = async () => {
-      if (!token || !id) return;
+      if (!id) return;
+      const roleId = parseInt(id);
+      if (Number.isNaN(roleId)) {
+        setError('Неверный ID роли');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const result = await getRole(token, parseInt(id));
-        if (result) {
-          setRole(result);
+        const { role: fetchedRole, error: fetchError } = await getRole(roleId);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedRole) {
+          setRole(fetchedRole);
         } else {
           setError('Роль не найдена');
         }
@@ -94,19 +88,50 @@ export default function RoleViewPage() {
       }
     };
     loadRole();
-  }, [id, token]);
+  }, [id]);
+
+  // Load allowed permissions from backend
+  useEffect(() => {
+    const loadPermissions = async () => {
+      try {
+        setPermissionsLoading(true);
+        const { data, error } = await getAllowedPermissions();
+
+        if (!error && data?.allowed_permissions) {
+          setAllowedPermissions(data.allowed_permissions);
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки разрешений:', err);
+      } finally {
+        setPermissionsLoading(false);
+      }
+    };
+    loadPermissions();
+  }, []);
 
   // Load users with this role
   useEffect(() => {
     const loadUsers = async () => {
-      if (!token || !id) return;
+      if (!id) return;
       setUsersLoading(true);
       try {
-        const result = await getUsersByRole(token, parseInt(id), {
-          limit: ITEMS_PER_PAGE,
-          offset: (currentPage - 1) * ITEMS_PER_PAGE,
-        });
-        setUsers(result.nodes.map((ur) => ur.user).filter(Boolean) as User[]);
+        // 🔧 Исправлено: деструктурируем ответ + используем page/pageSize
+        const { userRoles: result, error: fetchError } = await getUsersByRole(
+          parseInt(id),
+          { page: currentPage, pageSize: ITEMS_PER_PAGE } // 🔧 1-based pagination
+        );
+
+        if (fetchError) {
+          console.error('Ошибка загрузки пользователей:', fetchError);
+          return;
+        }
+
+        // 🔧 Исправлено: проверяем user на null и фильтруем
+        const validUsers = result.nodes
+          .map((ur) => ur.user)
+          .filter((user): user is User => user !== null && user !== undefined);
+
+        setUsers(validUsers);
         setTotalCount(result.paginationInfo.totalCount);
         setTotalPages(result.paginationInfo.totalPages);
       } catch (err) {
@@ -116,7 +141,7 @@ export default function RoleViewPage() {
       }
     };
     loadUsers();
-  }, [id, token, currentPage]);
+  }, [id, currentPage]);
 
   // Handle page change for users
   const handlePageChange: PaginationControlsProps['onPageChange'] = (page) => {
@@ -145,25 +170,16 @@ export default function RoleViewPage() {
     });
   };
 
+  // 🔧 Хелпер: получить доступные права для цели из бэкенда
+  const getAvailableRightsForGoal = (goalId: number): number[] => {
+    return allowedPermissions[String(goalId)] || [];
+  };
+
   // Show loading while auth is checking
-  if (authLoading) {
+  if (authLoading || permissionsLoading) {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }
@@ -228,7 +244,7 @@ export default function RoleViewPage() {
       </Box>
 
       <Stack spacing={3}>
-        {/* Rights Card */}
+        {/* Rights Card - 🔧 Использует данные с бэкенда */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -237,65 +253,73 @@ export default function RoleViewPage() {
             <Divider sx={{ mb: 3 }} />
 
             <Stack spacing={2}>
-              {Object.entries(GOAL_RIGHTS_MAP).map(([goalId, availableRights]) => {
-                const goalName = role.roleRightGoals?.find((rrg) => rrg.goalId === parseInt(goalId))
-                  ?.goal?.name;
+              {/* 🔧 Перебираем цели из roleRightGoals, а не из констант */}
+              {role.roleRightGoals && role.roleRightGoals.length > 0 ? (
+                Array.from(new Set(role.roleRightGoals.map((rrg) => rrg.goalId))).map((goalId) => {
+                  const goalName = role.roleRightGoals?.find((rrg) => rrg.goalId === goalId)?.goal
+                    ?.name;
+                  if (!goalName) return null;
 
-                if (!goalName) return null;
+                  const selectedGoalRights =
+                    role.roleRightGoals
+                      ?.filter((rrg) => rrg.goalId === goalId)
+                      .map((rrg) => rrg.rightId) || [];
 
-                const selectedGoalRights =
-                  role.roleRightGoals
-                    ?.filter((rrg) => rrg.goalId === parseInt(goalId))
-                    .map((rrg) => rrg.rightId) || [];
+                  // 🔧 Получаем доступные права из бэкенда
+                  const availableRights = getAvailableRightsForGoal(goalId);
 
-                return (
-                  <Card
-                    key={goalId}
-                    variant="outlined"
-                    sx={{
-                      borderColor: selectedGoalRights.length > 0 ? 'primary.500' : 'neutral.500',
-                      bgcolor: selectedGoalRights.length > 0 ? 'primary.softBg' : 'transparent',
-                    }}
-                  >
-                    <CardContent>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 2,
-                        }}
-                      >
-                        <Typography level="title-md">
-                          <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                          {goalName}
-                        </Typography>
-                        <Chip size="sm" variant="soft" color="neutral">
-                          {selectedGoalRights.length} из {availableRights.length}
-                        </Chip>
-                      </Box>
+                  return (
+                    <Card
+                      key={goalId}
+                      variant="outlined"
+                      sx={{
+                        borderColor: selectedGoalRights.length > 0 ? 'primary.500' : 'neutral.500',
+                        bgcolor: selectedGoalRights.length > 0 ? 'primary.softBg' : 'transparent',
+                      }}
+                    >
+                      <CardContent>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2,
+                          }}
+                        >
+                          <Typography level="title-md">
+                            <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                            {goalName}
+                          </Typography>
+                          <Chip size="sm" variant="soft" color="neutral">
+                            {selectedGoalRights.length} из {availableRights.length}
+                          </Chip>
+                        </Box>
 
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {availableRights.map((rightId) => {
-                          const isSelected = selectedGoalRights.includes(rightId);
-
-                          return (
-                            <Chip
-                              key={rightId}
-                              size="md"
-                              variant={isSelected ? 'solid' : 'outlined'}
-                              color={isSelected ? 'primary' : 'neutral'}
-                              sx={{ cursor: 'default' }}
-                            >
-                              {RIGHT_NAMES[rightId] || rightId}
-                            </Chip>
-                          );
-                        })}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                        <Stack direction="row" spacing={1} flexWrap="wrap">
+                          {availableRights.map((rightId) => {
+                            const isSelected = selectedGoalRights.includes(rightId);
+                            return (
+                              <Chip
+                                key={rightId}
+                                size="md"
+                                variant={isSelected ? 'solid' : 'outlined'}
+                                color={isSelected ? 'primary' : 'neutral'}
+                                sx={{ cursor: 'default' }}
+                              >
+                                {RIGHT_NAMES[rightId] || `Right #${rightId}`}
+                              </Chip>
+                            );
+                          })}
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                <Typography level="body-md" textColor="neutral.500">
+                  Права не назначены
+                </Typography>
+              )}
             </Stack>
           </CardContent>
         </Card>

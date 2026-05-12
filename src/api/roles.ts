@@ -7,225 +7,258 @@ import type {
   PaginationInput,
   CreateRoleInput,
   UpdateRoleInput,
-  DeleteResult,
   Right,
   Goal,
   UserRoleConnection,
 } from './types.ts';
 
+const ROLE_FIELDS = 'id name';
+const ROLE_RIGHT_GOAL_FIELDS = 'roleId rightId goalId canGrant right { id name } goal { id name }';
+const USER_ROLE_FIELDS = 'userId roleId user { id login fio isActive registrationDate }';
+
+// ============================================================================
+// РОЛИ: Получение списка с фильтрацией и пагинацией
+// ============================================================================
+
 export const getRoles = async (
-  token: string,
   pagination: PaginationInput,
   filter?: RoleFilterInput,
   signal?: AbortSignal
-): Promise<RoleConnection> => {
+): Promise<{ roles: RoleConnection; error: string | null }> => {
   const query = `query GetRoles($pagination: PaginationInput, $filter: RoleFilterInput) { 
     roles(pagination: $pagination, filter: $filter) { 
-      nodes { id name roleRightGoals { roleId rightId goalId } userRoles { userId roleId } } 
+      nodes { ${ROLE_FIELDS} roleRightGoals (first: 100) { ${ROLE_RIGHT_GOAL_FIELDS} } userRoles { ${USER_ROLE_FIELDS} } } 
       pageInfo { hasPreviousPage hasNextPage startCursor endCursor } 
       paginationInfo { totalCount currentPage totalPages } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ roles: RoleConnection }>>(
-    '/graphql',
-    { query, variables: { pagination, filter } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ roles: RoleConnection }>>(
+      query,
+      { pagination, filter },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return {
+        roles: {} as RoleConnection,
+        error: response.data.errors.map((e) => e.message).join('; '),
+      };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { roles: response.data.data.roles, error: null };
+  } catch (err) {
+    return {
+      roles: {} as RoleConnection,
+      error: err instanceof Error ? err.message : 'Ошибка запроса',
+    };
   }
-
-  return response.data.data.roles;
 };
 
+// ============================================================================
+// РОЛЬ: Получение одной роли по ID
+// ============================================================================
+
+// 🔧 Исправлено: аргумент `id`, а не `roleId`
 export const getRole = async (
-  token: string,
-  roleId: number,
+  id: number,
   signal?: AbortSignal
-): Promise<Role | null> => {
-  const query = `query GetRole($roleId: Int!) { 
-    role(roleId: $roleId) { 
-      id name 
-      roleRightGoals { roleId rightId goalId right { id name } goal { id name } } 
-      userRoles { userId roleId user { id login } } 
+): Promise<{ role: Role | null; error: string | null }> => {
+  const query = `query GetRole($id: Int!) { 
+    role(id: $id) { 
+      ${ROLE_FIELDS}
+      roleRightGoals (first: 100) { ${ROLE_RIGHT_GOAL_FIELDS} } 
+      userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ role: Role | null }>>(
-    '/graphql',
-    { query, variables: { roleId } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ role: Role | null }>>(
+      query,
+      { id },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { role: null, error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { role: response.data.data.role, error: null };
+  } catch (err) {
+    return { role: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
   }
-
-  return response.data.data.role;
 };
+
+// ============================================================================
+// РОЛИ: Создание / Обновление / Удаление
+// ============================================================================
 
 export const createRole = async (
-  token: string,
   data: CreateRoleInput,
   signal?: AbortSignal
-): Promise<Role> => {
+): Promise<{ role: Role | null; error: string | null }> => {
   const query = `mutation CreateRole($data: CreateRoleInput!) { 
     createRole(data: $data) { 
-      id name roleRightGoals { roleId rightId goalId } 
+      ${ROLE_FIELDS} roleRightGoals { ${ROLE_RIGHT_GOAL_FIELDS} } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ createRole: Role }>>(
-    '/graphql',
-    { query, variables: { data } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ createRole: Role }>>(
+      query,
+      { data },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { role: null, error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { role: response.data.data.createRole, error: null };
+  } catch (err) {
+    return { role: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
   }
-
-  return response.data.data.createRole;
 };
 
 export const updateRole = async (
-  token: string,
-  roleId: number,
+  id: number,
   data: UpdateRoleInput,
   signal?: AbortSignal
-): Promise<Role> => {
-  const query = `mutation UpdateRole($roleId: Int!, $data: UpdateRoleInput!) { 
-    updateRole(roleId: $roleId, data: $data) { 
-      id name roleRightGoals { roleId rightId goalId } 
+): Promise<{ role: Role | null; error: string | null }> => {
+  const query = `mutation UpdateRole($id: Int!, $data: UpdateRoleInput!) { 
+    updateRole(id: $id, data: $data) { 
+      ${ROLE_FIELDS} roleRightGoals { ${ROLE_RIGHT_GOAL_FIELDS} } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ updateRole: Role }>>(
-    '/graphql',
-    { query, variables: { roleId, data } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateRole: Role }>>(
+      query,
+      { id, data },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { role: null, error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { role: response.data.data.updateRole, error: null };
+  } catch (err) {
+    return { role: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
   }
-
-  return response.data.data.updateRole;
 };
 
+// 🔧 Исправлено: возвращает Boolean, а не DeleteResult
 export const deleteRole = async (
-  token: string,
-  roleId: number,
+  id: number,
   signal?: AbortSignal
-): Promise<DeleteResult> => {
-  const query = `mutation DeleteRole($roleId: Int!) { 
-    deleteRole(roleId: $roleId) { 
-      success message deletedId 
-    } 
-  }`;
+): Promise<{ ok: boolean; error: string | null }> => {
+  const query = `mutation DeleteRole($id: Int!) { deleteRole(id: $id) }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ deleteRole: DeleteResult }>>(
-    '/graphql',
-    { query, variables: { roleId } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ deleteRole: boolean }>>(
+      query,
+      { id },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { ok: false, error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { ok: Boolean(response.data.data?.deleteRole), error: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка удаления' };
   }
-
-  return response.data.data.deleteRole;
 };
 
-export const getRights = async (token: string, signal?: AbortSignal): Promise<Right[]> => {
+// ============================================================================
+// ПРАВА И ЦЕЛИ: Справочники
+// ============================================================================
+
+// 🔧 Исправлено: пагинация { page, pageSize } вместо { limit }
+export const getRights = async (
+  signal?: AbortSignal
+): Promise<{ rights: Right[]; error: string | null }> => {
   const query = `query GetRights { 
-    rights(pagination: { limit: 100 }) { 
+    rights(pagination: { page: 1, pageSize: 100 }) { 
       nodes { id name } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ rights: { nodes: Right[] } }>>(
-    '/graphql',
-    { query },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ rights: { nodes: Right[] } }>>(
+      query,
+      undefined,
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { rights: [], error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { rights: response.data.data.rights.nodes, error: null };
+  } catch (err) {
+    return { rights: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
   }
-
-  return response.data.data.rights.nodes;
 };
 
-export const getGoals = async (token: string, signal?: AbortSignal): Promise<Goal[]> => {
+export const getGoals = async (
+  signal?: AbortSignal
+): Promise<{ goals: Goal[]; error: string | null }> => {
   const query = `query GetGoals { 
-    goals(pagination: { limit: 100 }) { 
+    goals(pagination: { page: 1, pageSize: 100 }) { 
       nodes { id name } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ goals: { nodes: Goal[] } }>>(
-    '/graphql',
-    { query },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ goals: { nodes: Goal[] } }>>(
+      query,
+      undefined,
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { goals: [], error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { goals: response.data.data.goals.nodes, error: null };
+  } catch (err) {
+    return { goals: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
   }
-
-  return response.data.data.goals.nodes;
 };
 
+// ============================================================================
+// ПОЛЬЗОВАТЕЛИ РОЛИ: Получение списка пользователей с ролью
+// ============================================================================
+
+// 🔧 Исправлено: фильтр { roleId: { eq: ... } }
 export const getUsersByRole = async (
-  token: string,
   roleId: number,
   pagination: PaginationInput,
   signal?: AbortSignal
-): Promise<UserRoleConnection> => {
+): Promise<{ userRoles: UserRoleConnection; error: string | null }> => {
   const query = `query GetUserRoles($filter: UserRoleFilterInput, $pagination: PaginationInput) { 
     userRoles(filter: $filter, pagination: $pagination) { 
-      nodes { userId roleId user { id login fio isActive registrationDate } } 
+      nodes { ${USER_ROLE_FIELDS} } 
       pageInfo { hasPreviousPage hasNextPage startCursor endCursor } 
       paginationInfo { totalCount currentPage totalPages } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ userRoles: UserRoleConnection }>>(
-    '/graphql',
-    { query, variables: { filter: { roleId }, pagination } },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ userRoles: UserRoleConnection }>>(
+      query,
+      { filter: { roleId: { eq: roleId } }, pagination },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return {
+        userRoles: {} as UserRoleConnection,
+        error: response.data.errors.map((e) => e.message).join('; '),
+      };
     }
-  );
-
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    return { userRoles: response.data.data.userRoles, error: null };
+  } catch (err) {
+    return {
+      userRoles: {} as UserRoleConnection,
+      error: err instanceof Error ? err.message : 'Ошибка запроса',
+    };
   }
-
-  return response.data.data.userRoles;
 };

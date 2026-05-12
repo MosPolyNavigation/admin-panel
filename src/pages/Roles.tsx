@@ -39,14 +39,28 @@ import {
   type Role,
   type PaginationInput,
   type RoleFilterInput,
+  type StringFilterInput,
 } from '../api';
 
 const ITEMS_PER_PAGE = 10;
 
+// 🔧 Хелпер для построения фильтра в формате GraphQL
+function buildRoleFilter(name?: string): RoleFilterInput {
+  const filter: RoleFilterInput = {};
+  if (name?.trim()) {
+    filter.name = { startsWith: name.trim() } as StringFilterInput;
+  }
+  return filter;
+}
+
+function toGraphqlPagination(page: number, pageSize: number): PaginationInput {
+  return { page, pageSize }; // 🔧 1-based page
+}
+
 function Roles() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [roles, setRoles] = useState<Role[]>([]);
@@ -98,47 +112,44 @@ function Roles() {
     setSearchParams(newParams, { replace: true });
   }, [currentPage, searchName, showFilters, setSearchParams, searchParams]);
 
-  // Вычисляем pagination из параметров (мемоизируем)
+  // 🔧 Вычисляем pagination в формате GraphQL (мемоизируем)
   const pagination = useMemo<PaginationInput>(
-    () => ({
-      limit: ITEMS_PER_PAGE,
-      offset: (currentPage - 1) * ITEMS_PER_PAGE,
-    }),
+    () => toGraphqlPagination(currentPage, ITEMS_PER_PAGE),
     [currentPage]
   );
 
-  // Вычисляем filter из параметров (мемоизируем)
-  const filter = useMemo<RoleFilterInput>(
-    () => ({
-      name: searchName || undefined,
-    }),
-    [searchName]
-  );
+  // 🔧 Вычисляем filter в формате GraphQL (мемоизируем)
+  const filter = useMemo<RoleFilterInput>(() => buildRoleFilter(searchName), [searchName]);
 
   // Load roles
   const loadRoles = useCallback(async () => {
-    if (!token) return;
-
     setLoading(true);
     setError(null);
     try {
-      const result = await getRoles(token, pagination, filter);
+      // 🔧 Исправлено: деструктурируем ответ { roles, error }
+      const { roles: result, error: fetchError } = await getRoles(pagination, filter);
+
+      if (fetchError) {
+        throw new Error(fetchError);
+      }
+
       setRoles(result.nodes);
       setTotalCount(result.paginationInfo.totalCount);
       setTotalPages(result.paginationInfo.totalPages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки ролей');
-      showNotification('Ошибка загрузки ролей', 'danger');
+      const message = err instanceof Error ? err.message : 'Ошибка загрузки ролей';
+      setError(message);
+      showNotification(message, 'danger');
     } finally {
       setLoading(false);
     }
-  }, [token, pagination, filter]);
+  }, [pagination, filter]);
 
   useEffect(() => {
-    if (!authLoading && token) {
+    if (!authLoading) {
       loadRoles();
     }
-  }, [loadRoles, authLoading, token]);
+  }, [loadRoles, authLoading]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -154,9 +165,15 @@ function Roles() {
   };
 
   const confirmDelete = async () => {
-    if (!selectedRole || !token) return;
+    if (!selectedRole) return;
     try {
-      await deleteRole(token, selectedRole.id);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await deleteRole(selectedRole.id);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка удаления');
+      }
+
       showNotification(`Роль ${selectedRole.name} удалена`, 'success');
       loadRoles();
     } catch (err) {
@@ -198,7 +215,7 @@ function Roles() {
     navigate(targetPath);
   };
 
-  // Helper: count rights for role
+  // Helper: count rights for role (из кеша или 0, если не запрошено)
   const getRightsCount = (role: Role): number => {
     return role.roleRightGoals?.length || 0;
   };
@@ -213,17 +230,6 @@ function Roles() {
     return (
       <Page headerText="Управление ролями">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Управление ролями">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
       </Page>
     );
   }

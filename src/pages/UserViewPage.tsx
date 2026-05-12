@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, deleteUser, type User } from '../api';
+import { getUser, deleteUser, changeUserPassword, type User } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
 import { RequirePermission } from '../components/RequirePermission.tsx';
 
@@ -33,7 +33,7 @@ export default function UserViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -53,7 +53,6 @@ export default function UserViewPage() {
 
   const handleBack = () => {
     const from = searchParams.get('from') || '/users';
-    // Собираем параметры для возврата (исключая 'from')
     const returnParams = new URLSearchParams();
     for (const [key, value] of searchParams.entries()) {
       if (key !== 'from') {
@@ -67,12 +66,26 @@ export default function UserViewPage() {
   // Load user
   useEffect(() => {
     const loadUser = async () => {
-      if (!id || !token) return;
+      if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const result = await getUser(token, parseInt(id));
-        if (result) {
-          setUser(result);
+        // 🔧 Исправлено: деструктурируем ответ { user, error }
+        const { user: fetchedUser, error: fetchError } = await getUser(userId);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedUser) {
+          setUser(fetchedUser);
         } else {
           setError('Пользователь не найден');
         }
@@ -83,7 +96,7 @@ export default function UserViewPage() {
       }
     };
     loadUser();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -94,9 +107,15 @@ export default function UserViewPage() {
 
   // Handle delete
   const handleDelete = async () => {
-    if (!user || !token) return;
+    if (!user) return;
     try {
-      await deleteUser(token, user.id);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await deleteUser(user.id);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка удаления');
+      }
+
       showNotification(`Пользователь ${user.login} удалён`, 'success');
       navigate('/users');
     } catch (err) {
@@ -108,7 +127,7 @@ export default function UserViewPage() {
 
   // Handle change password
   const changePassword = async () => {
-    if (!user || !token) return;
+    if (!user) return;
     if (password.new !== password.confirm) {
       setPasswordError('Пароли не совпадают');
       return;
@@ -119,8 +138,13 @@ export default function UserViewPage() {
     }
     setChangingPassword(true);
     try {
-      const { changeUserPassword } = await import('../api');
-      await changeUserPassword(token, user.id, password.new);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await changeUserPassword(user.id, password.new);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка смены пароля');
+      }
+
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -143,25 +167,10 @@ export default function UserViewPage() {
     });
   };
 
-  // Show loading while auth is checking
   if (authLoading) {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={() => navigate('/users')} startDecorator={<BackIcon />}>
-          Назад к списку
-        </Button>
       </Page>
     );
   }
@@ -288,7 +297,7 @@ export default function UserViewPage() {
           </CardContent>
         </Card>
 
-        {/* Roles Card */}
+        {/* Roles Card - 🔧 Исправлено: userRoles вместо roles */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -296,11 +305,11 @@ export default function UserViewPage() {
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
-            {user.roles && user.roles.length > 0 ? (
+            {user.userRoles && user.userRoles.length > 0 ? (
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {user.roles.map((ur) => (
+                {user.userRoles.map((ur) => (
                   <Chip
-                    key={ur.roleId}
+                    key={`${ur.userId}_${ur.roleId}`}
                     size="md"
                     variant="soft"
                     color="primary"
@@ -355,42 +364,40 @@ export default function UserViewPage() {
               </RequirePermission>
 
               {/* Assign Roles */}
-              <RequirePermission goal="roles" right="grant">
-                <Box
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 2,
-                    borderRadius: 'sm',
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  p: 2,
+                  borderRadius: 'sm',
+                }}
+              >
+                <Box>
+                  <Typography level="title-md">Назначение ролей</Typography>
+                  <Typography level="body-sm" textColor="neutral.500">
+                    Добавить или удалить роли
+                  </Typography>
+                </Box>
+                <Button
+                  variant="outlined"
+                  startDecorator={<RoleIcon />}
+                  onClick={() => {
+                    const returnParams = new URLSearchParams();
+                    for (const [key, value] of searchParams.entries()) {
+                      if (key !== 'from') {
+                        returnParams.set(key, value);
+                      }
+                    }
+                    const query = returnParams.toString();
+                    navigate(
+                      query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
+                    );
                   }}
                 >
-                  <Box>
-                    <Typography level="title-md">Назначение ролей</Typography>
-                    <Typography level="body-sm" textColor="neutral.500">
-                      Добавить или удалить роли
-                    </Typography>
-                  </Box>
-                  <Button
-                    variant="outlined"
-                    startDecorator={<RoleIcon />}
-                    onClick={() => {
-                      const returnParams = new URLSearchParams();
-                      for (const [key, value] of searchParams.entries()) {
-                        if (key !== 'from') {
-                          returnParams.set(key, value);
-                        }
-                      }
-                      const query = returnParams.toString();
-                      navigate(
-                        query ? `/users/${user.id}/grant?${query}` : `/users/${user.id}/grant`
-                      );
-                    }}
-                  >
-                    Управление ролями
-                  </Button>
-                </Box>
-              </RequirePermission>
+                  Управление ролями
+                </Button>
+              </Box>
             </Stack>
           </CardContent>
         </Card>

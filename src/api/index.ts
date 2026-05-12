@@ -7,7 +7,6 @@ export type {
   PageInfo,
   PaginationInfo,
   PaginationInput,
-  DeleteResult,
   GqlResponse,
   // Пользователи и роли
   Role,
@@ -28,7 +27,6 @@ export type {
   UserConnection,
   UserRoleConnection,
   RoleConnection,
-  GrantRoleResult,
   // Отзывы
   Review,
   ReviewStatus,
@@ -42,6 +40,32 @@ export type {
   BanListResponse,
   UnbanRequest,
   UnbanResponse,
+  // Навигация
+  NavLocation,
+  NavAuditory,
+  NavType,
+  NavLocationUpdateInput,
+  NavLocationCreateInput,
+  NavCampus,
+  NavCampusConnection,
+  NavCampusCreateInput,
+  NavCampusUpdateInput,
+  NavPlan,
+  NavPlanConnection,
+  NavPlanCreateInput,
+  NavPlanUpdateInput,
+  NavFloor,
+  NavFloorConnection,
+  NavStatic,
+  NavStaticConnection,
+  NavAuditoryConnection,
+  NavAuditoryCreateInput,
+  NavAuditoryUpdateInput,
+  NavAuditoryPhoto,
+  IntFilterInput,
+  StringFilterInput,
+  BooleanFilterInput,
+  AllowedPermissionsResponse,
 } from './types.ts';
 
 // Пользователи
@@ -84,3 +108,33 @@ export { getStat, getAllStats, getAllStatsAggregated } from './stats.ts';
 
 // Баны
 export { getBannedUsers, getBanInfo, unbanUser } from './bans.ts';
+
+// Навигация
+export {
+  gqlErrorMessage,
+  getNavLocations,
+  getNavAuditoriesByTypeId,
+  getNavTypes,
+  updateNavLocationsBatch,
+  createNavLocation,
+  deleteNavLocation,
+  NAV_CROSSING_TYPE_ID_FALLBACK,
+  getNavCampuses,
+  createNavCampus,
+  updateNavCampusesBatch,
+  deleteNavCampus,
+  getNavPlans,
+  createNavPlan,
+  updateNavPlansBatch,
+  deleteNavPlan,
+  getNavFloors,
+  getNavStaticById,
+  getPlanSvg,
+  uploadPlanSvg,
+  getNavAuditories,
+  createNavAuditory,
+  updateNavAuditoriesBatch,
+  deleteNavAuditory,
+} from './navigation.ts';
+
+export { getAllowedPermissions } from './auth.ts';

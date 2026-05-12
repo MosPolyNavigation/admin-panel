@@ -29,7 +29,7 @@ export default function UserGrantPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -47,13 +47,33 @@ export default function UserGrantPage() {
   // Load user and roles
   useEffect(() => {
     const loadData = async () => {
-      if (!token || !id) return;
+      if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const [userData, rolesData] = await Promise.all([
-          getUser(token, parseInt(id)),
-          getRoles(token, { limit: 100, offset: 0 }),
+        // 🔧 Исправлено: деструктурируем ответы { user, error } и { roles, error }
+        const [userResult, rolesResult] = await Promise.all([
+          getUser(userId),
+          getRoles({ page: 1, pageSize: 100 }), // 🔧 Исправлено: page/pageSize вместо limit/offset
         ]);
+
+        if (userResult.error) {
+          setError(userResult.error);
+          return;
+        }
+        if (rolesResult.error) {
+          setError(rolesResult.error);
+          return;
+        }
+
+        const userData = userResult.user;
+        const rolesData = rolesResult.roles;
 
         if (!userData) {
           setError('Пользователь не найден');
@@ -63,8 +83,8 @@ export default function UserGrantPage() {
         setUser(userData);
         setRoles(rolesData.nodes);
 
-        // Загружаем текущие роли пользователя
-        const currentRoleIds = userData.roles?.map((ur) => ur.roleId) || [];
+        // 🔧 Исправлено: userRoles вместо roles
+        const currentRoleIds = userData.userRoles?.map((ur) => ur.roleId) || [];
         setSelectedRoleIds(currentRoleIds);
         setInitialRoleIds(currentRoleIds);
       } catch (err) {
@@ -74,7 +94,7 @@ export default function UserGrantPage() {
       }
     };
     loadData();
-  }, [id, token]);
+  }, [id]);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -92,7 +112,7 @@ export default function UserGrantPage() {
 
   // Handle save
   const save = async () => {
-    if (!token || !id || !user) return;
+    if (!id || !user) return;
     setSaving(true);
     setError(null);
 
@@ -103,12 +123,20 @@ export default function UserGrantPage() {
 
       // Сначала удаляем роли
       for (const roleId of rolesToRemove) {
-        await revokeRole(token, user.id, roleId);
+        // 🔧 Исправлено: деструктурируем ответ { ok, error }
+        const { ok, error } = await revokeRole(user.id, roleId);
+        if (!ok || error) {
+          throw new Error(error || `Ошибка отзыва роли ${roleId}`);
+        }
       }
 
       // Затем добавляем новые роли (если есть)
       if (rolesToAdd.length > 0) {
-        await grantRole(token, user.id, rolesToAdd);
+        // 🔧 Исправлено: деструктурируем ответ { ok, error }
+        const { ok, error } = await grantRole(user.id, rolesToAdd);
+        if (!ok || error) {
+          throw new Error(error || 'Ошибка назначения ролей');
+        }
       }
 
       showNotification(`Роли пользователя ${user.login} обновлены`, 'success');
@@ -149,25 +177,16 @@ export default function UserGrantPage() {
     handleBack();
   };
 
+  // 🔧 Хелпер для получения имён ролей из userRoles
+  const getUserRoleNames = (user: User): string[] => {
+    return (user.userRoles?.map((ur) => ur.role?.name).filter(Boolean) as string[]) || [];
+  };
+
   // Show loading while auth is checking
   if (authLoading) {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }
@@ -264,10 +283,16 @@ export default function UserGrantPage() {
                     Текущие роли
                   </Typography>
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((ur) => (
-                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                          {ur.role?.name || `Role ${ur.roleId}`}
+                    {/* 🔧 Исправлено: userRoles вместо roles */}
+                    {user.userRoles && user.userRoles.length > 0 ? (
+                      getUserRoleNames(user).map((roleName, idx) => (
+                        <Chip
+                          key={`${user.id}_role_${idx}`}
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                        >
+                          {roleName}
                         </Chip>
                       ))
                     ) : (

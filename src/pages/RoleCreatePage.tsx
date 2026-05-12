@@ -26,35 +26,12 @@ import {
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import { createRole, getRights, getGoals, type Right, type Goal } from '../api';
-
-// Доступные права для каждой цели (из миграции)
-const GOAL_RIGHTS_MAP: Record<number, number[]> = {
-  1: [1], // stats: view
-  2: [1], // dashboards: view
-  3: [1, 2, 3, 4], // users: view, create, edit, delete
-  4: [1, 2, 3, 4, 5], // roles: view, create, edit, delete, grant
-  5: [1, 3], // tables: view, edit
-  6: [1, 2, 3, 4], // resources: view, create, edit, delete
-  7: [1, 3], // tasks: view, edit
-  8: [1, 2, 3, 4], // nav_data: view, create, edit, delete
-  9: [3], // user_pass: edit
-  10: [1, 3], // admin: view, edit
-  11: [1, 3], // reviews: view, edit
-};
-
-// Названия прав
-const RIGHT_NAMES: Record<number, string> = {
-  1: 'view',
-  2: 'create',
-  3: 'edit',
-  4: 'delete',
-  5: 'grant',
-};
+import { GOAL_RIGHTS_MAP, RIGHT_NAMES } from '../constants';
 
 export default function RoleCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
 
   // State
   const [loading, setLoading] = useState(false);
@@ -74,10 +51,9 @@ export default function RoleCreatePage() {
   // Load rights and goals
   useEffect(() => {
     const loadData = async () => {
-      if (!token) return;
       setDataLoading(true);
       try {
-        const [rightsData, goalsData] = await Promise.all([getRights(token), getGoals(token)]);
+        const [rightsData, goalsData] = await Promise.all([getRights(), getGoals()]);
         setRights(rightsData);
         setGoals(goalsData);
       } catch (err) {
@@ -87,7 +63,7 @@ export default function RoleCreatePage() {
       }
     };
     loadData();
-  }, [token]);
+  }, []);
 
   // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
@@ -109,7 +85,6 @@ export default function RoleCreatePage() {
 
   // Handle create
   const create = async () => {
-    if (!token) return;
     if (!roleName.trim()) {
       showNotification('Название роли обязательно', 'danger');
       return;
@@ -126,7 +101,7 @@ export default function RoleCreatePage() {
         });
       });
 
-      await createRole(token, {
+      await createRole({
         name: roleName.trim(),
         roleRightGoals: roleRightGoals.length > 0 ? roleRightGoals : undefined,
       });
@@ -174,20 +149,6 @@ export default function RoleCreatePage() {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
-      </Page>
-    );
-  }
-
-  // Show message if not authenticated
-  if (!token) {
-    return (
-      <Page headerText="Требуется авторизация">
-        <Alert color="danger" variant="soft">
-          Требуется авторизация для доступа к этой странице
-        </Alert>
-        <Button onClick={handleBack} startDecorator={<BackIcon />}>
-          Назад
-        </Button>
       </Page>
     );
   }

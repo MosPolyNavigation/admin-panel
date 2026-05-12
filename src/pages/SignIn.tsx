@@ -26,21 +26,27 @@ interface SignInFormElement extends HTMLFormElement {
 export default function SingIn() {
   const { login, isAuthenticated } = useAuth();
   const [error, setError] = React.useState<string>('');
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   if (isAuthenticated) return <Navigate to="/" replace />;
 
   const handleSubmit = async (event: React.SubmitEvent<SignInFormElement>) => {
     event.preventDefault();
     setError('');
+    setLoading(true);
+
     const formElements = event.currentTarget.elements;
     const username = formElements.login.value;
     const password = formElements.password.value;
+    const rememberMe = formElements.persistent.checked;
 
     try {
-      await login({ username, password });
+      await login({ username, password }, rememberMe);
     } catch (error) {
       console.error('Login failed:', error);
       setError('Неверный логин или пароль');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -137,8 +143,8 @@ export default function SingIn() {
                   >
                     <Checkbox size="sm" label="Remember me" name="persistent" />
                   </Box>
-                  <Button type="submit" fullWidth>
-                    Войти
+                  <Button type="submit" fullWidth disabled={loading}>
+                    {loading ? 'Вход...' : 'Войти'}
                   </Button>
                 </Stack>
               </form>

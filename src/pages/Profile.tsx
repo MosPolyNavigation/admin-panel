@@ -35,7 +35,7 @@ import { getUser, updateUser, changeUserPasswordRest, type User } from '../api';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { token, user: authUser } = useAuth();
+  const { user: authUser } = useAuth();
 
   // State
   const [user, setUser] = useState<User | null>(null);
@@ -58,10 +58,10 @@ export default function ProfilePage() {
   // Load full user data (authUser может не содержать все поля)
   useEffect(() => {
     const loadUser = async () => {
-      if (!token || !authUser?.id) return;
+      if (!authUser?.id) return;
       setLoading(true);
       try {
-        const result = await getUser(token, authUser.id);
+        const result = await getUser(authUser.id);
         if (result) {
           setUser(result);
           setFormData({ fio: result.fio || '' });
@@ -75,7 +75,7 @@ export default function ProfilePage() {
       }
     };
     loadUser();
-  }, [token, authUser?.id]);
+  }, [authUser?.id]);
 
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
     setNotification(message);
@@ -88,13 +88,13 @@ export default function ProfilePage() {
   };
 
   const save = async () => {
-    if (!authUser?.id || !token) return;
+    if (!authUser?.id) return;
     setSaving(true);
     setError(null);
     try {
-      await updateUser(token, authUser.id, { fio: formData.fio || undefined });
+      await updateUser(authUser.id, { fio: formData.fio || undefined });
       showNotification('Данные сохранены', 'success');
-      const result = await getUser(token, authUser.id);
+      const result = await getUser(authUser.id);
       if (result) {
         setUser(result);
         setFormData({ fio: result.fio || '' });
@@ -116,7 +116,6 @@ export default function ProfilePage() {
   };
 
   const changePassword = async () => {
-    if (!token) return;
     if (password.new !== password.confirm) {
       setPasswordError('Пароли не совпадают');
       return;
@@ -131,7 +130,7 @@ export default function ProfilePage() {
     }
     setChangingPassword(true);
     try {
-      await changeUserPasswordRest(token, password.old, password.new);
+      await changeUserPasswordRest(password.old, password.new);
       setShowPasswordModal(false);
       setPassword({ old: '', new: '', confirm: '' });
       setPasswordError(null);

@@ -1,92 +1,180 @@
+import { buildFilterParts } from '../utils.ts';
 import { graphqlClient, restClient } from './client.ts';
-import { BASE_API_URL } from '../config.ts';
-import type { GqlResponse, Review, ReviewStatus, SetReviewStatusResponse } from './types.ts';
+import type {
+  GqlResponse,
+  PaginationInfo,
+  Review,
+  ReviewStatus,
+  SetReviewStatusResponse,
+} from './types.ts';
 
-export const getReviews = async (token: string, signal?: AbortSignal): Promise<Review[]> => {
-  const query = `{ reviews { id, problemId, creationDate, text, imageName, statusId } }`;
+const REVIEW_FIELDS = 'id clientId problemId statusId text imageName creationDate';
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
+export const getReviews = async (
+  filters?: { reviewStatusId?: number; clientId?: number; problemId?: string },
+  pagination?: { page?: number; pageSize?: number },
+  signal?: AbortSignal
+): Promise<{
+  reviews: Review[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}> => {
+  const filterParts = buildFilterParts(filters ?? {});
+
+  const args: string[] = [];
+  if (filterParts.length) args.push(`filter: {${filterParts.join(', ')}}`);
+
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
+    const pParts: string[] = [];
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
+    args.push(`pagination: {${pParts.join(', ')}}`);
+  }
+
+  const argsStr = args.length ? `(${args.join(', ')})` : '';
+
+  // 🔧 Запрашиваем paginationInfo в ответе
+  const query = `{ reviews${argsStr} { 
+    nodes { ${REVIEW_FIELDS} } 
+    paginationInfo { totalCount currentPage totalPages }
+  } }`;
+
+  try {
+    const response = await graphqlClient.post<
+      GqlResponse<{
+        reviews: {
+          nodes: Review[];
+          paginationInfo?: PaginationInfo;
+        };
+      }>
+    >(query, undefined, { signal });
+
+    if (response.data?.errors?.length) {
+      return { reviews: [], error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
 
-  return response.data.data.reviews;
+    const data = response.data.data?.reviews;
+    return {
+      reviews: data?.nodes ?? [],
+      pagination: data?.paginationInfo, // 🔧 Возвращаем пагинацию
+      error: null,
+    };
+  } catch (err) {
+    return {
+      reviews: [],
+      error: err instanceof Error ? err.message : 'Ошибка запроса',
+      pagination: undefined,
+    };
+  }
 };
 
 export const getReview = async (
-  token: string,
-  id: string,
+  id: number,
   signal?: AbortSignal
-): Promise<Review[]> => {
-  const query = `{ reviews (reviewId: ${id}) { id, problemId, creationDate, text, imageName, statusId } }`;
+): Promise<{ review: Review | null; error: string | null }> => {
+  const query = `{ review(id: ${id}) { ${REVIEW_FIELDS} } }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ reviews: Review[] }>>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ review: Review | null }>>(
+      query,
+      undefined,
+      { signal }
+    );
+
+    if (response.data?.errors?.length) {
+      return { review: null, error: response.data.errors.map((e) => e.message).join('; ') };
     }
-  );
-
-  return response.data.data.reviews;
+    return { review: response.data.data?.review ?? null, error: null };
+  } catch (err) {
+    return { review: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
 };
 
 export const getReviewStatuses = async (
-  token: string,
   signal?: AbortSignal
-): Promise<ReviewStatus[]> => {
+): Promise<{ statuses: ReviewStatus[]; error: string | null }> => {
+  const query = `{ reviewStatuses { nodes { id name } } }`;
+
   try {
-    const query = `{ reviewStatuses { id, name } }`;
+    const response = await graphqlClient.post<
+      GqlResponse<{ reviewStatuses: { nodes: ReviewStatus[] } }>
+    >(query, undefined, { signal });
 
-    const response = await graphqlClient.post<GqlResponse<{ reviewStatuses: ReviewStatus[] }>>(
-      '/graphql',
-      { query },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        signal,
-      }
-    );
+    if (response.data?.errors?.length) {
+      return { statuses: [], error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { statuses: response.data.data?.reviewStatuses?.nodes ?? [], error: null };
+  } catch (err) {
+    return { statuses: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
 
-    return response.data.data.reviewStatuses;
-  } catch (error) {
-    console.error('Ошибка загрузки статусов:', error);
-    return [];
+// Если нужен именно batch с пагинацией:
+export const getReviewsBatch = async (
+  statusIds: number[] = [1, 2, 3, 4, 5, 6, 7],
+  page: number = 1,
+  pageSize: number = 5,
+  signal?: AbortSignal
+) => {
+  const queryParts = statusIds.map((statusId) => {
+    return `status${statusId}: reviews(
+      filter: {reviewStatusId: {eq: ${statusId}}}, 
+      pagination: {page: ${page}, pageSize: ${pageSize}}
+    ) { 
+      nodes { ${REVIEW_FIELDS} }
+      paginationInfo { totalCount totalPages }
+    }`;
+  });
+
+  const query = `{ ${queryParts.join('\n')} }`;
+
+  try {
+    const response = await graphqlClient.post<{
+      data: Record<
+        string,
+        { nodes: Review[]; paginationInfo?: { totalCount: number; totalPages: number } }
+      >;
+      errors?: Array<{ message: string }>;
+    }>(query, undefined, { signal });
+
+    if (response.data?.errors?.length) {
+      console.error('GraphQL errors:', response.data.errors);
+      return null;
+    }
+
+    const result: Record<string, { reviews: Review[]; total?: number; pages?: number }> = {};
+    statusIds.forEach((statusId) => {
+      const key = `status${statusId}`;
+      const data = response.data.data?.[key];
+      result[key] = {
+        reviews: data?.nodes ?? [],
+        total: data?.paginationInfo?.totalCount,
+        pages: data?.paginationInfo?.totalPages,
+      };
+    });
+
+    return result;
+  } catch (err) {
+    console.error('Ошибка batch-запроса:', err);
+    return null;
   }
 };
 
 export const getReviewImageUrl = (imageName: string): string => {
-  return `${BASE_API_URL}/review/image/${imageName}`;
+  return `/review/image/${imageName}`;
 };
 
 export const setReviewStatus = async (
   review_id: string,
   status_id: string,
-  token: string,
   signal?: AbortSignal
 ): Promise<SetReviewStatusResponse | null> => {
   try {
-    const response = await restClient.patch(
-      `${BASE_API_URL}/review/${review_id}/status`,
+    const response = await restClient.patch<SetReviewStatusResponse>(
+      `/review/${review_id}/status`,
       `status_id=${status_id}`,
       {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         signal,
       }
     );
@@ -97,38 +185,29 @@ export const setReviewStatus = async (
   }
 };
 
-export const getReviewsBatch = async (token: string, signal?: AbortSignal) => {
-  const query = `{ 
-    status1: reviews(status_id: 1) { id problemId creationDate text status_id imageName } 
-    status2: reviews(status_id: 2) { id problemId creationDate text status_id imageName } 
-    status3: reviews(status_id: 3) { id problemId creationDate text status_id imageName } 
-    status4: reviews(status_id: 4) { id problemId creationDate text status_id imageName } 
-    status5: reviews(status_id: 5) { id problemId creationDate text status_id imageName } 
-    status6: reviews(status_id: 6) { id problemId creationDate text status_id imageName } 
-    status7: reviews(status_id: 7) { id problemId creationDate text status_id imageName } 
-  }`;
-
-  const response = await graphqlClient.post<{
-    data: {
-      status1: Review[];
-      status2: Review[];
-      status3: Review[];
-      status4: Review[];
-      status5: Review[];
-      status6: Review[];
-      status7: Review[];
-    };
-  }>(
-    '/graphql',
-    { query },
-    {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      signal,
+export const updateReview = async (
+  id: number,
+  data: { problemId?: string; statusId?: number; text?: string; imageName?: string },
+  signal?: AbortSignal
+): Promise<{ review: Review | null; error: string | null }> => {
+  const mutation = `
+    mutation($id: Int!, $data: UpdateReviewInput!) {
+      updateReview(id: $id, data: $data) { ${REVIEW_FIELDS} }
     }
-  );
+  `;
 
-  return response.data.data;
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateReview: Review }>>(
+      mutation,
+      { id, data },
+      { signal }
+    );
+
+    if (response.data?.errors?.length) {
+      return { review: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { review: response.data.data?.updateReview ?? null, error: null };
+  } catch (err) {
+    return { review: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
+  }
 };

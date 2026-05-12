@@ -28,6 +28,7 @@ interface ReviewStatusCardProps {
   statusId: number;
   statusName: string;
   reviews: Review[];
+  totalReviewsCount: number;
   currentPage: number;
   totalPages: number;
   isExpanded: boolean;
@@ -44,6 +45,7 @@ const ReviewStatusCard = ({
   statusId,
   statusName,
   reviews,
+  totalReviewsCount,
   currentPage,
   totalPages,
   isExpanded,
@@ -54,8 +56,8 @@ const ReviewStatusCard = ({
   truncateText,
   translateProblemId,
 }: ReviewStatusCardProps) => {
-  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-  const currentReviews = reviews.slice(startIndex, startIndex + ROWS_PER_PAGE);
+  const currentReviews = reviews;
+
   const handlePageChange = (page: number) => {
     onPageChange(statusId, page);
   };
@@ -72,7 +74,7 @@ const ReviewStatusCard = ({
         >
           <Stack direction="row" spacing={2} alignItems="center" sx={{ flex: 1 }}>
             <Badge
-              badgeContent={reviews.length}
+              badgeContent={totalReviewsCount}
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               color={STATUS_COLORS[statusId] as any}
               size="sm"
@@ -165,7 +167,7 @@ const ReviewStatusCard = ({
               <PaginationControls
                 currentPage={currentPage}
                 totalPages={totalPages}
-                totalItems={reviews.length}
+                totalItems={totalReviewsCount}
                 itemsPerPage={ROWS_PER_PAGE}
                 onPageChange={handlePageChange}
                 compact
