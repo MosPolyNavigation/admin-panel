@@ -47,7 +47,6 @@ import {
   getNavPlans,
   getNavTypes,
   updateNavAuditoriesBatch,
-  type NavAuditory2,
   type NavAuditoryCreateInput,
   type NavAuditoryUpdateInput,
   type NavPlan,
@@ -154,9 +153,9 @@ const DEFAULT_PAGE_SIZE = 20;
 function NavAuditoriesPage() {
   const { user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
-  const canEdit = navRights.includes('edit');
-  const canCreate = navRights.includes('create');
-  const canDelete = navRights.includes('delete');
+  const canEdit = navRights.some((e) => e.right === 'edit');
+  const canCreate = navRights.some((e) => e.right === 'create');
+  const canDelete = navRights.some((e) => e.right === 'delete');
 
   const [rows, setRows] = useState<EditableRow[]>([]);
   const [initialById, setInitialById] = useState<Map<number, EditableRow>>(new Map());
