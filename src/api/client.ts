@@ -154,8 +154,8 @@ class ApiClient {
         '/graphql',
         { query, variables },
         {
-          headers: { 'Content-Type': 'application/json', ...config?.headers }, // ✅ Мерджим заголовки
-          ...config, // ✅ Пробрасываем signal, timeout, onUploadProgress и т.д.
+          headers: { 'Content-Type': 'application/json', ...config?.headers },
+          ...config,
         }
       ),
   };

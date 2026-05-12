@@ -11,6 +11,8 @@ import type {
 
 const USER_FIELDS = 'id login fio isActive registrationDate updatedAt';
 const USER_ROLE_FIELDS = 'userId roleId role { id name }';
+const REFRESH_TOKEN_FIELD = 'id userId jti expDate browser userIp revoked createdAt';
+const USER_LOG_FIELDS = 'id userId text createdAt';
 
 export const getUsers = async (
   pagination: PaginationInput,
@@ -55,6 +57,8 @@ export const getUser = async (
     user(id: $id) { 
       ${USER_FIELDS}
       userRoles { ${USER_ROLE_FIELDS} } 
+      refreshTokens (first: 50) { ${REFRESH_TOKEN_FIELD} }
+      userLogs (first: 50) { ${USER_LOG_FIELDS} }
     } 
   }`;
 
@@ -81,6 +85,8 @@ export const getUserWithoutRoles = async (
   const query = `query GetUser($id: Int!) { 
     user(id: $id) { 
       ${USER_FIELDS}
+      refreshTokens (first: 50) { ${REFRESH_TOKEN_FIELD} }
+      userLogs (first: 50) { ${USER_LOG_FIELDS} }
     } 
   }`;
 

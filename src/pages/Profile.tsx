@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Typography,
@@ -28,15 +28,18 @@ import {
   Person as PersonIcon,
   CalendarToday as CalendarIcon,
   Update as UpdateIcon,
+  Logout as LogoutIcon, // 🔧 Добавляем иконку для сессий
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
 import {
   changeUserPasswordRest,
   type User,
-  getUserWithoutRoles,
+  type RefreshToken, // 🔧 Добавляем тип
+  getUser, // 🔧 Используем getUser вместо getUserWithoutRoles для загрузки токенов
   updateUserWithoutRoles,
 } from '../api';
+import { RefreshTokenList } from '../components/RefreshTokenList';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -49,6 +52,9 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [notificationType, setNotificationType] = useState<'success' | 'danger'>('success');
+
+  // 🔧 State для сессий (отдельно, чтобы обновлять без перезагрузки всей страницы)
+  const [refreshTokens, setRefreshTokens] = useState<RefreshToken[]>([]);
 
   // Form data
   const [formData, setFormData] = useState({ fio: '' });
@@ -66,7 +72,7 @@ export default function ProfilePage() {
       if (!authUser?.id) return;
       setLoading(true);
       try {
-        const { user: fetchedUser, error: fetchError } = await getUserWithoutRoles(authUser.id);
+        const { user: fetchedUser, error: fetchError } = await getUser(authUser.id);
 
         if (fetchError) {
           setError(fetchError);
@@ -76,6 +82,7 @@ export default function ProfilePage() {
         if (fetchedUser) {
           setUser(fetchedUser);
           setFormData({ fio: fetchedUser.fio || '' });
+          setRefreshTokens(fetchedUser.refreshTokens || []);
         } else {
           setError('Не удалось загрузить данные профиля');
         }
@@ -113,7 +120,6 @@ export default function ProfilePage() {
 
       showNotification('Данные сохранены', 'success');
 
-      // 🔧 Обновляем локальный стейт
       setUser(updatedUser);
       setFormData({ fio: updatedUser.fio || '' });
       setIsEditing(false);
@@ -159,6 +165,15 @@ export default function ProfilePage() {
       setChangingPassword(false);
     }
   };
+
+  // 🔧 Обработчик завершения сессии (обновляет локальный стейт)
+  const handleSessionRevoked = useCallback((revokedJti: string) => {
+    setRefreshTokens(
+      (prev) => prev.map((t) => (t.jti === revokedJti ? { ...t, revoked: true } : t))
+      // Или .filter(t => t.jti !== revokedJti), если нужно полностью убрать из списка
+    );
+    showNotification('Сессия завершена', 'success');
+  }, []);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('ru-RU', {
@@ -310,6 +325,31 @@ export default function ProfilePage() {
                 </Stack>
               </Box>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Active Sessions Card */}
+        <Card variant="outlined">
+          <CardContent>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+              }}
+            >
+              <Typography level="title-lg">
+                <LogoutIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Мои сессии
+              </Typography>
+              <Chip size="sm" variant="soft" color="neutral">
+                {refreshTokens.filter((t) => !t.revoked).length} активных
+              </Chip>
+            </Box>
+            <Divider sx={{ mb: 3 }} />
+
+            <RefreshTokenList tokens={refreshTokens} onSessionRevoked={handleSessionRevoked} />
           </CardContent>
         </Card>
 

@@ -99,11 +99,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    if (token) {
+      try {
+        await apiClient.post(
+          `${BASE_API_URL}/auth/logout`,
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            withCredentials: true,
+            timeout: 3000,
+          }
+        );
+      } catch (error) {
+        console.warn('Logout request failed, proceeding with local cleanup:', error);
+      }
+    }
+
     sessionStorage.removeItem('auth_token');
     sessionStorage.removeItem('return_url');
     setToken(null);
     setUser(null);
+
     navigate('/login');
   };
 

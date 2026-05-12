@@ -66,6 +66,8 @@ export type {
   StringFilterInput,
   BooleanFilterInput,
   AllowedPermissionsResponse,
+  RefreshToken,
+  UserLog,
 } from './types.ts';
 
 // Пользователи
