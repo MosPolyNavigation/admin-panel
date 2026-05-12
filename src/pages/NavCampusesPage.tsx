@@ -206,15 +206,13 @@ function NavCampusesPage() {
     if (appliedIdSys.trim() !== '') filters.idSys = appliedIdSys.trim();
     if (appliedName.trim() !== '') filters.name = appliedName.trim();
 
-    const offset = (currentPage - 1) * pageSize;
-
     const {
       campuses,
       pagination,
       error: campErr,
     } = await getNavCampuses(Object.keys(filters).length > 0 ? filters : undefined, {
-      limit: pageSize,
-      offset,
+      page: currentPage,
+      pageSize,
     });
 
     if (campErr) {

@@ -47,6 +47,7 @@ import {
   getNavPlans,
   getNavTypes,
   updateNavAuditoriesBatch,
+  type NavAuditory,
   type NavAuditoryCreateInput,
   type NavAuditoryUpdateInput,
   type NavPlan,
@@ -71,7 +72,7 @@ interface EditableRow {
   isNew?: boolean;
 }
 
-function fromApi(auditory: NavAuditory2): EditableRow {
+function fromApi(auditory: NavAuditory): EditableRow {
   return {
     key: `s-${auditory.id}`,
     serverId: auditory.id,
@@ -200,15 +201,13 @@ function NavAuditoriesPage() {
     if (appliedIdSys.trim() !== '') filters.idSys = appliedIdSys.trim();
     if (appliedName.trim() !== '') filters.name = appliedName.trim();
 
-    const offset = (currentPage - 1) * pageSize;
-
     const {
       auditories,
       pagination,
       error: audErr,
     } = await getNavAuditories(Object.keys(filters).length > 0 ? filters : undefined, {
-      limit: pageSize,
-      offset,
+      page: currentPage,
+      pageSize,
     });
 
     if (audErr) {
@@ -245,7 +244,7 @@ function NavAuditoriesPage() {
 
     void (async () => {
       const [{ items: typesItems, error: tErr }, { plans: plansItems, error: pErr }] =
-        await Promise.all([getNavTypes(100), getNavPlans(undefined, { limit: 200 })]);
+        await Promise.all([getNavTypes(100), getNavPlans(undefined, { pageSize: 200 })]);
 
       if (cancelled) return;
       if (!tErr) setTypes(typesItems);

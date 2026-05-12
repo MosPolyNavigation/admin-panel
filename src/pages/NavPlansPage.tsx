@@ -221,15 +221,13 @@ function NavPlansPage() {
     }
     if (appliedIdSys.trim() !== '') filters.idSys = appliedIdSys.trim();
 
-    const offset = (currentPage - 1) * pageSize;
-
     const {
       plans,
       pagination,
       error: planErr,
     } = await getNavPlans(Object.keys(filters).length > 0 ? filters : undefined, {
-      limit: pageSize,
-      offset,
+      page: currentPage,
+      pageSize,
     });
 
     if (planErr) {
@@ -271,8 +269,8 @@ function NavPlansPage() {
         { floors: floorsItems, error: fErr },
         { items: types, error: tErr },
       ] = await Promise.all([
-        getNavCampuses(undefined, { limit: 100 }),
-        getNavFloors({ limit: 50 }),
+        getNavCampuses(undefined, { pageSize: 100 }),
+        getNavFloors({ pageSize: 50 }),
         getNavTypes(50),
       ]);
 
