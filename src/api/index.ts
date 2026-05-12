@@ -65,6 +65,7 @@ export type {
   IntFilterInput,
   StringFilterInput,
   BooleanFilterInput,
+  AllowedPermissionsResponse,
 } from './types.ts';
 
 // Пользователи
@@ -135,3 +136,5 @@ export {
   updateNavAuditoriesBatch,
   deleteNavAuditory,
 } from './navigation.ts';
+
+export { getAllowedPermissions } from './auth.ts';

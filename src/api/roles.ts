@@ -27,7 +27,7 @@ export const getRoles = async (
 ): Promise<{ roles: RoleConnection; error: string | null }> => {
   const query = `query GetRoles($pagination: PaginationInput, $filter: RoleFilterInput) { 
     roles(pagination: $pagination, filter: $filter) { 
-      nodes { ${ROLE_FIELDS} roleRightGoals { ${ROLE_RIGHT_GOAL_FIELDS} } userRoles { ${USER_ROLE_FIELDS} } } 
+      nodes { ${ROLE_FIELDS} roleRightGoals (first: 100) { ${ROLE_RIGHT_GOAL_FIELDS} } userRoles { ${USER_ROLE_FIELDS} } } 
       pageInfo { hasPreviousPage hasNextPage startCursor endCursor } 
       paginationInfo { totalCount currentPage totalPages } 
     } 
@@ -67,7 +67,7 @@ export const getRole = async (
   const query = `query GetRole($id: Int!) { 
     role(id: $id) { 
       ${ROLE_FIELDS}
-      roleRightGoals { ${ROLE_RIGHT_GOAL_FIELDS} } 
+      roleRightGoals (first: 100) { ${ROLE_RIGHT_GOAL_FIELDS} } 
       userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;

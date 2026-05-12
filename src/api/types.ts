@@ -516,3 +516,7 @@ export interface NavAuditoryCreateInput {
   comments?: string | null;
   link?: string | null;
 }
+
+export interface AllowedPermissionsResponse {
+  allowed_permissions: Record<string, number[]>;
+}
