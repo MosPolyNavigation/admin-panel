@@ -62,6 +62,9 @@ export type {
   NavAuditoryCreateInput,
   NavAuditoryUpdateInput,
   NavAuditoryPhoto,
+  IntFilterInput,
+  StringFilterInput,
+  BooleanFilterInput,
 } from './types.ts';
 
 // Пользователи

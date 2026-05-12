@@ -19,7 +19,7 @@ export const getUsers = async (
 ): Promise<{ users: UserConnection; error: string | null }> => {
   const query = `query GetUsers($pagination: PaginationInput, $filter: UserFilterInput) { 
     users(pagination: $pagination, filter: $filter) { 
-      nodes { ${USER_FIELDS} roles { ${USER_ROLE_FIELDS} } } 
+      nodes { ${USER_FIELDS} userRoles { ${USER_ROLE_FIELDS} } } 
       pageInfo { hasPreviousPage hasNextPage startCursor endCursor } 
       paginationInfo { totalCount currentPage totalPages } 
     } 

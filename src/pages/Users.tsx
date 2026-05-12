@@ -45,9 +45,33 @@ import {
   type User,
   type PaginationInput,
   type UserFilterInput,
+  type StringFilterInput,
+  type BooleanFilterInput,
 } from '../api';
 
 const ITEMS_PER_PAGE = 10;
+
+// 🔧 Хелперы для построения фильтров (соответствуют схеме GraphQL)
+function buildUserFilter(
+  login?: string,
+  isActive?: 'all' | 'active' | 'inactive'
+): UserFilterInput {
+  const filter: UserFilterInput = {};
+
+  if (login?.trim()) {
+    filter.login = { startsWith: login.trim() } as StringFilterInput;
+  }
+
+  if (isActive && isActive !== 'all') {
+    filter.isActive = { eq: isActive === 'active' } as BooleanFilterInput;
+  }
+
+  return filter;
+}
+
+function toGraphqlPagination(page: number, pageSize: number): PaginationInput {
+  return { page, pageSize }; // 🔧 1-based page
+}
 
 function Users() {
   const navigate = useNavigate();
@@ -115,21 +139,15 @@ function Users() {
     setSearchParams(newParams, { replace: true });
   }, [currentPage, searchLogin, statusFilter, showFilters, setSearchParams, searchParams]);
 
-  // Вычисляем pagination из параметров (мемоизируем)
+  // 🔧 Вычисляем pagination в формате GraphQL (мемоизируем)
   const pagination = useMemo<PaginationInput>(
-    () => ({
-      limit: ITEMS_PER_PAGE,
-      offset: (currentPage - 1) * ITEMS_PER_PAGE,
-    }),
+    () => toGraphqlPagination(currentPage, ITEMS_PER_PAGE),
     [currentPage]
   );
 
-  // Вычисляем filter из параметров (мемоизируем)
+  // 🔧 Вычисляем filter в формате GraphQL (мемоизируем)
   const filter = useMemo<UserFilterInput>(
-    () => ({
-      login: searchLogin || undefined,
-      isActive: statusFilter === 'all' ? undefined : statusFilter === 'active',
-    }),
+    () => buildUserFilter(searchLogin, statusFilter),
     [searchLogin, statusFilter]
   );
 
@@ -138,13 +156,20 @@ function Users() {
     setLoading(true);
     setError(null);
     try {
-      const result = await getUsers(pagination, filter);
+      // 🔧 Исправлено: деструктурируем ответ { users, error }
+      const { users: result, error: fetchError } = await getUsers(pagination, filter);
+
+      if (fetchError) {
+        throw new Error(fetchError);
+      }
+
       setUsers(result.nodes);
       setTotalCount(result.paginationInfo.totalCount);
       setTotalPages(result.paginationInfo.totalPages);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки пользователей');
-      showNotification('Ошибка загрузки пользователей', 'danger');
+      const message = err instanceof Error ? err.message : 'Ошибка загрузки пользователей';
+      setError(message);
+      showNotification(message, 'danger');
     } finally {
       setLoading(false);
     }
@@ -172,7 +197,13 @@ function Users() {
   const confirmDelete = async () => {
     if (!selectedUser) return;
     try {
-      await deleteUser(selectedUser.id);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await deleteUser(selectedUser.id);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка удаления');
+      }
+
       showNotification(`Пользователь ${selectedUser.login} удалён`, 'success');
       loadUsers();
     } catch (err) {
@@ -186,7 +217,15 @@ function Users() {
   // Handle toggle active
   const toggleActive = async (user: User) => {
     try {
-      await updateUser(user.id, { isActive: !user.isActive });
+      // 🔧 Исправлено: деструктурируем ответ { user, error }
+      const { user: updatedUser, error } = await updateUser(user.id, {
+        isActive: !user.isActive,
+      });
+
+      if (error || !updatedUser) {
+        throw new Error(error || 'Ошибка обновления');
+      }
+
       showNotification(
         `Пользователь ${user.login} ${user.isActive ? 'деактивирован' : 'активирован'}`,
         'success'
@@ -218,7 +257,6 @@ function Users() {
 
   // Handle navigate with preserved state via URL params
   const handleNavigate = (path: string) => {
-    // Создаём строку параметров для возврата
     const returnParams = new URLSearchParams();
     if (currentPage > 1) returnParams.set('page', String(currentPage));
     if (searchLogin) returnParams.set('login', searchLogin);
@@ -372,7 +410,6 @@ function Users() {
                   <Typography level="body-sm">{formatDate(user.updatedAt)}</Typography>
                 </td>
                 <td style={{ padding: '12px' }}>
-                  {/* Вертикальное отображение ролей */}
                   <Stack direction="column" spacing={0.5}>
                     {user.roles && user.roles.length > 0 ? (
                       user.roles.slice(0, 3).map((ur) => (
