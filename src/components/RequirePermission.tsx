@@ -19,7 +19,8 @@ export const RequirePermission: React.FC<RequirePermissionProps> = ({ goal, righ
   }
 
   const userRights = user.rights_by_goals[goal] ?? [];
-  const hasPermission = userRights.includes(right);
+
+  const hasPermission = userRights.some((perm) => perm.right === right);
 
   if (!hasPermission) {
     return null;

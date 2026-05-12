@@ -66,6 +66,8 @@ export type {
   StringFilterInput,
   BooleanFilterInput,
   AllowedPermissionsResponse,
+  RefreshToken,
+  UserLog,
 } from './types.ts';
 
 // Пользователи
@@ -79,6 +81,8 @@ export {
   changeUserPasswordRest,
   grantRole,
   revokeRole,
+  getUserWithoutRoles,
+  updateUserWithoutRoles,
 } from './users.ts';
 
 // Роли

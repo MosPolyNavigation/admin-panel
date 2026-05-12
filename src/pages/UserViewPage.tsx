@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   Typography,
@@ -22,12 +22,15 @@ import {
   Delete as DeleteIcon,
   CalendarToday as CalendarIcon,
   Update as UpdateIcon,
+  Logout as LogoutIcon,
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, deleteUser, changeUserPassword, type User } from '../api';
+import { getUser, deleteUser, changeUserPassword, type User, type RefreshToken } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
 import { RequirePermission } from '../components/RequirePermission.tsx';
+import { RefreshTokenList } from '../components/RefreshTokenList';
+import { UserLogsTable } from '../components/UserLogsTable.tsx';
 
 export default function UserViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +44,9 @@ export default function UserViewPage() {
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const [notificationType, setNotificationType] = useState<'success' | 'danger'>('success');
+
+  // 🔧 State для сессий (отдельно, чтобы обновлять без перезагрузки всей страницы)
+  const [refreshTokens, setRefreshTokens] = useState<RefreshToken[]>([]);
 
   // Delete modal
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -76,7 +82,6 @@ export default function UserViewPage() {
 
       setLoading(true);
       try {
-        // 🔧 Исправлено: деструктурируем ответ { user, error }
         const { user: fetchedUser, error: fetchError } = await getUser(userId);
 
         if (fetchError) {
@@ -86,6 +91,7 @@ export default function UserViewPage() {
 
         if (fetchedUser) {
           setUser(fetchedUser);
+          setRefreshTokens(fetchedUser.refreshTokens || []);
         } else {
           setError('Пользователь не найден');
         }
@@ -109,7 +115,6 @@ export default function UserViewPage() {
   const handleDelete = async () => {
     if (!user) return;
     try {
-      // 🔧 Исправлено: деструктурируем ответ { ok, error }
       const { ok, error } = await deleteUser(user.id);
 
       if (!ok || error) {
@@ -138,7 +143,6 @@ export default function UserViewPage() {
     }
     setChangingPassword(true);
     try {
-      // 🔧 Исправлено: деструктурируем ответ { ok, error }
       const { ok, error } = await changeUserPassword(user.id, password.new);
 
       if (!ok || error) {
@@ -155,6 +159,13 @@ export default function UserViewPage() {
       setChangingPassword(false);
     }
   };
+
+  const handleSessionRevoked = useCallback((revokedJti: string) => {
+    setRefreshTokens((prev) =>
+      prev.map((t) => (t.jti === revokedJti ? { ...t, revoked: true } : t))
+    );
+    showNotification('Сессия завершена', 'success');
+  }, []);
 
   // Format date
   const formatDate = (dateString: string) => {
@@ -297,7 +308,7 @@ export default function UserViewPage() {
           </CardContent>
         </Card>
 
-        {/* Roles Card - 🔧 Исправлено: userRoles вместо roles */}
+        {/* Roles Card */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -324,6 +335,43 @@ export default function UserViewPage() {
                 Роли не назначены
               </Typography>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Active Sessions Card */}
+        <Card variant="outlined">
+          <CardContent>
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+              }}
+            >
+              <Typography level="title-lg">
+                <LogoutIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                Активные сессии
+              </Typography>
+              <Chip size="sm" variant="soft" color="neutral">
+                {refreshTokens.filter((t) => !t.revoked).length} активных
+              </Chip>
+            </Box>
+            <Divider sx={{ mb: 3 }} />
+
+            <RefreshTokenList tokens={refreshTokens} onSessionRevoked={handleSessionRevoked} />
+          </CardContent>
+        </Card>
+
+        {/* User logs Card */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography level="title-lg" sx={{ mb: 2 }}>
+              Журнал действий (последние 50 событий)
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <UserLogsTable logs={user.userLogs || []} />
           </CardContent>
         </Card>
 

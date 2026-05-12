@@ -11,6 +11,8 @@ import type {
 
 const USER_FIELDS = 'id login fio isActive registrationDate updatedAt';
 const USER_ROLE_FIELDS = 'userId roleId role { id name }';
+const REFRESH_TOKEN_FIELD = 'id userId jti expDate browser userIp revoked createdAt';
+const USER_LOG_FIELDS = 'id userId text createdAt';
 
 export const getUsers = async (
   pagination: PaginationInput,
@@ -55,6 +57,36 @@ export const getUser = async (
     user(id: $id) { 
       ${USER_FIELDS}
       userRoles { ${USER_ROLE_FIELDS} } 
+      refreshTokens (first: 50) { ${REFRESH_TOKEN_FIELD} }
+      userLogs (first: 50) { ${USER_LOG_FIELDS} }
+    } 
+  }`;
+
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ user: User | null }>>(
+      query,
+      { id },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.user, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
+
+export const getUserWithoutRoles = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `query GetUser($id: Int!) { 
+    user(id: $id) { 
+      ${USER_FIELDS}
+      refreshTokens (first: 50) { ${REFRESH_TOKEN_FIELD} }
+      userLogs (first: 50) { ${USER_LOG_FIELDS} }
     } 
   }`;
 
@@ -126,6 +158,33 @@ export const updateUser = async (
   }
 };
 
+export const updateUserWithoutRoles = async (
+  id: number,
+  data: UpdateUserInput,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `mutation UpdateUser($id: Int!, $data: UpdateUserInput!) { 
+    updateUser(id: $id, data: $data) { 
+      ${USER_FIELDS}
+    } 
+  }`;
+
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateUser: User }>>(
+      query,
+      { id, data },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.updateUser, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
+  }
+};
+
 export const deleteUser = async (
   id: number,
   signal?: AbortSignal
@@ -177,21 +236,17 @@ export const changeUserPasswordRest = async (
   oldPassword: string,
   newPassword: string,
   signal?: AbortSignal
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ message: string }> => {
   const params = new URLSearchParams();
   params.append('old_password', oldPassword);
   params.append('new_password', newPassword);
 
-  const response = await restClient.post<{ success: boolean; message: string }>(
-    `/auth/change-pass`,
-    params,
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      signal,
-    }
-  );
+  const response = await restClient.post<{ message: string }>(`/auth/change-pass`, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    signal,
+  });
 
   return response.data;
 };

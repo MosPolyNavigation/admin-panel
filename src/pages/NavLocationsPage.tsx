@@ -162,9 +162,9 @@ function serializeState(rows: EditableRow[], pendingDeleteIds: number[]): string
 function NavLocationsPage() {
   const { user, loading: authLoading } = useAuth();
   const navRights = user?.rights_by_goals['nav_data'] ?? [];
-  const canEdit = navRights.includes('edit');
-  const canCreate = navRights.includes('create');
-  const canDelete = navRights.includes('delete');
+  const canEdit = navRights.some((e) => e.right === 'edit');
+  const canCreate = navRights.some((e) => e.right === 'create');
+  const canDelete = navRights.some((e) => e.right === 'delete');
 
   const [rows, setRows] = useState<EditableRow[]>([]);
   const [initialById, setInitialById] = useState<Map<number, EditableRow>>(new Map());
@@ -323,8 +323,8 @@ function NavLocationsPage() {
 
     try {
       for (const id of pendingDeleteIds) {
-        const { error: delErr } = await deleteNavLocation(id);
-        if (delErr) {
+        const { ok, error: delErr } = await deleteNavLocation(id);
+        if (delErr || !ok) {
           setError(delErr);
           setSaving(false);
           return;

@@ -26,3 +26,23 @@ export const getAllowedPermissions = async (
     };
   }
 };
+
+export const revokeRefreshToken = async (
+  jti: string,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; error: string | null }> => {
+  try {
+    await restClient.post<{ status: string }>(
+      '/auth/revoke',
+      { jti },
+      { signal, headers: { 'Content-Type': 'application/json' } }
+    );
+    return { ok: true, error: null };
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const msg = err.response?.data?.detail || err.response?.data?.message || err.message;
+      return { ok: false, error: msg };
+    }
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка завершения сессии' };
+  }
+};
