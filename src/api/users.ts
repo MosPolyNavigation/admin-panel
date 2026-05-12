@@ -54,7 +54,7 @@ export const getUser = async (
   const query = `query GetUser($id: Int!) { 
     user(id: $id) { 
       ${USER_FIELDS}
-      roles { ${USER_ROLE_FIELDS} } 
+      userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;
 
@@ -106,7 +106,7 @@ export const updateUser = async (
   const query = `mutation UpdateUser($id: Int!, $data: UpdateUserInput!) { 
     updateUser(id: $id, data: $data) { 
       ${USER_FIELDS}
-      roles { ${USER_ROLE_FIELDS} } 
+      userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;
 

@@ -51,7 +51,6 @@ import {
 
 const ITEMS_PER_PAGE = 10;
 
-// 🔧 Хелперы для построения фильтров (соответствуют схеме GraphQL)
 function buildUserFilter(
   login?: string,
   isActive?: 'all' | 'active' | 'inactive'
@@ -70,7 +69,7 @@ function buildUserFilter(
 }
 
 function toGraphqlPagination(page: number, pageSize: number): PaginationInput {
-  return { page, pageSize }; // 🔧 1-based page
+  return { page, pageSize };
 }
 
 function Users() {
@@ -411,8 +410,8 @@ function Users() {
                 </td>
                 <td style={{ padding: '12px' }}>
                   <Stack direction="column" spacing={0.5}>
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.slice(0, 3).map((ur) => (
+                    {user.userRoles && user.userRoles.length > 0 ? (
+                      user.userRoles.slice(0, 3).map((ur) => (
                         <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
                           {ur.role?.name || `Role ${ur.roleId}`}
                         </Chip>
@@ -422,9 +421,9 @@ function Users() {
                         Нет ролей
                       </Typography>
                     )}
-                    {user.roles && user.roles.length > 3 && (
+                    {user.userRoles && user.userRoles.length > 3 && (
                       <Typography level="body-xs" textColor="neutral.400">
-                        +{user.roles.length - 3} ещё
+                        +{user.userRoles.length - 3} ещё
                       </Typography>
                     )}
                   </Stack>

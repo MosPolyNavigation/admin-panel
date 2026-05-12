@@ -141,7 +141,7 @@ export interface User {
   isActive: boolean;
   registrationDate: string;
   updatedAt: string;
-  roles: UserRole[] | null;
+  userRoles: UserRole[] | null;
 }
 
 export interface CreateUserInput {
