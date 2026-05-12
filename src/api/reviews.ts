@@ -1,6 +1,12 @@
 import { buildFilterParts } from '../utils.ts';
 import { graphqlClient, restClient } from './client.ts';
-import type { GqlResponse, Review, ReviewStatus, SetReviewStatusResponse } from './types.ts';
+import type {
+  GqlResponse,
+  PaginationInfo,
+  Review,
+  ReviewStatus,
+  SetReviewStatusResponse,
+} from './types.ts';
 
 const REVIEW_FIELDS = 'id clientId problemId statusId text imageName creationDate';
 
@@ -8,13 +14,15 @@ export const getReviews = async (
   filters?: { reviewStatusId?: number; clientId?: number; problemId?: string },
   pagination?: { page?: number; pageSize?: number },
   signal?: AbortSignal
-): Promise<{ reviews: Review[]; error: string | null }> => {
+): Promise<{
+  reviews: Review[];
+  pagination?: PaginationInfo;
+  error: string | null;
+}> => {
   const filterParts = buildFilterParts(filters ?? {});
 
   const args: string[] = [];
-  if (filterParts.length) {
-    args.push(`filter: {${filterParts.join(', ')}}`);
-  }
+  if (filterParts.length) args.push(`filter: {${filterParts.join(', ')}}`);
 
   if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
     const pParts: string[] = [];
@@ -24,21 +32,39 @@ export const getReviews = async (
   }
 
   const argsStr = args.length ? `(${args.join(', ')})` : '';
-  const query = `{ reviews${argsStr} { nodes { ${REVIEW_FIELDS} } } }`;
+
+  // 🔧 Запрашиваем paginationInfo в ответе
+  const query = `{ reviews${argsStr} { 
+    nodes { ${REVIEW_FIELDS} } 
+    paginationInfo { totalCount currentPage totalPages }
+  } }`;
 
   try {
-    const response = await graphqlClient.post<GqlResponse<{ reviews: { nodes: Review[] } }>>(
-      query,
-      undefined,
-      { signal }
-    );
+    const response = await graphqlClient.post<
+      GqlResponse<{
+        reviews: {
+          nodes: Review[];
+          paginationInfo?: PaginationInfo;
+        };
+      }>
+    >(query, undefined, { signal });
 
     if (response.data?.errors?.length) {
       return { reviews: [], error: response.data.errors.map((e) => e.message).join('; ') };
     }
-    return { reviews: response.data.data?.reviews?.nodes ?? [], error: null };
+
+    const data = response.data.data?.reviews;
+    return {
+      reviews: data?.nodes ?? [],
+      pagination: data?.paginationInfo, // 🔧 Возвращаем пагинацию
+      error: null,
+    };
   } catch (err) {
-    return { reviews: [], error: err instanceof Error ? err.message : 'Ошибка запроса' };
+    return {
+      reviews: [],
+      error: err instanceof Error ? err.message : 'Ошибка запроса',
+      pagination: undefined,
+    };
   }
 };
 
@@ -83,13 +109,20 @@ export const getReviewStatuses = async (
   }
 };
 
+// Если нужен именно batch с пагинацией:
 export const getReviewsBatch = async (
   statusIds: number[] = [1, 2, 3, 4, 5, 6, 7],
+  page: number = 1,
+  pageSize: number = 5,
   signal?: AbortSignal
 ) => {
   const queryParts = statusIds.map((statusId) => {
-    return `status${statusId}: reviews(filter: {reviewStatusId: {eq: ${statusId}}}) { 
-      nodes { ${REVIEW_FIELDS} } 
+    return `status${statusId}: reviews(
+      filter: {reviewStatusId: {eq: ${statusId}}}, 
+      pagination: {page: ${page}, pageSize: ${pageSize}}
+    ) { 
+      nodes { ${REVIEW_FIELDS} }
+      paginationInfo { totalCount totalPages }
     }`;
   });
 
@@ -97,7 +130,10 @@ export const getReviewsBatch = async (
 
   try {
     const response = await graphqlClient.post<{
-      data: Record<string, { nodes: Review[] }>;
+      data: Record<
+        string,
+        { nodes: Review[]; paginationInfo?: { totalCount: number; totalPages: number } }
+      >;
       errors?: Array<{ message: string }>;
     }>(query, undefined, { signal });
 
@@ -106,10 +142,15 @@ export const getReviewsBatch = async (
       return null;
     }
 
-    const result: Record<string, Review[]> = {};
+    const result: Record<string, { reviews: Review[]; total?: number; pages?: number }> = {};
     statusIds.forEach((statusId) => {
       const key = `status${statusId}`;
-      result[key] = response.data.data?.[key]?.nodes ?? [];
+      const data = response.data.data?.[key];
+      result[key] = {
+        reviews: data?.nodes ?? [],
+        total: data?.paginationInfo?.totalCount,
+        pages: data?.paginationInfo?.totalPages,
+      };
     });
 
     return result;
