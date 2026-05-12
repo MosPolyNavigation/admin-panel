@@ -18,7 +18,6 @@ import {
 import {
   ArrowBack as BackIcon,
   Edit as EditIcon,
-  Security as SecurityIcon,
   Group as UsersIcon,
   Visibility as ViewIcon,
   CheckCircle as ActiveIcon,
@@ -32,6 +31,7 @@ import { useAuth } from '../hooks/useAuth.ts';
 import { getRole, getUsersByRole, getAllowedPermissions, type Role, type User } from '../api';
 import { RequirePermission } from '../components/RequirePermission.tsx';
 import { RIGHT_NAMES } from '../constants';
+import { RoleRightsList } from '../components/RoleRightsList.tsx';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -170,11 +170,6 @@ export default function RoleViewPage() {
     });
   };
 
-  // 🔧 Хелпер: получить доступные права для цели из бэкенда
-  const getAvailableRightsForGoal = (goalId: number): number[] => {
-    return allowedPermissions[String(goalId)] || [];
-  };
-
   // Show loading while auth is checking
   if (authLoading || permissionsLoading) {
     return (
@@ -252,75 +247,13 @@ export default function RoleViewPage() {
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
-            <Stack spacing={2}>
-              {/* 🔧 Перебираем цели из roleRightGoals, а не из констант */}
-              {role.roleRightGoals && role.roleRightGoals.length > 0 ? (
-                Array.from(new Set(role.roleRightGoals.map((rrg) => rrg.goalId))).map((goalId) => {
-                  const goalName = role.roleRightGoals?.find((rrg) => rrg.goalId === goalId)?.goal
-                    ?.name;
-                  if (!goalName) return null;
-
-                  const selectedGoalRights =
-                    role.roleRightGoals
-                      ?.filter((rrg) => rrg.goalId === goalId)
-                      .map((rrg) => rrg.rightId) || [];
-
-                  // 🔧 Получаем доступные права из бэкенда
-                  const availableRights = getAvailableRightsForGoal(goalId);
-
-                  return (
-                    <Card
-                      key={goalId}
-                      variant="outlined"
-                      sx={{
-                        borderColor: selectedGoalRights.length > 0 ? 'primary.500' : 'neutral.500',
-                        bgcolor: selectedGoalRights.length > 0 ? 'primary.softBg' : 'transparent',
-                      }}
-                    >
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            mb: 2,
-                          }}
-                        >
-                          <Typography level="title-md">
-                            <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                            {goalName}
-                          </Typography>
-                          <Chip size="sm" variant="soft" color="neutral">
-                            {selectedGoalRights.length} из {availableRights.length}
-                          </Chip>
-                        </Box>
-
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          {availableRights.map((rightId) => {
-                            const isSelected = selectedGoalRights.includes(rightId);
-                            return (
-                              <Chip
-                                key={rightId}
-                                size="md"
-                                variant={isSelected ? 'solid' : 'outlined'}
-                                color={isSelected ? 'primary' : 'neutral'}
-                                sx={{ cursor: 'default' }}
-                              >
-                                {RIGHT_NAMES[rightId] || `Right #${rightId}`}
-                              </Chip>
-                            );
-                          })}
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  );
-                })
-              ) : (
-                <Typography level="body-md" textColor="neutral.500">
-                  Права не назначены
-                </Typography>
-              )}
-            </Stack>
+            <RoleRightsList
+              roleRightGoals={role.roleRightGoals || []}
+              allowedPermissions={allowedPermissions}
+              rightNames={RIGHT_NAMES}
+              isEditable={false}
+              onRightsChange={() => {}}
+            />
           </CardContent>
         </Card>
 

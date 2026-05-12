@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import {
   Typography,
@@ -13,25 +13,19 @@ import {
   Divider,
   Alert,
   LinearProgress,
-  Chip,
 } from '@mui/joy';
-import {
-  ArrowBack as BackIcon,
-  Save as SaveIcon,
-  Cancel as CancelIcon,
-  Security as SecurityIcon,
-  Add as AddIcon,
-  Remove as RemoveIcon,
-} from '@mui/icons-material';
+import { ArrowBack as BackIcon, Save as SaveIcon, Cancel as CancelIcon } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { createRole, getRights, getGoals, type Right, type Goal } from '../api';
-import { GOAL_RIGHTS_MAP, RIGHT_NAMES } from '../constants';
+import { createRole, getAllowedPermissions, getGoals, type Goal } from '../api';
+import { RoleRightsList } from '../components/RoleRightsList';
+import { RIGHT_NAMES } from '../constants';
 
 export default function RoleCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const rightsByGoals = user?.rights_by_goals || {};
 
   // State
   const [loading, setLoading] = useState(false);
@@ -42,20 +36,39 @@ export default function RoleCreatePage() {
 
   // Form data
   const [roleName, setRoleName] = useState('');
-  const [selectedRights, setSelectedRights] = useState<Record<number, number[]>>({});
 
-  // Data
-  const [rights, setRights] = useState<Right[]>([]);
+  const [allowedPermissions, setAllowedPermissions] = useState<Record<string, number[]>>({});
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [pendingChanges, setPendingChanges] = useState<
+    Array<{
+      rightId: number;
+      goalId: number;
+      selected: boolean;
+      canGrant: boolean;
+    }>
+  >([]);
 
-  // Load rights and goals
   useEffect(() => {
     const loadData = async () => {
       setDataLoading(true);
       try {
-        const [rightsData, goalsData] = await Promise.all([getRights(), getGoals()]);
-        setRights(rightsData);
-        setGoals(goalsData);
+        const [goalsResult, permissionsResult] = await Promise.all([
+          getGoals(),
+          getAllowedPermissions(),
+        ]);
+
+        if (goalsResult.error) {
+          setError(goalsResult.error);
+          return;
+        }
+        if (permissionsResult.error) {
+          console.warn('Не удалось загрузить разрешения:', permissionsResult.error);
+        }
+
+        setGoals(goalsResult.goals);
+        if (permissionsResult.data?.allowed_permissions) {
+          setAllowedPermissions(permissionsResult.data.allowed_permissions);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка загрузки данных');
       } finally {
@@ -65,23 +78,38 @@ export default function RoleCreatePage() {
     loadData();
   }, []);
 
-  // Show notification
   const showNotification = (message: string, type: 'success' | 'danger' = 'success') => {
     setNotification(message);
     setNotificationType(type);
     setTimeout(() => setNotification(null), 4000);
   };
 
-  // Handle right toggle
-  const toggleRight = (goalId: number, rightId: number) => {
-    setSelectedRights((prev) => {
-      const goalRights = prev[goalId] || [];
-      const newGoalRights = goalRights.includes(rightId)
-        ? goalRights.filter((id) => id !== rightId)
-        : [...goalRights, rightId];
-      return { ...prev, [goalId]: newGoalRights };
-    });
-  };
+  const handleRightsChange = useCallback(
+    (
+      changes: Array<{
+        rightId: number;
+        goalId: number;
+        selected: boolean;
+        canGrant: boolean;
+      }>
+    ) => {
+      setPendingChanges((prev) => {
+        const updated = [...prev];
+        changes.forEach(({ rightId, goalId, selected, canGrant }) => {
+          const idx = updated.findIndex((c) => c.rightId === rightId && c.goalId === goalId);
+
+          // 🔧 Всегда обновляем или добавляем, никогда не удаляем
+          if (idx >= 0) {
+            updated[idx] = { rightId, goalId, selected, canGrant };
+          } else {
+            updated.push({ rightId, goalId, selected, canGrant });
+          }
+        });
+        return updated;
+      });
+    },
+    []
+  );
 
   // Handle create
   const create = async () => {
@@ -93,13 +121,13 @@ export default function RoleCreatePage() {
     setLoading(true);
     setError(null);
     try {
-      // Собираем все выбранные права
-      const roleRightGoals: { rightId: number; goalId: number }[] = [];
-      Object.entries(selectedRights).forEach(([goalId, rightIds]) => {
-        rightIds.forEach((rightId) => {
-          roleRightGoals.push({ rightId, goalId: parseInt(goalId) });
-        });
-      });
+      const roleRightGoals = pendingChanges
+        .filter((c) => c.selected)
+        .map(({ rightId, goalId }) => ({
+          rightId,
+          goalId,
+          canGrant: false,
+        }));
 
       await createRole({
         name: roleName.trim(),
@@ -108,7 +136,6 @@ export default function RoleCreatePage() {
 
       showNotification('Роль успешно создана', 'success');
 
-      // Возвращаемся на страницу ролей с сохранением параметров
       const from = searchParams.get('from') || '/roles';
       const returnParams = new URLSearchParams();
       for (const [key, value] of searchParams.entries()) {
@@ -126,6 +153,14 @@ export default function RoleCreatePage() {
       setLoading(false);
     }
   };
+
+  const goalsMap = goals.reduce(
+    (acc, goal) => {
+      acc[goal.id] = goal.name;
+      return acc;
+    },
+    {} as Record<number, string>
+  );
 
   // Handle cancel
   const handleBack = () => {
@@ -145,15 +180,7 @@ export default function RoleCreatePage() {
   };
 
   // Show loading while auth is checking
-  if (authLoading) {
-    return (
-      <Page headerText="Загрузка...">
-        <LinearProgress />
-      </Page>
-    );
-  }
-
-  if (dataLoading) {
+  if (authLoading || dataLoading) {
     return (
       <Page headerText="Загрузка...">
         <LinearProgress />
@@ -210,7 +237,6 @@ export default function RoleCreatePage() {
           </CardContent>
         </Card>
 
-        {/* Rights Assignment Card */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -218,76 +244,24 @@ export default function RoleCreatePage() {
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
-            <Stack spacing={2}>
-              {goals.map((goal) => {
-                const availableRights = GOAL_RIGHTS_MAP[goal.id] || [];
-                const selectedGoalRights = selectedRights[goal.id] || [];
-
-                return (
-                  <Card
-                    key={goal.id}
-                    variant="outlined"
-                    sx={{
-                      borderColor: selectedGoalRights.length > 0 ? 'primary.500' : 'neutral.500',
-                      bgcolor: selectedGoalRights.length > 0 ? 'primary.softBg' : 'transparent',
-                    }}
-                  >
-                    <CardContent>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          mb: 2,
-                        }}
-                      >
-                        <Typography level="title-md">
-                          <SecurityIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-                          {goal.name}
-                        </Typography>
-                        <Chip size="sm" variant="soft" color="neutral">
-                          {selectedGoalRights.length} из {availableRights.length}
-                        </Chip>
-                      </Box>
-
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {availableRights.map((rightId) => {
-                          const right = rights.find((r) => r.id === rightId);
-                          const isSelected = selectedGoalRights.includes(rightId);
-
-                          return (
-                            <Chip
-                              key={rightId}
-                              size="md"
-                              variant={isSelected ? 'solid' : 'outlined'}
-                              color={isSelected ? 'primary' : 'neutral'}
-                              onClick={() => toggleRight(goal.id, rightId)}
-                              sx={{ cursor: 'pointer' }}
-                              startDecorator={
-                                isSelected ? (
-                                  <RemoveIcon sx={{ fontSize: 16 }} />
-                                ) : (
-                                  <AddIcon sx={{ fontSize: 16 }} />
-                                )
-                              }
-                            >
-                              {right?.name || RIGHT_NAMES[rightId] || rightId}
-                            </Chip>
-                          );
-                        })}
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </Stack>
+            <RoleRightsList
+              roleRightGoals={[]}
+              allowedPermissions={allowedPermissions}
+              rightNames={RIGHT_NAMES}
+              goals={goalsMap}
+              isEditable={true}
+              rightsByGoals={rightsByGoals}
+              pendingChanges={pendingChanges}
+              onRightsChange={handleRightsChange}
+            />
           </CardContent>
         </Card>
 
         {/* Info Alert */}
         <Alert color="primary" variant="soft">
           <Typography level="body-sm">
-            Выберите права для каждой цели. Вы можете назначать только те права, которые есть у вас.
+            Выберите права для каждой цели. Переключатель «Можно передавать» появится только для тех
+            прав, которые вы можете делегировать.
           </Typography>
         </Alert>
 
@@ -311,6 +285,7 @@ export default function RoleCreatePage() {
               color="primary"
               size="lg"
               loading={loading}
+              disabled={!roleName.trim() && pendingChanges.filter((c) => c.selected).length === 0}
             >
               Создать
             </Button>

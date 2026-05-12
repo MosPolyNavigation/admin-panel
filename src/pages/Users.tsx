@@ -459,15 +459,17 @@ function Users() {
                         <EditIcon />
                       </IconButton>
                     </RequirePermission>
-                    <IconButton
-                      size="sm"
-                      color="neutral"
-                      variant="outlined"
-                      onClick={() => handleNavigate(`/users/${user.id}/grant`)}
-                      title="Назначить роли"
-                    >
-                      <RoleIcon />
-                    </IconButton>
+                    <RequirePermission goal="roles" right="grant">
+                      <IconButton
+                        size="sm"
+                        color="neutral"
+                        variant="outlined"
+                        onClick={() => handleNavigate(`/users/${user.id}/grant`)}
+                        title="Назначить роли"
+                      >
+                        <RoleIcon />
+                      </IconButton>
+                    </RequirePermission>
                     <RequirePermission goal="users" right="edit">
                       <IconButton
                         size="sm"

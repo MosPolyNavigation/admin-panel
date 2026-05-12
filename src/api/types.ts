@@ -118,6 +118,7 @@ export interface RoleRightGoal {
   roleId: number;
   rightId: number;
   goalId: number;
+  canGrant: boolean;
   right: Right | null;
   goal: Goal | null;
 }
