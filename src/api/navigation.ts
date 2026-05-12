@@ -19,11 +19,11 @@ import type {
   NavFloor,
   NavFloorConnection,
   NavStatic,
-  NavAuditory2,
   NavAuditoryConnection,
   NavAuditoryCreateInput,
   NavAuditoryUpdateInput,
 } from './types.ts';
+import { buildFilterParts } from '../utils.ts';
 
 const LOCATION_FIELDS = 'id idSys name short ready metro address comments crossings';
 
@@ -36,16 +36,9 @@ export const getNavLocations = async (
   filters?: { id?: number; idSys?: string },
   signal?: AbortSignal
 ): Promise<{ locations: NavLocation[]; error: string | null }> => {
-  const parts: string[] = [];
-  if (filters?.id !== undefined && filters.id !== null && !Number.isNaN(Number(filters.id))) {
-    parts.push(`id: ${Number(filters.id)}`);
-  }
-  if (filters?.idSys !== undefined && filters.idSys.trim() !== '') {
-    parts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
-  }
+  const filterParts = buildFilterParts(filters ?? {});
 
-  // Исправление: используем filter Input Object и nodes
-  const args = parts.length ? `(filter: {${parts.join(', ')}})` : '';
+  const args = filterParts.length ? `(filter: {${filterParts.join(', ')}})` : '';
   const query = `{ navLocations${args} { nodes { ${LOCATION_FIELDS} } } }`;
 
   const response = await graphqlClient.post<
@@ -61,10 +54,10 @@ export const NAV_CROSSING_TYPE_ID_FALLBACK = 16;
 
 export const getNavAuditoriesByTypeId = async (
   typeId: number,
-  limit: number = 50,
+  pageSize: number = 50,
   signal?: AbortSignal
 ): Promise<{ items: NavAuditory[]; error: string | null }> => {
-  const query = `{ navAuditories(filter: {typeId: ${typeId}}, pagination: {limit: ${limit}}) { nodes { id idSys name typeId } } }`;
+  const query = `{ navAuditories(filter: {typeId: {eq: ${typeId}}}, pagination: {page: 1, pageSize: ${pageSize}}) { nodes { id idSys name typeId } } }`;
   const response = await graphqlClient.post<
     GqlResponse<{ navAuditories: { nodes: NavAuditory[] } }>
   >(query, undefined, { signal });
@@ -74,10 +67,10 @@ export const getNavAuditoriesByTypeId = async (
 };
 
 export const getNavTypes = async (
-  limit: number = 50,
+  pageSize: number = 50,
   signal?: AbortSignal
 ): Promise<{ items: NavType[]; error: string | null }> => {
-  const query = `{ navTypes(pagination: {limit: ${limit}}) { nodes { id name } } }`;
+  const query = `{ navTypes(pagination: {page: 1, pageSize: ${pageSize}}) { nodes { id name } } }`;
   const response = await graphqlClient.post<GqlResponse<{ navTypes: { nodes: NavType[] } }>>(
     query,
     undefined,
@@ -198,38 +191,21 @@ const CAMPUS_FIELDS = 'id idSys locId name ready stairGroups comments';
 
 export const getNavCampuses = async (
   filters?: { id?: number; idSys?: string; locId?: number; name?: string; ready?: boolean },
-  pagination?: { limit?: number; offset?: number },
+  pagination?: { page?: number; pageSize?: number },
   signal?: AbortSignal
 ): Promise<{
   campuses: NavCampus[];
   pagination?: PaginationInfo;
   error: string | null;
 }> => {
-  const filterParts: string[] = [];
-  if (filters?.id !== undefined && filters.id !== null) {
-    filterParts.push(`id: ${Number(filters.id)}`);
-  }
-  if (filters?.idSys !== undefined && filters.idSys?.trim() !== '') {
-    filterParts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
-  }
-  if (filters?.locId !== undefined && filters.locId !== null) {
-    filterParts.push(`locId: ${Number(filters.locId)}`);
-  }
-  if (filters?.name !== undefined && filters.name?.trim() !== '') {
-    filterParts.push(`name: ${JSON.stringify(filters.name.trim())}`);
-  }
-  if (filters?.ready !== undefined) {
-    filterParts.push(`ready: ${filters.ready}`);
-  }
+  const filterParts = buildFilterParts(filters ?? {});
 
   const args: string[] = [];
-  if (filterParts.length) {
-    args.push(`filter: {${filterParts.join(', ')}}`);
-  }
-  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+  if (filterParts.length) args.push(`filter: {${filterParts.join(', ')}}`);
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
     const pParts: string[] = [];
-    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
-    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
     args.push(`pagination: {${pParts.join(', ')}}`);
   }
   const argsStr = args.length ? `(${args.join(', ')})` : '';
@@ -246,10 +222,7 @@ export const getNavCampuses = async (
     { signal }
   );
 
-  const err = response.data?.errors?.length
-    ? response.data.errors.map((e: { message: string }) => e.message).join('; ')
-    : null;
-
+  const err = gqlErrorMessage(response.data);
   if (err) return { campuses: [], error: err };
 
   const data = response.data.data?.navCampuses;
@@ -371,38 +344,22 @@ const PLAN_FIELDS =
 
 export const getNavPlans = async (
   filters?: { id?: number; idSys?: string; corId?: number; floorId?: number; ready?: boolean },
-  pagination?: { limit?: number; offset?: number },
+  pagination?: { page?: number; pageSize?: number },
   signal?: AbortSignal
 ): Promise<{
   plans: NavPlan[];
   pagination?: PaginationInfo;
   error: string | null;
 }> => {
-  const filterParts: string[] = [];
-  if (filters?.id !== undefined && filters.id !== null) {
-    filterParts.push(`id: ${Number(filters.id)}`);
-  }
-  if (filters?.idSys !== undefined && filters.idSys?.trim() !== '') {
-    filterParts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
-  }
-  if (filters?.corId !== undefined && filters.corId !== null) {
-    filterParts.push(`corId: ${Number(filters.corId)}`);
-  }
-  if (filters?.floorId !== undefined && filters.floorId !== null) {
-    filterParts.push(`floorId: ${Number(filters.floorId)}`);
-  }
-  if (filters?.ready !== undefined) {
-    filterParts.push(`ready: ${filters.ready}`);
-  }
+  const filterParts = buildFilterParts(filters ?? {});
 
   const args: string[] = [];
-  if (filterParts.length) {
-    args.push(`filter: {${filterParts.join(', ')}}`);
-  }
-  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+  if (filterParts.length) args.push(`filter: {${filterParts.join(', ')}}`);
+
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
     const pParts: string[] = [];
-    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
-    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
     args.push(`pagination: {${pParts.join(', ')}}`);
   }
   const argsStr = args.length ? `(${args.join(', ')})` : '';
@@ -517,7 +474,7 @@ export const deleteNavPlan = async (
 // ============================================================================
 
 export const getNavFloors = async (
-  pagination?: { limit?: number; offset?: number },
+  pagination?: { page?: number; pageSize?: number },
   signal?: AbortSignal
 ): Promise<{
   floors: NavFloor[];
@@ -525,10 +482,11 @@ export const getNavFloors = async (
   error: string | null;
 }> => {
   const args: string[] = [];
-  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
     const pParts: string[] = [];
-    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
-    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
     args.push(`pagination: {${pParts.join(', ')}}`);
   }
   const argsStr = args.length ? `(${args.join(', ')})` : '';
@@ -701,38 +659,22 @@ const AUDITORY_FIELDS = `
 
 export const getNavAuditories = async (
   filters?: { id?: number; idSys?: string; planId?: number; typeId?: number; ready?: boolean },
-  pagination?: { limit?: number; offset?: number },
+  pagination?: { page?: number; pageSize?: number },
   signal?: AbortSignal
 ): Promise<{
-  auditories: NavAuditory2[];
+  auditories: NavAuditory[];
   pagination?: PaginationInfo;
   error: string | null;
 }> => {
-  const filterParts: string[] = [];
-  if (filters?.id !== undefined && filters.id !== null) {
-    filterParts.push(`id: ${Number(filters.id)}`);
-  }
-  if (filters?.idSys !== undefined && filters.idSys?.trim() !== '') {
-    filterParts.push(`idSys: ${JSON.stringify(filters.idSys.trim())}`);
-  }
-  if (filters?.planId !== undefined && filters.planId !== null) {
-    filterParts.push(`planId: ${Number(filters.planId)}`);
-  }
-  if (filters?.typeId !== undefined && filters.typeId !== null) {
-    filterParts.push(`typeId: ${Number(filters.typeId)}`);
-  }
-  if (filters?.ready !== undefined) {
-    filterParts.push(`ready: ${filters.ready}`);
-  }
+  const filterParts = buildFilterParts(filters ?? {});
 
   const args: string[] = [];
-  if (filterParts.length) {
-    args.push(`filter: {${filterParts.join(', ')}}`);
-  }
-  if (pagination?.limit !== undefined || pagination?.offset !== undefined) {
+  if (filterParts.length) args.push(`filter: {${filterParts.join(', ')}}`);
+
+  if (pagination?.page !== undefined || pagination?.pageSize !== undefined) {
     const pParts: string[] = [];
-    if (pagination?.limit !== undefined) pParts.push(`limit: ${pagination.limit}`);
-    if (pagination?.offset !== undefined) pParts.push(`offset: ${pagination.offset}`);
+    if (pagination?.page !== undefined) pParts.push(`page: ${pagination.page}`);
+    if (pagination?.pageSize !== undefined) pParts.push(`pageSize: ${pagination.pageSize}`);
     args.push(`pagination: {${pParts.join(', ')}}`);
   }
   const argsStr = args.length ? `(${args.join(', ')})` : '';
@@ -763,7 +705,7 @@ export const getNavAuditories = async (
 export const updateNavAuditoriesBatch = async (
   updates: Array<{ id: number; data: NavAuditoryUpdateInput }>,
   signal?: AbortSignal
-): Promise<{ auditories: NavAuditory2[]; error: string | null }> => {
+): Promise<{ auditories: NavAuditory[]; error: string | null }> => {
   if (updates.length === 0) {
     return { auditories: [], error: null };
   }
@@ -785,7 +727,7 @@ export const updateNavAuditoriesBatch = async (
 
   const mutation = `mutation(${variableDefinitions.join(', ')}) { ${mutationFields.join(' ')} }`;
 
-  const response = await graphqlClient.post<GqlResponse<Record<string, NavAuditory2 | null>>>(
+  const response = await graphqlClient.post<GqlResponse<Record<string, NavAuditory | null>>>(
     mutation,
     variableValues,
     { signal }
@@ -797,9 +739,9 @@ export const updateNavAuditoriesBatch = async (
   const data = response.data.data;
   if (!data) return { auditories: [], error: 'Пустой ответ' };
 
-  const auditories: NavAuditory2[] = [];
+  const auditories: NavAuditory[] = [];
   updates.forEach((_, i) => {
-    const aud = data[`aud${i}` as keyof typeof data] as NavAuditory2 | null | undefined;
+    const aud = data[`aud${i}` as keyof typeof data] as NavAuditory | null | undefined;
     if (aud) auditories.push(aud);
   });
 
@@ -809,14 +751,14 @@ export const updateNavAuditoriesBatch = async (
 export const createNavAuditory = async (
   data: NavAuditoryCreateInput,
   signal?: AbortSignal
-): Promise<{ auditory: NavAuditory2 | null; error: string | null }> => {
+): Promise<{ auditory: NavAuditory | null; error: string | null }> => {
   const mutation = `
     mutation($data: NavAuditoryInput!) {
       createNavAuditory(data: $data) { ${AUDITORY_FIELDS} }
     }
   `;
 
-  const response = await graphqlClient.post<GqlResponse<{ createNavAuditory: NavAuditory2 }>>(
+  const response = await graphqlClient.post<GqlResponse<{ createNavAuditory: NavAuditory }>>(
     mutation,
     { data },
     { signal }

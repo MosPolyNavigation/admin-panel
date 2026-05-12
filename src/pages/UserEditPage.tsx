@@ -74,14 +74,28 @@ export default function UserEditPage() {
   useEffect(() => {
     const loadUser = async () => {
       if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const result = await getUser(parseInt(id));
-        if (result) {
-          setUser(result);
+        // 🔧 Исправлено: деструктурируем ответ { user, error }
+        const { user: fetchedUser, error: fetchError } = await getUser(userId);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedUser) {
+          setUser(fetchedUser);
           setFormData({
-            fio: result.fio || '',
-            isActive: result.isActive,
+            fio: fetchedUser.fio || '',
+            isActive: fetchedUser.isActive,
           });
         } else {
           setError('Пользователь не найден');
@@ -118,15 +132,21 @@ export default function UserEditPage() {
     setSaving(true);
     setError(null);
     try {
-      await updateUser(user.id, formData);
+      // 🔧 Исправлено: деструктурируем ответ { user, error }
+      const { user: updatedUser, error: updateError } = await updateUser(user.id, formData);
+
+      if (updateError || !updatedUser) {
+        throw new Error(updateError || 'Ошибка сохранения');
+      }
+
       showNotification('Данные сохранены', 'success');
       // Reload user data
-      const result = await getUser(user.id);
-      if (result) {
-        setUser(result);
+      const { user: reloaded, error: reloadError } = await getUser(user.id);
+      if (!reloadError && reloaded) {
+        setUser(reloaded);
         setFormData({
-          fio: result.fio || '',
-          isActive: result.isActive,
+          fio: reloaded.fio || '',
+          isActive: reloaded.isActive,
         });
       }
     } catch (err) {
@@ -161,7 +181,13 @@ export default function UserEditPage() {
       return;
     }
     try {
-      await changeUserPassword(user.id, password.new);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await changeUserPassword(user.id, password.new);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка смены пароля');
+      }
+
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -180,6 +206,11 @@ export default function UserEditPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  // 🔧 Хелпер для получения имён ролей из userRoles
+  const getUserRoleNames = (user: User): string[] => {
+    return (user.userRoles?.map((ur) => ur.role?.name).filter(Boolean) as string[]) || [];
   };
 
   // Show loading while auth is checking
@@ -330,15 +361,20 @@ export default function UserEditPage() {
                 </Box>
               </RequirePermission>
 
-              {/* Roles */}
+              {/* Roles - 🔧 Исправлено: userRoles вместо roles */}
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                   <Typography>Роли пользователя</Typography>
                   <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((ur) => (
-                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                          {ur.role?.name || `Role ${ur.roleId}`}
+                    {user.userRoles && user.userRoles.length > 0 ? (
+                      getUserRoleNames(user).map((roleName, idx) => (
+                        <Chip
+                          key={`${user.id}_role_${idx}`}
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                        >
+                          {roleName}
                         </Chip>
                       ))
                     ) : (

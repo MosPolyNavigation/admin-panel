@@ -7,142 +7,170 @@ import type {
   PaginationInput,
   CreateUserInput,
   UpdateUserInput,
-  GrantRoleResult,
-  DeleteResult,
 } from './types.ts';
+
+const USER_FIELDS = 'id login fio isActive registrationDate updatedAt';
+const USER_ROLE_FIELDS = 'userId roleId role { id name }';
 
 export const getUsers = async (
   pagination: PaginationInput,
   filter?: UserFilterInput,
   signal?: AbortSignal
-): Promise<UserConnection> => {
+): Promise<{ users: UserConnection; error: string | null }> => {
   const query = `query GetUsers($pagination: PaginationInput, $filter: UserFilterInput) { 
     users(pagination: $pagination, filter: $filter) { 
-      nodes { id login fio isActive registrationDate updatedAt roles { userId roleId role { id name } } } 
+      nodes { ${USER_FIELDS} userRoles { ${USER_ROLE_FIELDS} } } 
       pageInfo { hasPreviousPage hasNextPage startCursor endCursor } 
       paginationInfo { totalCount currentPage totalPages } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ users: UserConnection }>>(
-    query,
-    { pagination, filter },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ users: UserConnection }>>(
+      query,
+      { pagination, filter },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return {
+        users: {} as UserConnection,
+        error: response.data.errors.map((e) => e.message).join('; '),
+      };
+    }
+    return { users: response.data.data.users, error: null };
+  } catch (err) {
+    return {
+      users: {} as UserConnection,
+      error: err instanceof Error ? err.message : 'Ошибка запроса',
+    };
   }
-
-  return response.data.data.users;
 };
 
-export const getUser = async (userId: number, signal?: AbortSignal): Promise<User | null> => {
-  const query = `query GetUser($userId: Int!) { 
-    user(userId: $userId) { 
-      id login fio isActive registrationDate updatedAt 
-      roles { userId roleId role { id name } } 
+export const getUser = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `query GetUser($id: Int!) { 
+    user(id: $id) { 
+      ${USER_FIELDS}
+      userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ user: User | null }>>(
-    query,
-    { userId },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ user: User | null }>>(
+      query,
+      { id },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.user, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
   }
-
-  return response.data.data.user;
 };
 
-export const createUser = async (data: CreateUserInput, signal?: AbortSignal): Promise<User> => {
+export const createUser = async (
+  data: CreateUserInput,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
   const query = `mutation CreateUser($data: CreateUserInput!) { 
-    createUser(data: $data) { 
-      id login fio isActive registrationDate updatedAt 
-    } 
+    createUser(data: $data) { ${USER_FIELDS} } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ createUser: User }>>(
-    query,
-    { data },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ createUser: User }>>(
+      query,
+      { data },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.createUser, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
   }
-
-  return response.data.data.createUser;
 };
 
 export const updateUser = async (
-  userId: number,
+  id: number,
   data: UpdateUserInput,
   signal?: AbortSignal
-): Promise<User> => {
-  const query = `mutation UpdateUser($userId: Int!, $data: UpdateUserInput!) { 
-    updateUser(userId: $userId, data: $data) { 
-      id login fio isActive registrationDate updatedAt 
-      roles { userId roleId role { id name } } 
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `mutation UpdateUser($id: Int!, $data: UpdateUserInput!) { 
+    updateUser(id: $id, data: $data) { 
+      ${USER_FIELDS}
+      userRoles { ${USER_ROLE_FIELDS} } 
     } 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ updateUser: User }>>(
-    query,
-    { userId, data },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateUser: User }>>(
+      query,
+      { id, data },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.updateUser, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
   }
-
-  return response.data.data.updateUser;
 };
 
-export const deleteUser = async (userId: number, signal?: AbortSignal): Promise<DeleteResult> => {
-  const query = `mutation DeleteUser($userId: Int!) { 
-    deleteUser(userId: $userId) { 
-      success message deletedId 
-    } 
-  }`;
+export const deleteUser = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ ok: boolean; error: string | null }> => {
+  const query = `mutation DeleteUser($id: Int!) { deleteUser(id: $id) }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ deleteUser: DeleteResult }>>(
-    query,
-    { userId },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ deleteUser: boolean }>>(
+      query,
+      { id },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { ok: false, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { ok: Boolean(response.data.data?.deleteUser), error: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка удаления' };
   }
-
-  return response.data.data.deleteUser;
 };
 
 export const changeUserPassword = async (
   userId: number,
   newPassword: string,
   signal?: AbortSignal
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ ok: boolean; error: string | null }> => {
   const query = `mutation ChangeUserPassword($data: ChangeUserPasswordInput!) { 
-    changeUserPassword(data: $data) { 
-      success message 
-    } 
+    changeUserPassword(data: $data) 
   }`;
 
-  const response = await graphqlClient.post<
-    GqlResponse<{ changeUserPassword: { success: boolean; message: string } }>
-  >(query, { data: { userId, newPassword } }, { signal });
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ changeUserPassword: boolean }>>(
+      query,
+      { data: { userId, newPassword } },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { ok: false, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { ok: Boolean(response.data.data?.changeUserPassword), error: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка смены пароля' };
   }
-
-  return response.data.data.changeUserPassword;
 };
 
 export const changeUserPasswordRest = async (
@@ -172,46 +200,48 @@ export const grantRole = async (
   userId: number,
   roleIds: number[],
   signal?: AbortSignal
-): Promise<GrantRoleResult> => {
+): Promise<{ ok: boolean; error: string | null }> => {
   const query = `mutation GrantRole($data: GrantRoleInput!) { 
-    grantRole(data: $data) { 
-      success message user { id login roles { roleId role { id name } } } 
-    } 
+    grantRole(data: $data) 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ grantRole: GrantRoleResult }>>(
-    query,
-    { data: { userId, roleIds } },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ grantRole: boolean }>>(
+      query,
+      { data: { userId, roleIds } },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { ok: false, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { ok: Boolean(response.data.data?.grantRole), error: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка назначения роли' };
   }
-
-  return response.data.data.grantRole;
 };
 
 export const revokeRole = async (
   userId: number,
   roleId: number,
   signal?: AbortSignal
-): Promise<GrantRoleResult> => {
+): Promise<{ ok: boolean; error: string | null }> => {
   const query = `mutation RevokeRole($userId: Int!, $roleId: Int!) { 
-    revokeRole(userId: $userId, roleId: $roleId) { 
-      success message user { id login roles { roleId role { id name } } } 
-    } 
+    revokeRole(userId: $userId, roleId: $roleId) 
   }`;
 
-  const response = await graphqlClient.post<GqlResponse<{ revokeRole: GrantRoleResult }>>(
-    query,
-    { userId, roleId },
-    { signal }
-  );
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ revokeRole: boolean }>>(
+      query,
+      { userId, roleId },
+      { signal }
+    );
 
-  if (response.data.errors?.length) {
-    throw new Error(response.data.errors[0].message);
+    if (response.data.errors?.length) {
+      return { ok: false, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { ok: Boolean(response.data.data?.revokeRole), error: null };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : 'Ошибка отзыва роли' };
   }
-
-  return response.data.data.revokeRole;
 };

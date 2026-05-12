@@ -15,14 +15,8 @@ export interface PaginationInfo {
 }
 
 export interface PaginationInput {
-  limit: number;
-  offset: number;
-}
-
-export interface DeleteResult {
-  success: boolean;
-  message: string;
-  deletedId: number | null;
+  page: number;
+  pageSize: number;
 }
 
 export interface GqlResponse<T = unknown> {
@@ -35,13 +29,79 @@ export interface GqlResponse<T = unknown> {
 }
 
 // ============================================================================
+// ФИЛЬТРЫ — ИСПРАВЛЕНО (вложенные объекты)
+// ============================================================================
+export interface IntFilterInput {
+  eq?: number | null;
+  ne?: number | null;
+  gt?: number | null;
+  gte?: number | null;
+  lt?: number | null;
+  lte?: number | null;
+  isIn?: number[] | null;
+  isNotIn?: number[] | null;
+  isNull?: boolean | null;
+  between?: [number, number] | null;
+  notBetween?: [number, number] | null;
+}
+
+export interface StringFilterInput {
+  eq?: string | null;
+  ne?: string | null;
+  ciEq?: string | null;
+  contains?: string | null;
+  startsWith?: string | null;
+  endsWith?: string | null;
+  like?: string | null;
+  notLike?: string | null;
+  isIn?: string[] | null;
+  isNotIn?: string[] | null;
+  isNull?: boolean | null;
+}
+
+export interface BooleanFilterInput {
+  eq?: boolean | null;
+  ne?: boolean | null;
+  isNull?: boolean | null;
+}
+
+export interface RoleFilterInput {
+  id?: IntFilterInput | null;
+  name?: StringFilterInput | null;
+  and?: RoleFilterInput[] | null;
+  or?: RoleFilterInput[] | null;
+  not?: RoleFilterInput | null;
+}
+
+export interface UserFilterInput {
+  id?: IntFilterInput | null;
+  login?: StringFilterInput | null;
+  fio?: StringFilterInput | null;
+  isActive?: BooleanFilterInput | null;
+  and?: UserFilterInput[] | null;
+  or?: UserFilterInput[] | null;
+  not?: UserFilterInput | null;
+}
+
+export interface ReviewFilterInput {
+  id?: IntFilterInput | null;
+  clientId?: IntFilterInput | null;
+  problemId?: StringFilterInput | null;
+  reviewStatusId?: IntFilterInput | null;
+  text?: StringFilterInput | null;
+  and?: ReviewFilterInput[] | null;
+  or?: ReviewFilterInput[] | null;
+  not?: ReviewFilterInput | null;
+}
+
+// ============================================================================
 // ПОЛЬЗОВАТЕЛИ И РОЛИ
 // ============================================================================
 export interface Role {
   id: number;
   name: string;
-  roleRightGoals: RoleRightGoal[] | null;
-  userRoles: UserRole[] | null;
+  roleRightGoals?: RoleRightGoal[] | null;
+  userRoles?: UserRole[] | null;
 }
 
 export interface Right {
@@ -81,13 +141,7 @@ export interface User {
   isActive: boolean;
   registrationDate: string;
   updatedAt: string;
-  roles: UserRole[] | null;
-}
-
-export interface UserFilterInput {
-  id?: number;
-  login?: string;
-  isActive?: boolean;
+  userRoles: UserRole[] | null;
 }
 
 export interface CreateUserInput {
@@ -110,11 +164,6 @@ export interface ChangeUserPasswordInput {
 export interface GrantRoleInput {
   userId: number;
   roleIds: number[];
-}
-
-export interface RoleFilterInput {
-  id?: number;
-  name?: string;
 }
 
 export interface CreateRoleInput {
@@ -145,22 +194,20 @@ export interface RoleConnection {
   paginationInfo: PaginationInfo;
 }
 
-export interface GrantRoleResult {
-  success: boolean;
-  message: string;
-  user: User | null;
-}
-
 // ============================================================================
 // ОТЗЫВЫ
 // ============================================================================
 export interface Review {
-  id: number | string;
+  id: number;
+  clientId: number;
   problemId: string;
-  creationDate: string;
+  statusId: number;
   text: string;
   imageName: string | null;
-  statusId: number;
+  creationDate: string;
+  client?: ClientId | null;
+  problem?: Problem | null;
+  status?: ReviewStatus | null;
 }
 
 export interface ReviewStatus {
@@ -173,6 +220,16 @@ export interface SetReviewStatusResponse {
   review_id: number;
   status_id: number;
   status_name: string;
+}
+
+export interface ClientId {
+  id: number;
+  ident: string;
+  creationDate: string;
+}
+
+export interface Problem {
+  id: string;
 }
 
 // ============================================================================
@@ -245,7 +302,17 @@ export interface NavLocation {
 export interface NavAuditory {
   id: number;
   idSys: string;
+  typeId: number;
+  ready: boolean;
+  planId: number;
   name: string;
+  textFromSign: string | null;
+  additionalInfo: string | null;
+  comments: string | null;
+  link: string | null;
+  type?: NavType | null;
+  plan?: NavPlan | null;
+  photos?: NavAuditoryPhoto[] | null;
 }
 
 export interface NavType {
@@ -420,24 +487,8 @@ export interface NavAuditoryPhoto {
   updateDate: string | null;
 }
 
-export interface NavAuditory2 {
-  id: number;
-  idSys: string;
-  typeId: number;
-  ready: boolean;
-  planId: number;
-  name: string;
-  textFromSign: string | null;
-  additionalInfo: string | null;
-  comments: string | null;
-  link: string | null;
-  type?: NavType;
-  plan?: NavPlan;
-  photos?: NavAuditoryPhoto[] | null;
-}
-
 export interface NavAuditoryConnection {
-  nodes: NavAuditory2[];
+  nodes: NavAuditory[];
   pageInfo: PageInfo;
   paginationInfo: PaginationInfo;
 }
@@ -464,4 +515,8 @@ export interface NavAuditoryCreateInput {
   additionalInfo?: string | null;
   comments?: string | null;
   link?: string | null;
+}
+
+export interface AllowedPermissionsResponse {
+  allowed_permissions: Record<string, number[]>;
 }

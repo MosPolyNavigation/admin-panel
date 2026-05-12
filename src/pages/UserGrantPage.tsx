@@ -48,12 +48,32 @@ export default function UserGrantPage() {
   useEffect(() => {
     const loadData = async () => {
       if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const [userData, rolesData] = await Promise.all([
-          getUser(parseInt(id)),
-          getRoles({ limit: 100, offset: 0 }),
+        // 🔧 Исправлено: деструктурируем ответы { user, error } и { roles, error }
+        const [userResult, rolesResult] = await Promise.all([
+          getUser(userId),
+          getRoles({ page: 1, pageSize: 100 }), // 🔧 Исправлено: page/pageSize вместо limit/offset
         ]);
+
+        if (userResult.error) {
+          setError(userResult.error);
+          return;
+        }
+        if (rolesResult.error) {
+          setError(rolesResult.error);
+          return;
+        }
+
+        const userData = userResult.user;
+        const rolesData = rolesResult.roles;
 
         if (!userData) {
           setError('Пользователь не найден');
@@ -63,8 +83,8 @@ export default function UserGrantPage() {
         setUser(userData);
         setRoles(rolesData.nodes);
 
-        // Загружаем текущие роли пользователя
-        const currentRoleIds = userData.roles?.map((ur) => ur.roleId) || [];
+        // 🔧 Исправлено: userRoles вместо roles
+        const currentRoleIds = userData.userRoles?.map((ur) => ur.roleId) || [];
         setSelectedRoleIds(currentRoleIds);
         setInitialRoleIds(currentRoleIds);
       } catch (err) {
@@ -103,12 +123,20 @@ export default function UserGrantPage() {
 
       // Сначала удаляем роли
       for (const roleId of rolesToRemove) {
-        await revokeRole(user.id, roleId);
+        // 🔧 Исправлено: деструктурируем ответ { ok, error }
+        const { ok, error } = await revokeRole(user.id, roleId);
+        if (!ok || error) {
+          throw new Error(error || `Ошибка отзыва роли ${roleId}`);
+        }
       }
 
       // Затем добавляем новые роли (если есть)
       if (rolesToAdd.length > 0) {
-        await grantRole(user.id, rolesToAdd);
+        // 🔧 Исправлено: деструктурируем ответ { ok, error }
+        const { ok, error } = await grantRole(user.id, rolesToAdd);
+        if (!ok || error) {
+          throw new Error(error || 'Ошибка назначения ролей');
+        }
       }
 
       showNotification(`Роли пользователя ${user.login} обновлены`, 'success');
@@ -147,6 +175,11 @@ export default function UserGrantPage() {
 
   const cancel = () => {
     handleBack();
+  };
+
+  // 🔧 Хелпер для получения имён ролей из userRoles
+  const getUserRoleNames = (user: User): string[] => {
+    return (user.userRoles?.map((ur) => ur.role?.name).filter(Boolean) as string[]) || [];
   };
 
   // Show loading while auth is checking
@@ -250,10 +283,16 @@ export default function UserGrantPage() {
                     Текущие роли
                   </Typography>
                   <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mt: 0.5 }}>
-                    {user.roles && user.roles.length > 0 ? (
-                      user.roles.map((ur) => (
-                        <Chip key={ur.roleId} size="sm" variant="soft" color="primary">
-                          {ur.role?.name || `Role ${ur.roleId}`}
+                    {/* 🔧 Исправлено: userRoles вместо roles */}
+                    {user.userRoles && user.userRoles.length > 0 ? (
+                      getUserRoleNames(user).map((roleName, idx) => (
+                        <Chip
+                          key={`${user.id}_role_${idx}`}
+                          size="sm"
+                          variant="soft"
+                          color="primary"
+                        >
+                          {roleName}
                         </Chip>
                       ))
                     ) : (

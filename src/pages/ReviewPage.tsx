@@ -52,36 +52,42 @@ export default function ReviewPage() {
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id) return;
+      const reviewId = id ? Number(id) : null;
+      if (!reviewId || Number.isNaN(reviewId)) {
+        setError('Неверный ID отзыва');
+        setLoading(false);
+        return;
+      }
 
       try {
         setLoading(true);
+        setError(null);
 
-        const reviews = await getReview(id);
+        const { review: fetchedReview, error: fetchError } = await getReview(reviewId);
 
-        const reviewId = Number(id);
-        const foundReview = reviews.find((r) => Number(r.id) === reviewId);
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
 
-        if (!foundReview) {
+        if (!fetchedReview) {
           setError('Отзыв не найден');
           return;
         }
 
-        setReview(foundReview);
+        setReview(fetchedReview);
+        setSelectedStatus(String(fetchedReview.statusId));
 
-        try {
-          const statusList = await getReviewStatuses();
+        const { statuses: statusList, error: statusError } = await getReviewStatuses();
+
+        if (!statusError && statusList.length > 0) {
           setStatuses(statusList);
-          if (statusList.length > 0) {
-            setSelectedStatus(String(foundReview.statusId));
+          if (!statusList.some((s) => s.id === fetchedReview.statusId)) {
+            setSelectedStatus(String(statusList[0].id));
           }
-        } catch (statusErr) {
-          console.error('Ошибка загрузки статусов:', statusErr);
         }
-
-        setError(null);
       } catch (err) {
-        setError('Ошибка загрузки отзыва');
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки отзыва');
         console.error(err);
       } finally {
         setLoading(false);
@@ -98,11 +104,14 @@ export default function ReviewPage() {
       setStatusLoading(true);
 
       const result = await setReviewStatus(id, selectedStatus);
-      if (result === null) {
+
+      if (!result) {
         showAlert('Ошибка при обновлении статуса', 'danger');
       } else {
-        setSelectedStatus(String(result.status_id));
-        showAlert('Статус успешно обновлён', 'success');
+        if (result.status_id !== undefined) {
+          setSelectedStatus(String(result.status_id));
+        }
+        showAlert(result.message || 'Статус успешно обновлён', 'success');
       }
     } catch (err) {
       showAlert('Ошибка при обновлении статуса', 'danger');
@@ -173,7 +182,7 @@ export default function ReviewPage() {
         <Button
           variant="outlined"
           startDecorator={<BackIcon />}
-          onClick={() => navigate(`/reviews${location.search}`)} // ← сохраняем params
+          onClick={() => navigate(`/reviews${location.search}`)}
         >
           Назад
         </Button>
@@ -190,13 +199,13 @@ export default function ReviewPage() {
       )}
 
       <Stack spacing={3}>
+        {/* Карточка: Информация */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
               Информация об отзыве
             </Typography>
             <Divider sx={{ mb: 3 }} />
-
             <Stack spacing={3}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                 <DateIcon sx={{ color: 'neutral.500' }} />
@@ -207,7 +216,6 @@ export default function ReviewPage() {
                   <Typography level="body-md">{formatDate(review.creationDate)}</Typography>
                 </Box>
               </Box>
-
               <Box>
                 <Typography level="body-sm" color="neutral" sx={{ mb: 1 }}>
                   Текст отзыва
@@ -222,13 +230,13 @@ export default function ReviewPage() {
           </CardContent>
         </Card>
 
+        {/* Карточка: Управление статусом */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
               Управление статусом
             </Typography>
             <Divider sx={{ mb: 3 }} />
-
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               spacing={2}
@@ -242,7 +250,7 @@ export default function ReviewPage() {
                   value={selectedStatus}
                   onChange={(_, value) => setSelectedStatus(value)}
                   placeholder="Выберите статус"
-                  disabled={statuses.length === 0}
+                  disabled={statuses.length === 0 || statusLoading}
                 >
                   {statuses.map((status) => (
                     <Option key={status.id} value={String(status.id)}>
@@ -265,13 +273,13 @@ export default function ReviewPage() {
           </CardContent>
         </Card>
 
+        {/* Карточка: Изображение */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
               Изображение
             </Typography>
             <Divider sx={{ mb: 3 }} />
-
             {imageUrl ? (
               <Box>
                 <AspectRatio
@@ -316,15 +324,9 @@ export default function ReviewPage() {
         </Card>
       </Stack>
 
+      {/* Модальное окно для изображения */}
       <Modal open={imageModalOpen} onClose={() => setImageModalOpen(false)}>
-        <ModalDialog
-          sx={{
-            maxWidth: '90vw',
-            maxHeight: '90vh',
-            p: 1,
-            overflow: 'hidden',
-          }}
-        >
+        <ModalDialog sx={{ maxWidth: '90vw', maxHeight: '90vh', p: 1, overflow: 'hidden' }}>
           <ModalClose />
           {imageUrl && (
             <Box
@@ -339,11 +341,7 @@ export default function ReviewPage() {
               <img
                 src={imageUrl}
                 alt="Изображение отзыва"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: 'calc(90vh - 60px)',
-                  objectFit: 'contain',
-                }}
+                style={{ maxWidth: '100%', maxHeight: 'calc(90vh - 60px)', objectFit: 'contain' }}
               />
             </Box>
           )}

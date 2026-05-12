@@ -25,7 +25,7 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, deleteUser, type User } from '../api';
+import { getUser, deleteUser, changeUserPassword, type User } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
 import { RequirePermission } from '../components/RequirePermission.tsx';
 
@@ -53,7 +53,6 @@ export default function UserViewPage() {
 
   const handleBack = () => {
     const from = searchParams.get('from') || '/users';
-    // Собираем параметры для возврата (исключая 'from')
     const returnParams = new URLSearchParams();
     for (const [key, value] of searchParams.entries()) {
       if (key !== 'from') {
@@ -68,11 +67,25 @@ export default function UserViewPage() {
   useEffect(() => {
     const loadUser = async () => {
       if (!id) return;
+      const userId = parseInt(id);
+      if (Number.isNaN(userId)) {
+        setError('Неверный ID пользователя');
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        const result = await getUser(parseInt(id));
-        if (result) {
-          setUser(result);
+        // 🔧 Исправлено: деструктурируем ответ { user, error }
+        const { user: fetchedUser, error: fetchError } = await getUser(userId);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedUser) {
+          setUser(fetchedUser);
         } else {
           setError('Пользователь не найден');
         }
@@ -96,7 +109,13 @@ export default function UserViewPage() {
   const handleDelete = async () => {
     if (!user) return;
     try {
-      await deleteUser(user.id);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await deleteUser(user.id);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка удаления');
+      }
+
       showNotification(`Пользователь ${user.login} удалён`, 'success');
       navigate('/users');
     } catch (err) {
@@ -119,8 +138,13 @@ export default function UserViewPage() {
     }
     setChangingPassword(true);
     try {
-      const { changeUserPassword } = await import('../api');
-      await changeUserPassword(user.id, password.new);
+      // 🔧 Исправлено: деструктурируем ответ { ok, error }
+      const { ok, error } = await changeUserPassword(user.id, password.new);
+
+      if (!ok || error) {
+        throw new Error(error || 'Ошибка смены пароля');
+      }
+
       setShowPasswordModal(false);
       setPassword({ new: '', confirm: '' });
       setPasswordError(null);
@@ -143,7 +167,6 @@ export default function UserViewPage() {
     });
   };
 
-  // Show loading while auth is checking
   if (authLoading) {
     return (
       <Page headerText="Загрузка...">
@@ -274,7 +297,7 @@ export default function UserViewPage() {
           </CardContent>
         </Card>
 
-        {/* Roles Card */}
+        {/* Roles Card - 🔧 Исправлено: userRoles вместо roles */}
         <Card variant="outlined">
           <CardContent>
             <Typography level="title-lg" sx={{ mb: 2 }}>
@@ -282,11 +305,11 @@ export default function UserViewPage() {
             </Typography>
             <Divider sx={{ mb: 3 }} />
 
-            {user.roles && user.roles.length > 0 ? (
+            {user.userRoles && user.userRoles.length > 0 ? (
               <Stack direction="row" spacing={1} flexWrap="wrap">
-                {user.roles.map((ur) => (
+                {user.userRoles.map((ur) => (
                   <Chip
-                    key={ur.roleId}
+                    key={`${ur.userId}_${ur.roleId}`}
                     size="md"
                     variant="soft"
                     color="primary"
