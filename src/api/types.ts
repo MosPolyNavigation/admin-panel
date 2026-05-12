@@ -118,6 +118,7 @@ export interface RoleRightGoal {
   roleId: number;
   rightId: number;
   goalId: number;
+  canGrant: boolean;
   right: Right | null;
   goal: Goal | null;
 }
@@ -134,6 +135,24 @@ export interface UserRole {
   user: User | null;
 }
 
+export interface RefreshToken {
+  id: number;
+  userId: number;
+  jti: string;
+  expDate: string;
+  browser?: string;
+  userIp?: string;
+  revoked: boolean;
+  createdAt: string;
+}
+
+export interface UserLog {
+  id: number;
+  userId: number;
+  text: string;
+  createdAt: string;
+}
+
 export interface User {
   id: number;
   login: string;
@@ -142,6 +161,8 @@ export interface User {
   registrationDate: string;
   updatedAt: string;
   userRoles: UserRole[] | null;
+  refreshTokens: RefreshToken[];
+  userLogs: UserLog[];
 }
 
 export interface CreateUserInput {
