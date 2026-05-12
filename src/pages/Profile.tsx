@@ -31,7 +31,12 @@ import {
 } from '@mui/icons-material';
 import Page from '../components/Page.tsx';
 import { useAuth } from '../hooks/useAuth.ts';
-import { getUser, updateUser, changeUserPasswordRest, type User } from '../api';
+import {
+  changeUserPasswordRest,
+  type User,
+  getUserWithoutRoles,
+  updateUserWithoutRoles,
+} from '../api';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -61,10 +66,16 @@ export default function ProfilePage() {
       if (!authUser?.id) return;
       setLoading(true);
       try {
-        const result = await getUser(authUser.id);
-        if (result) {
-          setUser(result);
-          setFormData({ fio: result.fio || '' });
+        const { user: fetchedUser, error: fetchError } = await getUserWithoutRoles(authUser.id);
+
+        if (fetchError) {
+          setError(fetchError);
+          return;
+        }
+
+        if (fetchedUser) {
+          setUser(fetchedUser);
+          setFormData({ fio: fetchedUser.fio || '' });
         } else {
           setError('Не удалось загрузить данные профиля');
         }
@@ -92,13 +103,19 @@ export default function ProfilePage() {
     setSaving(true);
     setError(null);
     try {
-      await updateUser(authUser.id, { fio: formData.fio || undefined });
-      showNotification('Данные сохранены', 'success');
-      const result = await getUser(authUser.id);
-      if (result) {
-        setUser(result);
-        setFormData({ fio: result.fio || '' });
+      const { user: updatedUser, error: updateError } = await updateUserWithoutRoles(authUser.id, {
+        fio: formData.fio || undefined,
+      });
+
+      if (updateError || !updatedUser) {
+        throw new Error(updateError || 'Ошибка сохранения');
       }
+
+      showNotification('Данные сохранены', 'success');
+
+      // 🔧 Обновляем локальный стейт
+      setUser(updatedUser);
+      setFormData({ fio: updatedUser.fio || '' });
       setIsEditing(false);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Ошибка сохранения';
@@ -131,6 +148,7 @@ export default function ProfilePage() {
     setChangingPassword(true);
     try {
       await changeUserPasswordRest(password.old, password.new);
+
       setShowPasswordModal(false);
       setPassword({ old: '', new: '', confirm: '' });
       setPasswordError(null);

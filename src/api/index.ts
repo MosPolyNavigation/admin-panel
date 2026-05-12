@@ -79,6 +79,8 @@ export {
   changeUserPasswordRest,
   grantRole,
   revokeRole,
+  getUserWithoutRoles,
+  updateUserWithoutRoles,
 } from './users.ts';
 
 // Роли

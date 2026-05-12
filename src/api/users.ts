@@ -74,6 +74,32 @@ export const getUser = async (
   }
 };
 
+export const getUserWithoutRoles = async (
+  id: number,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `query GetUser($id: Int!) { 
+    user(id: $id) { 
+      ${USER_FIELDS}
+    } 
+  }`;
+
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ user: User | null }>>(
+      query,
+      { id },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.user, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка запроса' };
+  }
+};
+
 export const createUser = async (
   data: CreateUserInput,
   signal?: AbortSignal
@@ -107,6 +133,33 @@ export const updateUser = async (
     updateUser(id: $id, data: $data) { 
       ${USER_FIELDS}
       userRoles { ${USER_ROLE_FIELDS} } 
+    } 
+  }`;
+
+  try {
+    const response = await graphqlClient.post<GqlResponse<{ updateUser: User }>>(
+      query,
+      { id, data },
+      { signal }
+    );
+
+    if (response.data.errors?.length) {
+      return { user: null, error: response.data.errors.map((e) => e.message).join('; ') };
+    }
+    return { user: response.data.data.updateUser, error: null };
+  } catch (err) {
+    return { user: null, error: err instanceof Error ? err.message : 'Ошибка мутации' };
+  }
+};
+
+export const updateUserWithoutRoles = async (
+  id: number,
+  data: UpdateUserInput,
+  signal?: AbortSignal
+): Promise<{ user: User | null; error: string | null }> => {
+  const query = `mutation UpdateUser($id: Int!, $data: UpdateUserInput!) { 
+    updateUser(id: $id, data: $data) { 
+      ${USER_FIELDS}
     } 
   }`;
 
@@ -177,21 +230,17 @@ export const changeUserPasswordRest = async (
   oldPassword: string,
   newPassword: string,
   signal?: AbortSignal
-): Promise<{ success: boolean; message: string }> => {
+): Promise<{ message: string }> => {
   const params = new URLSearchParams();
   params.append('old_password', oldPassword);
   params.append('new_password', newPassword);
 
-  const response = await restClient.post<{ success: boolean; message: string }>(
-    `/auth/change-pass`,
-    params,
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      signal,
-    }
-  );
+  const response = await restClient.post<{ message: string }>(`/auth/change-pass`, params, {
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    signal,
+  });
 
   return response.data;
 };
