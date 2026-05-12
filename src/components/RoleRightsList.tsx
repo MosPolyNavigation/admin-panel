@@ -78,7 +78,8 @@ export const RoleRightsList: React.FC<RoleRightsListProps> = ({
 
   goalsMap.forEach((goalData, goalId) => {
     const availableRights = allowedPermissions[String(goalId)] || [];
-    const goalPermissions = rightsByGoals[String(goalId)] || [];
+    const goalPermissions = rightsByGoals[goalData.name] || [];
+    const userPerms = roleRightGoals.filter((e) => e.goalId === goalId);
 
     availableRights.forEach((rightId) => {
       const key = `${goalId}_${rightId}`;
@@ -90,9 +91,14 @@ export const RoleRightsList: React.FC<RoleRightsListProps> = ({
       const isSelected = change !== undefined ? change.selected : !!original;
       const canGrant = change !== undefined ? change.canGrant : (original?.canGrant ?? false);
 
-      const isGrantable = goalPermissions.some(
-        (p) => p.right === String(rightId) && p.can_grant === true
-      );
+      let isGrantable;
+      if (goalPermissions.length !== 0) {
+        isGrantable = goalPermissions.some(
+          (p) => p.right === rightNames[rightId] && p.can_grant === true
+        );
+      } else {
+        isGrantable = userPerms.some((p) => p.rightId === rightId && p.canGrant == true);
+      }
 
       goalData.rights.push({
         rightId,
