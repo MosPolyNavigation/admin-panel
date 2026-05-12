@@ -40,6 +40,7 @@ import {
   updateUserWithoutRoles,
 } from '../api';
 import { RefreshTokenList } from '../components/RefreshTokenList';
+import { UserLogsTable } from '../components/UserLogsTable.tsx';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -350,6 +351,18 @@ export default function ProfilePage() {
             <Divider sx={{ mb: 3 }} />
 
             <RefreshTokenList tokens={refreshTokens} onSessionRevoked={handleSessionRevoked} />
+          </CardContent>
+        </Card>
+
+        {/* User Logs Card */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography level="title-lg" sx={{ mb: 2 }}>
+              Мой журнал действий (последние 50 событий)
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <UserLogsTable logs={user.userLogs || []} />
           </CardContent>
         </Card>
 

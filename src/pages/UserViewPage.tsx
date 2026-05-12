@@ -29,7 +29,8 @@ import { useAuth } from '../hooks/useAuth.ts';
 import { getUser, deleteUser, changeUserPassword, type User, type RefreshToken } from '../api';
 import { Modal, ModalClose, ModalDialog } from '@mui/joy';
 import { RequirePermission } from '../components/RequirePermission.tsx';
-import { RefreshTokenList } from '../components/RefreshTokenList'; // 🔧 Импорт нового компонента
+import { RefreshTokenList } from '../components/RefreshTokenList';
+import { UserLogsTable } from '../components/UserLogsTable.tsx';
 
 export default function UserViewPage() {
   const { id } = useParams<{ id: string }>();
@@ -359,6 +360,18 @@ export default function UserViewPage() {
             <Divider sx={{ mb: 3 }} />
 
             <RefreshTokenList tokens={refreshTokens} onSessionRevoked={handleSessionRevoked} />
+          </CardContent>
+        </Card>
+
+        {/* User logs Card */}
+        <Card variant="outlined">
+          <CardContent>
+            <Typography level="title-lg" sx={{ mb: 2 }}>
+              Журнал действий (последние 50 событий)
+            </Typography>
+            <Divider sx={{ mb: 3 }} />
+
+            <UserLogsTable logs={user.userLogs || []} />
           </CardContent>
         </Card>
 

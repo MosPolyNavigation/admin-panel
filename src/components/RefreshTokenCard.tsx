@@ -1,4 +1,3 @@
-// components/RefreshTokenCard.tsx
 import { useState } from 'react';
 import { Card, CardContent, Typography, IconButton, Tooltip, LinearProgress } from '@mui/joy';
 import { Logout as LogoutIcon } from '@mui/icons-material';
