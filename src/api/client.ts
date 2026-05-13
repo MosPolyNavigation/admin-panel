@@ -121,8 +121,22 @@ class ApiClient {
 
   private handleRefreshFailure() {
     sessionStorage.removeItem('auth_token');
+    const currentPath = window.location.pathname;
+    if (currentPath.startsWith('/admin/login')) {
+      return;
+    }
     const returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
     window.location.href = `/admin/login?returnUrl=${returnUrl}`;
+  }
+
+  public async forceRefreshToken(): Promise<string | null> {
+    try {
+      const token = await this.refreshToken();
+      return token;
+    } catch {
+      this.handleRefreshFailure();
+      return null;
+    }
   }
 
   // 🌐 Публичное API
@@ -165,5 +179,6 @@ const apiInstance = new ApiClient();
 
 // Экспортируем основной инстанс и удобные обёртки
 export const apiClient = apiInstance.getInstance();
+export const apiInstanceManager = apiInstance;
 export const restClient = apiInstance.rest;
 export const graphqlClient = apiInstance.graphql;
