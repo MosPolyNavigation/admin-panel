@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router';
 import { BASE_API_URL } from '../config.ts';
 import { AuthContext, type User } from './AuthContext.tsx';
-import { apiClient } from '../api/client.ts';
+import { apiClient, apiInstanceManager } from '../api/client.ts';
 
 // ✅ В файле только один экспорт компонента — идеально для Fast Refresh!
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -35,7 +35,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     handleReturnUrl();
 
     const initAuth = async () => {
-      if (savedToken) {
+      if (savedToken === null) {
+        try {
+          const newToken = await apiInstanceManager.forceRefreshToken();
+          if (newToken) {
+            setToken(newToken);
+            await fetchUser(newToken);
+          } else {
+            setToken(null);
+            setUser(null);
+          }
+        } catch {
+          setToken(null);
+          setUser(null);
+        }
+      } else {
         try {
           setToken(savedToken);
           await fetchUser(savedToken);
